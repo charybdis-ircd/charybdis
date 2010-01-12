@@ -152,6 +152,12 @@ static struct InfoStruct info_table[] = {
 		"Time to allow per client_flood_message_num outside of burst",
 	},
 	{
+		"connect_delay",
+		OUTPUT_DECIMAL,
+		&ConfigFileEntry.connect_delay,
+		"Time to wait before processing commands from a new client",
+	},
+	{
 		"connect_timeout",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.connect_timeout,
