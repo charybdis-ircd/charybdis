@@ -603,6 +603,7 @@ general {
 	pace_wait = 10 seconds;
 	short_motd = no;
 	ping_cookie = no;
+	connect_delay = 0 seconds;
 	connect_timeout = 30 seconds;
 	default_ident_timeout = 5;
 	disable_auth = no;
