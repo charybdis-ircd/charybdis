@@ -2748,7 +2748,7 @@ static struct ConfEntry conf_general_table[] =
 	{ "client_exit",	CF_YESNO, NULL, 0, &ConfigFileEntry.client_exit		},
 	{ "collision_fnc",	CF_YESNO, NULL, 0, &ConfigFileEntry.collision_fnc	},
 	{ "resv_fnc",		CF_YESNO, NULL, 0, &ConfigFileEntry.resv_fnc		},
-	{ "connect_delay",	CF_TIME,  NULL, 0, &ConfigFileEntry.connect_delay	},
+	{ "post_registration_delay", CF_TIME, NULL, 0, &ConfigFileEntry.post_registration_delay	},
 	{ "connect_timeout",	CF_TIME,  NULL, 0, &ConfigFileEntry.connect_timeout	},
 	{ "default_floodcount", CF_INT,   NULL, 0, &ConfigFileEntry.default_floodcount	},
 	{ "default_ident_timeout",	CF_INT, NULL, 0, &ConfigFileEntry.default_ident_timeout		},
