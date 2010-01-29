@@ -68,6 +68,7 @@ extension_LTLIBRARIES =		\
   no_kill_services.la		\
   no_locops.la			\
   no_oper_invis.la		\
+  sasl_usercloak.la		\
   spy_admin_notice.la		\
   spy_info_notice.la		\
   spy_links_notice.la		\
