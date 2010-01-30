@@ -49,6 +49,7 @@ check_new_user(void *vdata)
 		return;
 
 	char buf[HOSTLEN];
+	memset(buf, 0, sizeof(buf));
 	char *dst = buf;
 
 	strncpy(buf, source_p->host, accountpart - source_p->host);
