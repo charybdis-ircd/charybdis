@@ -44,7 +44,7 @@ check_new_user(void *vdata)
 	if (EmptyString(source_p->user->suser))
 		return;
 
-	char *accountpart = strstr(source_p->host, "account");
+	char *accountpart = strstr(source_p->orighost, "account");
 	if (!accountpart)
 		return;
 
@@ -52,8 +52,8 @@ check_new_user(void *vdata)
 	memset(buf, 0, sizeof(buf));
 	char *dst = buf;
 
-	strncpy(buf, source_p->host, accountpart - source_p->host);
-	dst += accountpart - source_p->host;
+	strncpy(buf, source_p->orighost, accountpart - source_p->orighost);
+	dst += accountpart - source_p->orighost;
 
 	int needhash = 0;
 
@@ -64,7 +64,7 @@ check_new_user(void *vdata)
 			/* Doesn't fit. Warn opers and bail. */
 			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 					"Couldn't fit account name part %s in hostname for %s!%s@%s",
-					source_p->user->suser, source_p->name, source_p->username, source_p->host);
+					source_p->user->suser, source_p->name, source_p->username, source_p->orighost);
 			return;
 		}
 
@@ -83,7 +83,7 @@ check_new_user(void *vdata)
 			/* Doesn't fit. Warn opers and bail. */
 			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 					"Couldn't fit account name part %s in hostname for %s!%s@%s",
-					source_p->user->suser, source_p->name, source_p->user, source_p->host);
+					source_p->user->suser, source_p->name, source_p->username, source_p->orighost);
 			return;
 		}
 
@@ -99,5 +99,10 @@ check_new_user(void *vdata)
 	/* just in case */
 	buf[HOSTLEN-1] = '\0';
 
-	change_nick_user_host(source_p, source_p->name, source_p->username, buf, 0, "Changing host");
+	/* If hostname has been changed already (probably by services cloak on SASL login), then
+	 * leave it intact. If not, change it. In either case, update the original hostname.
+	 */
+	if (0 == irccmp(source_p->host, source_p->orighost))
+		change_nick_user_host(source_p, source_p->name, source_p->username, buf, 0, "Changing host");
+	strncpy(source_p->orighost, buf, HOSTLEN);
 }
