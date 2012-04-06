@@ -1,7 +1,7 @@
-This is charybdis 3.4-devel, Copyright (c) 2005-2010 Charybdis team.
+This is charybdis 3.4-releng, Copyright (c) 2005-2010 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
--- charybdis-3.4-devel
+-- charybdis-3.4-releng
 
 server protocol
 - Allow overriding opers (with the new extension) to op themselves on channels.
@@ -68,6 +68,8 @@ config
 - Add general::away_interval to allow configuring /away rate limiting.
 - Add listener::defer_accept to delay accepting a connection until the client
   sends data. This depends on kernel support. It may break BOPM checking.
+- Add general::resv_fnc to forcibly change nicks of local users that match a
+  newly set nick RESV, default enabled.
 misc
 - In mkpasswd, default to SHA512-based crypt instead of MD5-based crypt.
 - Add --with-custom-branding and --with-custom-version configure options to
