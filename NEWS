@@ -1,6 +1,19 @@
 This is charybdis 3.4.0-rc1, Copyright (c) 2005-2012 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
+-- charybdis-3.4.0-rc2
+
+server protocol
+- Fix bugs introduced in charybdis-3.4.0-rc1 that caused the CAPAB line to
+  be ignored (all capabilities were assumed to be present).
+- Fix propagation of ip_cloaking hostname changes (only when setting or
+  unsetting the umode after connection).
+user
+- Allow mode queries on mlocked modes. In particular, allow /mode #channel f
+  to query the forward channel even if +f is mlocked.
+misc
+- Work around timerfd/signalfd brokenness on OpenVZ.
+
 -- charybdis-3.4.0-rc1
 
 server protocol
