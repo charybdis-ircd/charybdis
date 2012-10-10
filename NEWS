@@ -1,5 +1,12 @@
-This is charybdis 3.4.0-rc1, Copyright (c) 2005-2012 Charybdis team.
+This is charybdis 3.4.0, Copyright (c) 2005-2012 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+-- charybdis-3.4.0
+
+misc
+- Fix a compilation issue in libratbox/src/sigio.c with recent glibc.
+- Extend documentation slightly.
+- Remove a BSD advertising clause that permission was granted to remove.
 
 -- charybdis-3.4.0-rc2
 
