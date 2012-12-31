@@ -59,31 +59,32 @@ mr_capab(struct Client *client_p, struct Client *source_p, int parc, const char 
 	int i;
 	char *p;
 	char *s;
+	if(parv[1]) {
+		/* ummm, this shouldn't happen. Could argue this should be logged etc. */
+		if(client_p->localClient == NULL)
+			return 0;
 
-	/* ummm, this shouldn't happen. Could argue this should be logged etc. */
-	if(client_p->localClient == NULL)
-		return 0;
+		if(client_p->user)
+			return 0;
 
-	if(client_p->user)
-		return 0;
+		/* CAP_TS6 is set in PASS, so is valid.. */
+		if((client_p->localClient->caps & ~CAP_TS6) != 0)
+		{
+			exit_client(client_p, client_p, client_p, "CAPAB received twice");
+			return 0;
+		}
+		else
+			client_p->localClient->caps |= CAP_CAP;
 
-	/* CAP_TS6 is set in PASS, so is valid.. */
-	if((client_p->localClient->caps & ~CAP_TS6) != 0)
-	{
-		exit_client(client_p, client_p, client_p, "CAPAB received twice");
-		return 0;
-	}
-	else
-		client_p->localClient->caps |= CAP_CAP;
+		rb_free(client_p->localClient->fullcaps);
+		client_p->localClient->fullcaps = rb_strdup(parv[1]);
 
-	rb_free(client_p->localClient->fullcaps);
-	client_p->localClient->fullcaps = rb_strdup(parv[1]);
-
-	for (i = 1; i < parc; i++)
-	{
-		char *t = LOCAL_COPY(parv[i]);
-		for (s = rb_strtok_r(t, " ", &p); s; s = rb_strtok_r(NULL, " ", &p))
-			client_p->localClient->caps |= capability_get(serv_capindex, s);
+		for (i = 1; i < parc; i++)
+		{
+			char *t = LOCAL_COPY(parv[i]);
+			for (s = rb_strtok_r(t, " ", &p); s; s = rb_strtok_r(NULL, " ", &p))
+				client_p->localClient->caps |= capability_get(serv_capindex, s);
+		}
 	}
 
 	return 0;
