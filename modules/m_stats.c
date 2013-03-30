@@ -230,7 +230,12 @@ m_stats(struct Client *client_p, struct Client *source_p, int parc, const char *
 						   form_str (ERR_NOPRIVILEGES));
 				break;
 			}
-			if(stats_cmd_table[i].need_admin && !IsOperAdmin(source_p))
+			/* Use IsAdmin here instead of is IsOperAdmin - remote
+			 * servers don't know a given user's privsets, and if
+			 * this is a command not from our server, it will fail.
+			 * --Elizabeth
+			 */
+			if(stats_cmd_table[i].need_admin && !IsAdmin(source_p))
 			{
 				sendto_one(source_p, form_str(ERR_NOPRIVS),
 					   me.name, source_p->name, "admin");
