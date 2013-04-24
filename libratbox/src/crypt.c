@@ -26,6 +26,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+ 
+/*
+ * This should fix compiling on OS X Leopard and/or PowerPC OSX in general
+ * -ShockkPony
+ */
+
+#ifdef __APPLE__
+	#include <CoreFoundation/CoreFoundation.h>
+	#define htole32(x) CFSwapInt32HostToLittle(x)
+	#define le32toh(x) CFSwapInt32LittleToHost(x)
+#endif 
 
 #include <libratbox_config.h>
 #include <ratbox_lib.h>
