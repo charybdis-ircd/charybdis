@@ -312,10 +312,12 @@ rb_init_ssl(void)
 		ret = 0;
 	}
 	/* Disable SSLv2, make the client use our settings */
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_SSLv2 | SSL_OP_CIPHER_SERVER_PREFERENCE);
+	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_COMPRESSION | SSL_OP_NO_SSLv2 | SSL_OP_CIPHER_SERVER_PREFERENCE);
 	SSL_CTX_set_verify(ssl_server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
-	
-	/* Set ECDHE on OpenSSL 1.00+ */
+
+	/* Cipher preference */
+		SSL_CTX_set_cipher_list(ssl_server_ctx, "EECDH+HIGH:EDH+HIGH:HIGH:!aNULL");
+
 	#if (OPENSSL_VERSION_NUMBER >= 0x10000000)
 		SSL_CTX_set_tmp_ecdh(ssl_server_ctx, EC_KEY_new_by_curve_name(NID_secp384r1));
 	#endif
