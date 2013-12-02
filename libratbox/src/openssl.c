@@ -311,8 +311,11 @@ rb_init_ssl(void)
 			   get_ssl_error(ERR_get_error()));
 		ret = 0;
 	}
-	/* Disable SSLv2, make the client use our settings */
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_COMPRESSION | SSL_OP_NO_SSLv2 | SSL_OP_CIPHER_SERVER_PREFERENCE);
+	/* Disable compression and SSLv2, make the client use our preferred ciphersuite order,
+           make DH key exchange provide truly perfect forward secrecy by generating a new keypair
+           for every session. */
+	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_COMPRESSION | SSL_OP_NO_SSLv2 |
+		SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_SINGLE_DH_USE);
 	SSL_CTX_set_verify(ssl_server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
 
 	/* Cipher preference */
@@ -320,6 +323,7 @@ rb_init_ssl(void)
 
 	#if (OPENSSL_VERSION_NUMBER >= 0x10000000)
 		SSL_CTX_set_tmp_ecdh(ssl_server_ctx, EC_KEY_new_by_curve_name(NID_secp384r1));
+		SSL_CTX_set_options(ssl_server_ctx, SSL_OP_SINGLE_ECDH_USE);
 	#endif
 
 	ssl_client_ctx = SSL_CTX_new(TLSv1_client_method());
