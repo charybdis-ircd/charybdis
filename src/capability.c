@@ -247,7 +247,7 @@ capability_index_stats(void (*cb)(const char *line, void *privdata), void *privd
 			cb(buf, privdata);
 		}
 
-		rb_snprintf(buf, sizeof buf, "'%s': remaining bits - %ld", idx->name,
+		rb_snprintf(buf, sizeof buf, "'%s': remaining bits - %u", idx->name,
 			    (sizeof(unsigned int) * 8) - (idx->highest_bit - 1));
 		cb(buf, privdata);
 	}
