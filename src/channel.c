@@ -1230,6 +1230,8 @@ send_cap_mode_changes(struct Client *client_p, struct Client *source_p,
 	pbl = 0;
 	parabuf[0] = 0;
 	pbuf = parabuf;
+	cap = 0;
+	nocap = 0;
 	dir = MODE_QUERY;
 
 	mbl = preflen = rb_sprintf(modebuf, ":%s TMODE %ld %s ",
