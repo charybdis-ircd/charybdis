@@ -43,6 +43,7 @@
 #include "hook.h"
 
 static int m_part(struct Client *, struct Client *, int, const char **);
+static int h_channel_part;
 
 struct Message part_msgtab = {
 	"PART", 0, 0, 0, MFLG_SLOW,
@@ -51,7 +52,12 @@ struct Message part_msgtab = {
 
 mapi_clist_av1 part_clist[] = { &part_msgtab, NULL };
 
-DECLARE_MODULE_AV1(part, NULL, NULL, part_clist, NULL, NULL, "$Revision: 98 $");
+mapi_hlist_av1 part_hlist[] = {
+	{ "channel_part", &h_channel_part },
+	{ NULL, NULL },
+};
+
+DECLARE_MODULE_AV1(part, NULL, NULL, part_clist, part_hlist, NULL, "$Revision: 99 $");
 
 static void part_one_client(struct Client *client_p,
 			    struct Client *source_p, char *name, char *reason);
@@ -104,6 +110,8 @@ part_one_client(struct Client *client_p, struct Client *source_p, char *name, ch
 {
 	struct Channel *chptr;
 	struct membership *msptr;
+	
+	hook_data_channel_activity hook_info;
 
 	if((chptr = find_channel(name)) == NULL)
 	{
@@ -146,6 +154,11 @@ part_one_client(struct Client *client_p, struct Client *source_p, char *name, ch
 				     source_p->name, source_p->username,
 				     source_p->host, chptr->chname);
 	}
+	
+	hook_info.client = source_p;
+	hook_info.chptr = chptr;
+	call_hook(h_channel_part, &hook_info);
+	
 	remove_user_from_channel(msptr);
 }
 
