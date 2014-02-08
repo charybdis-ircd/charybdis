@@ -145,6 +145,27 @@ const char *scache_get_name(struct scache_entry *ptr)
 	return ptr->name;
 }
 
+/* scache_should_show()
+ *
+ * inputs	- scache entry
+ * outputs	- whether entry should be shown in /links and /map
+ * side effects	-
+ */
+static int
+scache_should_show(struct scache_entry *ptr)
+{
+	if (!irccmp(ptr->name, me.name))
+		return FALSE;
+	else if (ptr->flags & SC_HIDDEN &&
+			!ConfigServerHide.disable_hidden)
+		return FALSE;
+	else if (ptr->flags & SC_ONLINE)
+		return ptr->known_since < rb_current_time() - ConfigServerHide.links_delay;
+	else
+		return ptr->last_split > rb_current_time() - ConfigServerHide.links_delay \
+			&& ptr->last_split - ptr->known_since > ConfigServerHide.links_delay;
+}
+
 /* scache_send_flattened_links()
  *
  * inputs	- client to send to
@@ -156,23 +177,13 @@ scache_send_flattened_links(struct Client *source_p)
 {
 	struct scache_entry *scache_ptr;
 	int i;
-	int show;
 
 	for (i = 0; i < SCACHE_HASH_SIZE; i++)
 	{
 		scache_ptr = scache_hash[i];
 		while (scache_ptr)
 		{
-			if (!irccmp(scache_ptr->name, me.name))
-				show = FALSE;
-			else if (scache_ptr->flags & SC_HIDDEN &&
-					!ConfigServerHide.disable_hidden)
-				show = FALSE;
-			else if (scache_ptr->flags & SC_ONLINE)
-				show = scache_ptr->known_since < rb_current_time() - ConfigServerHide.links_delay;
-			else
-				show = scache_ptr->last_split > rb_current_time() - ConfigServerHide.links_delay && scache_ptr->last_split - scache_ptr->known_since > ConfigServerHide.links_delay;
-			if (show)
+			if (scache_should_show(scache_ptr))
 				sendto_one_numeric(source_p, RPL_LINKS, form_str(RPL_LINKS), 
 						   scache_ptr->name, me.name, 1, scache_ptr->info);
 
@@ -183,6 +194,44 @@ scache_send_flattened_links(struct Client *source_p)
 			   me.name, me.name, 0, me.info);
 
 	sendto_one_numeric(source_p, RPL_ENDOFLINKS, form_str(RPL_ENDOFLINKS), "*");
+}
+
+/* scache_send_flattened_map()
+ *
+ * inputs	- client to send to
+ * outputs	- us, the cached links (as a flat map), and RPL_MAPEND
+ * side effects	-
+ */
+void
+scache_send_flattened_map(struct Client *source_p)
+{
+	struct scache_entry *scache_ptr;
+	int i;
+	size_t count, unused;
+	char buf[BUFSIZE];
+
+	count_scache(&count, &unused);
+
+	count--;
+	sendto_one_numeric(source_p, RPL_MAP, form_str(RPL_MAP), me.name);
+
+	for (i = 0; i < SCACHE_HASH_SIZE; i++)
+	{
+		scache_ptr = scache_hash[i];
+		while (scache_ptr)
+		{
+			count--;
+			if (scache_should_show(scache_ptr))
+			{
+				rb_snprintf(buf, BUFSIZE, " %c- %s", count ? '|' : '`', scache_ptr->name);
+				sendto_one_numeric(source_p, RPL_MAP, form_str(RPL_MAP), buf);
+			}
+
+			scache_ptr = scache_ptr->next;
+		}
+	}
+
+	sendto_one_numeric(source_p, RPL_MAPEND, form_str(RPL_MAPEND));
 }
 
 #define MISSING_TIMEOUT 86400
