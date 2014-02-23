@@ -87,7 +87,7 @@ AM_CONDITIONAL([MINGW], [test "$is_mingw" = "yes"])
 
 
 # backwards support for IRC_CFLAGS
-CFLAGS="$IRC_CFLAGS $CFLAGS -Wall"
+CFLAGS="$IRC_CFLAGS $CFLAGS"
 
 dnl use directory structure of cached as default (hack)
 if test "$libexecdir" = '${exec_prefix}/libexec' &&
