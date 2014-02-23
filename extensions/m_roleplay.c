@@ -137,8 +137,10 @@ m_displaymsg(struct Client *source_p, const char *channel, int underline, int ac
 	struct Channel *chptr;
 	struct membership *msptr;
 	char nick2[NICKLEN+1];
-	char *nick3 = rb_strdup(nick);
+	char nick3[NICKLEN+1];
 	char text2[BUFSIZE];
+
+	rb_strlcpy(nick3, nick, sizeof nick3);
 
 	if(!IsFloodDone(source_p))
 		flood_endgrace(source_p);
