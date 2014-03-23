@@ -514,18 +514,23 @@ check_forward(struct Client *source_p, struct Channel *chptr,
 {
 	struct Channel *targptr;
 	struct membership *msptr;
+	struct ConfItem *aconf = NULL;
 
-	if(!check_channel_name(forward) ||
-			(MyClient(source_p) && (strlen(forward) > LOC_CHANNELLEN || hash_find_resv(forward))))
+	if(!check_channel_name(forward) || (MyClient(source_p) && strlen(forward) > LOC_CHANNELLEN))
 	{
-		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), forward);
+                sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), forward, "invalid or too long");
+                return 0;
+        }
+	else if (MyClient(source_p) && (aconf = hash_find_resv(forward)))
+	{
+		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), forward, aconf->passwd);
 		return 0;
 	}
 	/* don't forward to inconsistent target -- jilles */
 	if(chptr->chname[0] == '#' && forward[0] == '&')
 	{
 		sendto_one_numeric(source_p, ERR_BADCHANNAME,
-				   form_str(ERR_BADCHANNAME), forward);
+				   form_str(ERR_BADCHANNAME), forward, "inconsistent target");
 		return 0;
 	}
 	if(MyClient(source_p) && (targptr = find_channel(forward)) == NULL)

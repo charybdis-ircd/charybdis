@@ -164,7 +164,8 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 		if(!check_channel_name_loc(source_p, name) || (strlen(name) > LOC_CHANNELLEN))
 		{
 			sendto_one_numeric(source_p, ERR_BADCHANNAME,
-					   form_str(ERR_BADCHANNAME), (unsigned char *) name);
+					   form_str(ERR_BADCHANNAME), (unsigned char *) name,
+					   "invalid or too long");
 			continue;
 		}
 
@@ -188,7 +189,8 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 		if(!IsExemptResv(source_p) && (aconf = hash_find_resv(name)))
 		{
 			sendto_one_numeric(source_p, ERR_BADCHANNAME,
-					   form_str(ERR_BADCHANNAME), name);
+					   form_str(ERR_BADCHANNAME), name,
+					   aconf->passwd);
 
 			/* dont warn for opers */
 			if(!IsExemptJupe(source_p) && !IsOper(source_p))

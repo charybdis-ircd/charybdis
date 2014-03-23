@@ -183,7 +183,7 @@
 #define NUMERIC_STR_475      ":%s 475 %s %s :Cannot join channel (+k) - bad key"
 #define NUMERIC_STR_477      ":%s 477 %s %s :Cannot join channel (+r) - you need to be identified with services"
 #define NUMERIC_STR_478      ":%s 478 %s %s %s :Channel ban list is full"
-#define NUMERIC_STR_479      "%s :Illegal channel name"
+#define NUMERIC_STR_479      "%s :Illegal channel name (%s)"
 #define NUMERIC_STR_480      ":%s 480 %s %s :Cannot join channel (+j) - throttle exceeded, try again later"
 #define NUMERIC_STR_481      ":Permission Denied - You're not an IRC operator"
 #define NUMERIC_STR_482      ":%s 482 %s %s :You're not a channel operator"

@@ -76,7 +76,8 @@ m_names(struct Client *client_p, struct Client *source_p, int parc, const char *
 		{
 			sendto_one_numeric(source_p, ERR_BADCHANNAME,
 					   form_str(ERR_BADCHANNAME),
-					   (unsigned char *) p);
+					   (unsigned char *) p,
+					   "invalid or too long");
 			return 0;
 		}
 

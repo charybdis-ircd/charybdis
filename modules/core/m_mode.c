@@ -107,7 +107,7 @@ m_mode(struct Client *client_p, struct Client *source_p, int parc, const char *p
 
 	if(!check_channel_name(dest))
 	{
-		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[1]);
+		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[1], "invalid or too long");
 		return 0;
 	}
 
@@ -178,7 +178,7 @@ ms_tmode(struct Client *client_p, struct Client *source_p, int parc, const char 
 	/* Now, try to find the channel in question */
 	if(!IsChanPrefix(parv[2][0]) || !check_channel_name(parv[2]))
 	{
-		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[2]);
+		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[2], "invalid or too long");
 		return 0;
 	}
 
@@ -217,7 +217,7 @@ ms_mlock(struct Client *client_p, struct Client *source_p, int parc, const char 
 	/* Now, try to find the channel in question */
 	if(!IsChanPrefix(parv[2][0]) || !check_channel_name(parv[2]))
 	{
-		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[2]);
+		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), parv[2], "invalid or too long");
 		return 0;
 	}
 
