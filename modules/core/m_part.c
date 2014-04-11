@@ -134,8 +134,8 @@ part_one_client(struct Client *client_p, struct Client *source_p, char *name, co
 	{
 
 		sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
-			      ":%s PART %s :%s", use_id(source_p), chptr->chname, reason);
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s!%s@%s PART %s :%s",
+			      ":%s PART %s :\"%s\"", use_id(source_p), chptr->chname, reason);
+		sendto_channel_local(ALL_MEMBERS, chptr, ":%s!%s@%s PART %s :\"%s\"",
 				     source_p->name, source_p->username,
 				     source_p->host, chptr->chname, reason);
 	}
