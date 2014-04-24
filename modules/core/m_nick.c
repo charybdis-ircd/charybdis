@@ -115,6 +115,7 @@ static int
 mr_nick(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
+	struct ConfItem *aconf;
 	char nick[NICKLEN];
 
 	if (strlen(client_p->id) == 3)
@@ -137,15 +138,23 @@ mr_nick(struct Client *client_p, struct Client *source_p, int parc, const char *
 	if(!clean_nick(nick, 1))
 	{
 		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME),
-			   me.name, EmptyString(source_p->name) ? "*" : source_p->name, parv[1]);
+			   me.name, EmptyString(source_p->name) ? "*" : source_p->name, parv[1], "invalid or too long");
 		return 0;
 	}
 
 	/* check if the nick is resv'd */
-	if(find_nick_resv(nick))
+	if(aconf = find_nick_resv(nick))
 	{
+		/* like klines, resvs have a user visible reason and an oper-visible reason
+		 * delimited by a pipe character.  If we find a pipe in the reason, swap it
+		 * out for a null before sending it out, and swap the pipe back in after
+		 * faster and less verbose than using a temporary buffer or other method
+		 */
+		char *reason_break = strstr(aconf->passwd, "|");
+		if (reason_break != NULL) *reason_break = '\0';
 		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME),
-			   me.name, EmptyString(source_p->name) ? "*" : source_p->name, nick);
+			   me.name, EmptyString(source_p->name) ? "*" : source_p->name, nick, aconf->passwd);
+		if (reason_break != NULL) *reason_break = '|';
 		return 0;
 	}
 
@@ -173,6 +182,7 @@ static int
 m_nick(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
+	struct ConfItem *aconf;
 	char nick[NICKLEN];
 
 	if(parc < 2 || EmptyString(parv[1]))
@@ -191,13 +201,17 @@ m_nick(struct Client *client_p, struct Client *source_p, int parc, const char *p
 	/* check the nickname is ok */
 	if(!clean_nick(nick, 1))
 	{
-		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME), me.name, source_p->name, nick);
+		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME), me.name, source_p->name, nick, "invalid or too long");
 		return 0;
 	}
 
-	if(!IsExemptResv(source_p) && find_nick_resv(nick))
+	if(!IsExemptResv(source_p) && (aconf = find_nick_resv(nick)))
 	{
-		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME), me.name, source_p->name, nick);
+		/* resvs, like klines, have oper-only reason delimited by a pipe char */
+		char *reason_break = strstr(aconf->passwd, "|");
+		if (reason_break != NULL) *reason_break = '\0';
+		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME), me.name, source_p->name, nick, aconf->passwd);
+		if (reason_break != NULL) *reason_break = '|';
 		return 0;
 	}
 

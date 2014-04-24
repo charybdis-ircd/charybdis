@@ -523,7 +523,15 @@ check_forward(struct Client *source_p, struct Channel *chptr,
         }
 	else if (MyClient(source_p) && (aconf = hash_find_resv(forward)))
 	{
+		/* like klines, resvs have a user visible reason and an oper-visible reason
+		 * delimited by a pipe character.  If we find a pipe in the reason, swap it
+		 * out for a null before sending it out, and swap the pipe back in after
+		 * faster and less verbose than using a temporary buffer or other method
+		 */
+		char *reason_break = strstr(aconf->passwd, "|");
+		if (reason_break != NULL) *reason_break = '\0';
 		sendto_one_numeric(source_p, ERR_BADCHANNAME, form_str(ERR_BADCHANNAME), forward, aconf->passwd);
+		if (reason_break != NULL) *reason_break = '|';
 		return 0;
 	}
 	/* don't forward to inconsistent target -- jilles */

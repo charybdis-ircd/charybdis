@@ -157,7 +157,7 @@
 #define NUMERIC_STR_421      ":%s 421 %s %s :Unknown command"
 #define NUMERIC_STR_422      ":%s 422 %s :MOTD File is missing"
 #define NUMERIC_STR_431      ":%s 431 %s :No nickname given"
-#define NUMERIC_STR_432      ":%s 432 %s %s :Erroneous Nickname"
+#define NUMERIC_STR_432      ":%s 432 %s %s :Erroneous Nickname (%s)"
 #define NUMERIC_STR_433      ":%s 433 %s %s :Nickname is already in use."
 #define NUMERIC_STR_435      "%s %s :Cannot change nickname while banned on channel"
 #define NUMERIC_STR_436      "%s :Nickname collision KILL"
