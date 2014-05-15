@@ -302,6 +302,8 @@ register_local_user(struct Client *client_p, struct Client *source_p, const char
 	if(!valid_hostname(source_p->host))
 	{
 		sendto_one_notice(source_p, ":*** Notice -- You have an illegal character in your hostname");
+		sendto_realops_snomask(SNO_REJ, L_ALL, "Invalid hostname: %s (of user %s)",
+			source_p->host, source_p->name);
 
 		rb_strlcpy(source_p->host, source_p->sockhost, sizeof(source_p->host));
  	}
