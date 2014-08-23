@@ -3,8 +3,10 @@
  * ip_cloaking.c: provide user hostname cloaking
  *
  * Written originally by nenolod, altered to use FNV by Elizabeth in 2008
+ * altered some more by groente
  */
 
+#include <openssl/hmac.h>
 #include "stdinc.h"
 #include "modules.h"
 #include "hook.h"
@@ -16,6 +18,15 @@
 #include "s_user.h"
 #include "s_serv.h"
 #include "numeric.h"
+#include "newconf.h"
+
+char *secretsalt = "32qwnqoWI@DpMd&w";
+
+static void
+conf_set_secretsalt(void *data)
+{
+	secretsalt = rb_strdup(data);
+}
 
 static int
 _modinit(void)
@@ -23,6 +34,9 @@ _modinit(void)
 	/* add the usermode to the available slot */
 	user_modes['h'] = find_umode_slot();
 	construct_umodebuf();
+
+        add_top_conf("cloaking", NULL, NULL, NULL);
+        add_conf_item("cloaking", "secretsalt", CF_QSTRING, conf_set_secretsalt);
 
 	return 0;
 }
@@ -33,6 +47,10 @@ _moddeinit(void)
 	/* disable the umode and remove it from the available list */
 	user_modes['h'] = 0;
 	construct_umodebuf();
+
+        add_top_conf("cloaking", NULL, NULL, NULL);
+        add_conf_item("cloaking", "secretsalt", CF_QSTRING, conf_set_secretsalt);
+
 }
 
 static void check_umode_change(void *data);
@@ -72,92 +90,23 @@ distribute_hostchange(struct Client *client_p, char *newhost)
 }
 
 static void
-do_host_cloak_ip(const char *inbuf, char *outbuf)
+do_host_cloak(const char *inbuf, char *outbuf)
 {
-	/* None of the characters in this table can be valid in an IP */
-	char chartable[] = "ghijklmnopqrstuvwxyz";
-	char *tptr;
-	uint32_t accum = fnv_hash((const unsigned char*) inbuf, 32);
-	int sepcount = 0;
-	int totalcount = 0;
-	int ipv6 = 0;
+	unsigned char *hash;
+	char buf[3];
+	char output[HOSTLEN+1];
+	int i;
 
-	rb_strlcpy(outbuf, inbuf, HOSTLEN + 1);
+	hash = HMAC(EVP_sha256(), secretsalt, strlen(secretsalt), (unsigned char*)inbuf, strlen(inbuf), NULL, NULL);
 
-	if (strchr(outbuf, ':'))
-	{
-		ipv6 = 1;
+	output[0]=0;
 
-		/* Damn you IPv6... 
-		 * We count the number of colons so we can calculate how much
-		 * of the host to cloak. This is because some hostmasks may not
-		 * have as many octets as we'd like.
-		 *
-		 * We have to do this ahead of time because doing this during
-		 * the actual cloaking would get ugly
-		 */
-		for (tptr = outbuf; *tptr != '\0'; tptr++)
-			if (*tptr == ':')
-				totalcount++;
-	}
-	else if (!strchr(outbuf, '.'))
-		return;
+        for (i = 0; i < 32; i++) {
+                sprintf(buf, "%.2x", hash[i]);
+                strcat(output,buf);
+        }
 
-	for (tptr = outbuf; *tptr != '\0'; tptr++) 
-	{
-		if (*tptr == ':' || *tptr == '.')
-		{
-			sepcount++;
-			continue;
-		}
-
-		if (ipv6 && sepcount < totalcount / 2)
-			continue;
-
-		if (!ipv6 && sepcount < 2)
-			continue;
-
-		*tptr = chartable[(*tptr + accum) % 20];
-		accum = (accum << 1) | (accum >> 31);
-	}
-}
-
-static void
-do_host_cloak_host(const char *inbuf, char *outbuf)
-{
-	char b26_alphabet[] = "abcdefghijklmnopqrstuvwxyz";
-	char *tptr;
-	uint32_t accum = fnv_hash((const unsigned char*) inbuf, 32);
-
-	rb_strlcpy(outbuf, inbuf, HOSTLEN + 1);
-
-	/* pass 1: scramble first section of hostname using base26 
-	 * alphabet toasted against the FNV hash of the string.
-	 *
-	 * numbers are not changed at this time, only letters.
-	 */
-	for (tptr = outbuf; *tptr != '\0'; tptr++)
-	{
-		if (*tptr == '.')
-			break;
-
-		if (isdigit(*tptr) || *tptr == '-')
-			continue;
-
-		*tptr = b26_alphabet[(*tptr + accum) % 26];
-
-		/* Rotate one bit to avoid all digits being turned odd or even */
-		accum = (accum << 1) | (accum >> 31);
-	}
-
-	/* pass 2: scramble each number in the address */
-	for (tptr = outbuf; *tptr != '\0'; tptr++)
-	{
-		if (isdigit(*tptr))
-			*tptr = '0' + (*tptr + accum) % 10;
-
-		accum = (accum << 1) | (accum >> 31);
-	}	
+	rb_strlcpy(outbuf,output,HOSTLEN+1);
 }
 
 static void
@@ -209,10 +158,7 @@ check_new_user(void *vdata)
 		return;
 	}
 	source_p->localClient->mangledhost = rb_malloc(HOSTLEN + 1);
-	if (!irccmp(source_p->orighost, source_p->sockhost))
-		do_host_cloak_ip(source_p->orighost, source_p->localClient->mangledhost);
-	else
-		do_host_cloak_host(source_p->orighost, source_p->localClient->mangledhost);
+	do_host_cloak(source_p->orighost, source_p->localClient->mangledhost);
 	if (IsDynSpoof(source_p))
 		source_p->umodes &= ~user_modes['h'];
 	if (source_p->umodes & user_modes['h'])
