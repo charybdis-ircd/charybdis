@@ -37,11 +37,12 @@
  * IP cloaking extensions: use ip_cloaking_4.0
  * if you're linking 3.2 and later, otherwise use
  * ip_cloaking.so, for compatibility with older 3.x
- * releases.
+ * releases. You may want to use ip_cloaking_hmac.
  */
 
 #loadmodule "extensions/ip_cloaking_4.0.so";
 #loadmodule "extensions/ip_cloaking.so";
+#loadmodule "extensions/ip_cloaking_hmac.so";
 
 serverinfo {
 	name = "hades.arpa";
