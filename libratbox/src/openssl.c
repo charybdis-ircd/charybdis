@@ -603,10 +603,12 @@ rb_init_prng(const char *path, prng_seed_t seed_type)
 
 	switch (seed_type)
 	{
+#ifdef HAVE_RAND_EGD
 	case RB_PRNG_EGD:
 		if(RAND_egd(path) == -1)
 			return -1;
 		break;
+#endif
 	case RB_PRNG_FILE:
 		if(RAND_load_file(path, -1) == -1)
 			return -1;
