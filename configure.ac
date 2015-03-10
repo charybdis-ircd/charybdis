@@ -535,6 +535,8 @@ if test "$cf_enable_openssl" != no; then
 	fi
 fi
 
+AC_CHECK_LIB(crypto, RAND_egd, AC_DEFINE(HAVE_RAND_EGD, 1, [Define if the libcrypto has RAND_egd]))
+
 CPPFLAGS="$save_CPPFLAGS"
 LIBS="$save_LIBS"
 
