@@ -579,7 +579,9 @@ rb_init_prng(const char *path, prng_seed_t seed_type)
 	switch (seed_type)
 	{
 	case RB_PRNG_EGD:
+#ifdef HAVE_RAND_EGD
 		if(RAND_egd(path) == -1)
+#endif
 			return -1;
 		break;
 	case RB_PRNG_FILE:
