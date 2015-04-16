@@ -103,7 +103,7 @@ kq_update_events(rb_fde_t *F, short filter, PF * handler)
 			kep_flags = EV_DELETE;
 		}
 
-		EV_SET(kep, (uintptr_t)F->fd, filter, kep_flags, 0, 0, (void *)F);
+		EV_SET(kep, (uintptr_t)F->fd, filter, kep_flags, 0, 0, (intptr_t *)F);
 
 		if(++kqoff == kqmax)
 		{
@@ -259,7 +259,7 @@ rb_select_kqueue(long delay)
 		{
 
 		case EVFILT_READ:
-			F = kqout[i].udata;
+			F = (rb_fde_t *)kqout[i].udata;
 			if((hdl = F->read_handler) != NULL)
 			{
 				F->read_handler = NULL;
@@ -269,7 +269,7 @@ rb_select_kqueue(long delay)
 			break;
 
 		case EVFILT_WRITE:
-			F = kqout[i].udata;
+			F = (rb_fde_t *)kqout[i].udata;
 			if((hdl = F->write_handler) != NULL)
 			{
 				F->write_handler = NULL;
@@ -278,7 +278,7 @@ rb_select_kqueue(long delay)
 			break;
 #if defined(EVFILT_TIMER)
 		case EVFILT_TIMER:
-			rb_run_event(kqout[i].udata);
+			rb_run_event((struct ev_entry *)kqout[i].udata);
 			break;
 #endif
 		default:
@@ -329,7 +329,7 @@ rb_kqueue_sched_event(struct ev_entry *event, int when)
 	kep_flags = EV_ADD;
 	if(event->frequency == 0)
 		kep_flags |= EV_ONESHOT;
-	EV_SET(&kev, (uintptr_t)event, EVFILT_TIMER, kep_flags, 0, when * 1000, event);
+	EV_SET(&kev, (uintptr_t)event, EVFILT_TIMER, kep_flags, 0, when * 1000, (intptr_t)event);
 	if(kevent(kq, &kev, 1, NULL, 0, NULL) < 0)
 		return 0;
 	return 1;
@@ -339,7 +339,7 @@ void
 rb_kqueue_unsched_event(struct ev_entry *event)
 {
 	struct kevent kev;
-	EV_SET(&kev, (uintptr_t)event, EVFILT_TIMER, EV_DELETE, 0, 0, event);
+	EV_SET(&kev, (uintptr_t)event, EVFILT_TIMER, EV_DELETE, 0, 0, (intptr_t)event);
 	kevent(kq, &kev, 1, NULL, 0, NULL);
 }
 
