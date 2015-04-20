@@ -32,7 +32,7 @@ skip_atoi(const char **s)
 {
 	int i = 0;
 
-	while(isdigit((int)**s))
+	while(isdigit(**s))
 		i = i * 10 + *((*s)++) - '0';
 	return i;
 }
@@ -373,7 +373,7 @@ rb_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		/* get field width */
 		field_width = -1;
-		if(isdigit((int)*fmt))
+		if(isdigit(*fmt))
 			field_width = skip_atoi(&fmt);
 		else if(*fmt == '*')
 		{
@@ -392,7 +392,7 @@ rb_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		if(*fmt == '.')
 		{
 			++fmt;
-			if(isdigit((int)*fmt))
+			if(isdigit(*fmt))
 				precision = skip_atoi(&fmt);
 			else if(*fmt == '*')
 			{

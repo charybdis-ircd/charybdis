@@ -57,7 +57,7 @@ DECLARE_MODULE_AV1(svinfo, NULL, NULL, svinfo_clist, NULL, NULL, "$Revision: 494
 static int
 ms_svinfo(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	signed long deltat;
+	signed int deltat;
 	time_t theirtime;
 	char squitreason[120];
 
@@ -82,20 +82,20 @@ ms_svinfo(struct Client *client_p, struct Client *source_p, int parc, const char
 	 */
 	rb_set_time();
 	theirtime = atol(parv[4]);
-	deltat = labs(theirtime - rb_current_time());
+	deltat = abs(theirtime - rb_current_time());
 
 	if(deltat > ConfigFileEntry.ts_max_delta)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 				     "Link %s dropped, excessive TS delta"
-				     " (my TS=%ld, their TS=%ld, delta=%ld)",
+				     " (my TS=%ld, their TS=%ld, delta=%d)",
 				     source_p->name,
 				     (long) rb_current_time(), (long) theirtime, deltat);
 		ilog(L_SERVER,
 		     "Link %s dropped, excessive TS delta"
-		     " (my TS=%ld, their TS=%ld, delta=%ld)",
+		     " (my TS=%ld, their TS=%ld, delta=%d)",
 		     log_client_name(source_p, SHOW_IP), (long) rb_current_time(), (long) theirtime, deltat);
-		rb_snprintf(squitreason, sizeof squitreason, "Excessive TS delta (my TS=%ld, their TS=%ld, delta=%ld)",
+		rb_snprintf(squitreason, sizeof squitreason, "Excessive TS delta (my TS=%ld, their TS=%ld, delta=%d)",
 				(long) rb_current_time(), (long) theirtime, deltat);
 		disable_server_conf_autoconn(source_p->name);
 		exit_client(source_p, source_p, source_p, squitreason);
@@ -106,7 +106,7 @@ ms_svinfo(struct Client *client_p, struct Client *source_p, int parc, const char
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Link %s notable TS delta"
-				     " (my TS=%ld, their TS=%ld, delta=%ld)",
+				     " (my TS=%ld, their TS=%ld, delta=%d)",
 				     source_p->name, (long) rb_current_time(), (long) theirtime, deltat);
 	}
 

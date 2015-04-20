@@ -478,7 +478,7 @@ irc_ns_name_ntop(const char *src, char *dst, size_t dstsiz)
  */
 static int
 irc_dn_comp(const char *src, unsigned char *dst, int dstsiz,
-            const unsigned char **dnptrs, const unsigned char **lastdnptr)
+            unsigned char **dnptrs, unsigned char **lastdnptr)
 {
   return(irc_ns_name_compress(src, dst, (size_t)dstsiz,
                               (const unsigned char **)dnptrs,
@@ -1145,7 +1145,7 @@ irc_res_mkquery(
 	HEADER *hp;
 	unsigned char *cp;
 	int n;
-	const unsigned char *dnptrs[20], **dpp, **lastdnptr;
+	unsigned char *dnptrs[20], **dpp, **lastdnptr;
 
 	/*
 	 * Initialize header fields.
@@ -1153,7 +1153,7 @@ irc_res_mkquery(
 	if ((buf == NULL) || (buflen < HFIXEDSZ))
 		return (-1);
 	memset(buf, 0, HFIXEDSZ);
-	hp = (HEADER *)(void *)buf;
+	hp = (HEADER *) buf;
 
 	hp->id = 0;
 	hp->opcode = QUERY;

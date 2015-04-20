@@ -62,7 +62,7 @@ parse_netmask(const char *text, struct sockaddr  *naddr, int *nb)
 	if(naddr == NULL)
 		addr = (struct rb_sockaddr_storage *)&xaddr;
 	else
-		addr = (struct rb_sockaddr_storage *)(void *)naddr;
+		addr = (struct rb_sockaddr_storage *)naddr;
 
 	if(strpbrk(ip, "*?") != NULL)
 	{
@@ -126,7 +126,7 @@ init_host_hash(void)
 static unsigned long
 hash_ipv4(struct sockaddr *saddr, int bits)
 {
-	struct sockaddr_in *addr = (struct sockaddr_in *)(void *)saddr;
+	struct sockaddr_in *addr = (struct sockaddr_in *) saddr;
 
 	if(bits != 0)
 	{
@@ -146,7 +146,7 @@ hash_ipv4(struct sockaddr *saddr, int bits)
 static unsigned long
 hash_ipv6(struct sockaddr *saddr, int bits)
 {
-	struct sockaddr_in6 *addr = (struct sockaddr_in6 *)(void *)saddr;
+	struct sockaddr_in6 *addr = (struct sockaddr_in6 *) saddr;
 	unsigned long v = 0, n;
 	for (n = 0; n < 16; n++)
 	{
@@ -741,8 +741,7 @@ show_iline_prefix(struct Client *sptr, struct ConfItem *aconf, char *name)
 void
 report_auth(struct Client *client_p)
 {
-	char *name, *host, *user, *classname;
-	const char *pass;
+	char *name, *host, *pass, *user, *classname;
 	struct AddressRec *arec;
 	struct ConfItem *aconf;
 	int i, port;
