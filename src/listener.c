@@ -503,19 +503,12 @@ add_connection(struct Listener *listener, rb_fde_t *F, struct sockaddr *sai, str
 static const char *toofast = "ERROR :Reconnecting too fast, throttled.\r\n";
 
 static int
-accept_precallback(rb_fde_t *F, struct sockaddr *addr, rb_socklen_t addrlen, void *data)
+check_connection(rb_fde_t *F, struct sockaddr *addr, struct Listener *listener)
 {
-	struct Listener *listener = (struct Listener *)data;
 	char buf[BUFSIZE];
 	struct ConfItem *aconf;
 	static time_t last_oper_notice = 0;
 	int len;
-
-	if(listener->ssl && (!ssl_ok || !get_ssld_count()))
-	{
-		rb_close(F);
-		return 0;
-	}
 
 	if((maxconnections - 10) < rb_get_fd(F)) /* XXX this is kinda bogus */
 	{
@@ -577,6 +570,24 @@ accept_precallback(rb_fde_t *F, struct sockaddr *addr, rb_socklen_t addrlen, voi
 	return 1;
 }
 
+static int
+accept_precallback(rb_fde_t *F, struct sockaddr *addr, rb_socklen_t addrlen, void *data)
+{
+	struct Listener *listener = (struct Listener *)data;
+
+	if(listener->ssl && (!ssl_ok || !get_ssld_count()))
+	{
+		rb_close(F);
+		return 0;
+	}
+
+	if(!listener->ssl) {
+		return check_connection(F, addr, listener);
+	}
+
+	return 1;
+}
+
 static void
 accept_ssld(rb_fde_t *F, struct sockaddr *addr, struct sockaddr *laddr, struct Listener *listener)
 {
@@ -589,6 +600,11 @@ accept_ssld(rb_fde_t *F, struct sockaddr *addr, struct sockaddr *laddr, struct L
 		return;
 	}
 	ctl = start_ssld_accept(F, xF[1], rb_get_fd(xF[0])); /* this will close F for us */
+
+	if(!check_connection(xF[0], addr, listener)) {
+		return;
+	}
+
 	add_connection(listener, xF[0], addr, laddr, ctl);
 }
 
