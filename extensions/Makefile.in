@@ -60,6 +60,7 @@ SRCS =                          \
   ip_cloaking_old.c		\
   ip_cloaking_3.0.c		\
   ip_cloaking_4.0.c		\
+  ip_cloaking_hmac.c            \
   override.c			\
   restrict-unauthenticated.c    \
   sno_farconnect.c		\
