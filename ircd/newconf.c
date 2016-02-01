@@ -36,7 +36,7 @@
 static int yy_defer_accept = 1;
 
 struct TopConf *conf_cur_block;
-static char *conf_cur_block_name = NULL;
+char *conf_cur_block_name = NULL;
 
 static rb_dlink_list conf_items;
 
