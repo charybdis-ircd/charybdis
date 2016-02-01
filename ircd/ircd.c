@@ -642,6 +642,7 @@ charybdis_main(int argc, char *argv[])
 	default_server_capabs = CAP_MASK;
 
 	init_main_logfile();
+	init_hook();
 	newconf_init();
 	init_s_conf();
 	init_s_newconf();
@@ -650,7 +651,6 @@ charybdis_main(int argc, char *argv[])
 	init_host_hash();
 	clear_hash_parse();
 	init_client();
-	init_hook();
 	init_channels();
 	initclass();
 	whowas_init();
