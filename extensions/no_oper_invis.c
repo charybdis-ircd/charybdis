@@ -29,8 +29,8 @@ h_noi_umode_changed(hook_data_umode_changed *hdata)
 {
 	struct Client *source_p = hdata->client;
 
-	if (MyClient(source_p) && IsOper(source_p) && !IsOperInvis(source_p) &&
-			IsInvisible(source_p))
+	//TODO: OperExempt()?
+	if (MyClient(source_p) && IsOper(source_p) && !OperCan(source_p, "invisible") && IsInvisible(source_p))
 	{
 		ClearInvisible(source_p);
 		/* If they tried /umode +i, complain; do not complain

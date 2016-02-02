@@ -49,7 +49,7 @@ struct Message set_msgtab = {
 };
 
 mapi_clist_av1 set_clist[] = { &set_msgtab, NULL };
-DECLARE_MODULE_AV1(set, NULL, NULL, set_clist, NULL, NULL, "$Revision: 3406 $");
+DECLARE_MODULE_AV1(set, NULL, NULL, set_clist, NULL, NULL, "$Revision: 3407 $");
 
 /* Structure used for the SET table itself */
 struct SetStruct
@@ -190,10 +190,10 @@ quote_floodcount(struct Client *source_p, const char *arg, int newval)
 static void
 quote_identtimeout(struct Client *source_p, const char *arg, int newval)
 {
-	if(!IsOperAdmin(source_p))
+	if(!OperCan(source_p, "SET", "IDENTTIMEOUT"))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
+			   me.name, source_p->name, "SET:IDENTTIMEOUT");
 		return;
 	}
 

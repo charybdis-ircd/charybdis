@@ -48,12 +48,6 @@ mo_extendchans(struct Client *client_p, struct Client *source_p, int parc, const
 {
 	struct Client *target_p;
 
-	if(!HasPrivilege(source_p, "oper:extendchans"))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "extendchans");
-		return 0;
-	}
-
 	if(EmptyString(parv[1]))
 	{
 		sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS), me.name, source_p->name, "EXTENDCHANS");

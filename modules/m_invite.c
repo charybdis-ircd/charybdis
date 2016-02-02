@@ -40,6 +40,7 @@
 #include "modules.h"
 #include "packet.h"
 #include "tgchange.h"
+#include "role.h"
 
 static int m_invite(struct Client *, struct Client *, int, const char **);
 
@@ -180,7 +181,8 @@ m_invite(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	if(MyConnect(target_p))
 	{
-		if(!IsOper(source_p) && (IsSetCallerId(target_p) ||
+		//TODO: OperExempt()
+		if(!OperCan(source_p, "INVITE", "accept") && (IsSetCallerId(target_p) ||
 					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])) &&
 				!accept_message(source_p, target_p))
 		{

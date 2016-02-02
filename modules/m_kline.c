@@ -108,12 +108,6 @@ mo_kline(struct Client *client_p, struct Client *source_p, int parc, const char 
 	int loc = 1;
 	int propagated = ConfigFileEntry.use_propagated_bans;
 
-	if(!IsOperK(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "kline");
-		return 0;
-	}
-
 	if((tkline_time = valid_temp_time(parv[loc])) >= 0)
 		loc++;
 	/* we just set tkline_time to -1! */
@@ -127,10 +121,10 @@ mo_kline(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	if(parc >= loc + 2 && !irccmp(parv[loc], "ON"))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "KLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "KLINE:remote");
 			return 0;
 		}
 
@@ -361,12 +355,6 @@ mo_unkline(struct Client *client_p, struct Client *source_p, int parc, const cha
 	struct ConfItem *aconf;
 	int propagated = 1;
 
-	if(!IsOperUnkline(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "unkline");
-		return 0;
-	}
-
 	if((host = strchr(h, '@')) || *h == '*' || strchr(h, '.') || strchr(h, ':'))
 	{
 		/* Explicit user@host mask given */
@@ -400,10 +388,10 @@ mo_unkline(struct Client *client_p, struct Client *source_p, int parc, const cha
 	/* possible remote kline.. */
 	if((parc > 3) && (irccmp(parv[2], "ON") == 0))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "UNKLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "UNKLINE:remote");
 			return 0;
 		}
 

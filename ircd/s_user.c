@@ -1031,8 +1031,7 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 					source_p->localClient->opername = NULL;
 
 					rb_dlinkFindDestroy(source_p, &local_oper_list);
-					privilegeset_unref(source_p->localClient->privset);
-					source_p->localClient->privset = NULL;
+					source_p->localClient->role = NULL;
 				}
 
 				rb_dlinkFindDestroy(source_p, &oper_list);
@@ -1055,18 +1054,25 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 		case 's':
 			if (MyConnect(source_p))
 			{
-				if(!IsOper(source_p)
-						&& (ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE))
-				{
-					if (what == MODE_ADD || source_p->umodes & UMODE_SERVNOTICE)
-						badflag = YES;
-					continue;
-				}
-				showsnomask = YES;
 				if(what == MODE_ADD)
 				{
-					if (parc > 3)
+					if(ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE && !OperCanUmode(source_p, 's'))
+					{
+						badflag = YES;
+						continue;
+					}
+
+					if(parc > 3)
+					{
 						source_p->snomask = parse_snobuf_to_mask(source_p->snomask, parv[3]);
+						if(ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE)
+						{
+							char *const buf = construct_snobuf(source_p->snomask);
+							for(size_t i = 0; i < strlen(buf); i++)
+								if(!OperCanSnote(source_p, buf[i]))
+									source_p->snomask &= ~snomask_modes[(uint8_t)buf[i]];
+						}
+					}
 					else
 						source_p->snomask |= SNO_GENERAL;
 				}
@@ -1076,6 +1082,8 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 					source_p->umodes |= UMODE_SERVNOTICE;
 				else
 					source_p->umodes &= ~UMODE_SERVNOTICE;
+
+				showsnomask = YES;
 				break;
 			}
 			/* FALLTHROUGH */
@@ -1115,20 +1123,19 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	if(badflag)
 		sendto_one(source_p, form_str(ERR_UMODEUNKNOWNFLAG), me.name, source_p->name);
 
-	if(MyClient(source_p) && (source_p->snomask & SNO_NCHANGE) && !IsOperN(source_p))
+	if(MyClient(source_p) && (source_p->snomask & SNO_NCHANGE) && !OperCanSnote(source_p, 'n'))
 	{
 		sendto_one_notice(source_p, ":*** You need oper and nick_changes flag for +s +n");
 		source_p->snomask &= ~SNO_NCHANGE;	/* only tcm's really need this */
 	}
 
-	if(MyClient(source_p) && (source_p->umodes & UMODE_OPERWALL) && !IsOperOperwall(source_p))
+	if(MyClient(source_p) && (source_p->umodes & UMODE_OPERWALL) && !OperCanUmode(source_p, 'z'))
 	{
 		sendto_one_notice(source_p, ":*** You need oper and operwall flag for +z");
 		source_p->umodes &= ~UMODE_OPERWALL;
 	}
 
-	if(MyConnect(source_p) && (source_p->umodes & UMODE_ADMIN) &&
-	   (!IsOperAdmin(source_p) || IsOperHiddenAdmin(source_p)))
+	if(MyConnect(source_p) && (source_p->umodes & UMODE_ADMIN) && !OperCanUmode(source_p, 'a'))
 	{
 		sendto_one_notice(source_p, ":*** You need oper and admin flag for +a");
 		source_p->umodes &= ~UMODE_ADMIN;
@@ -1320,16 +1327,16 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 
 	source_p->flags2 |= oper_p->flags;
 	source_p->localClient->opername = rb_strdup(oper_p->name);
-	source_p->localClient->privset = privilegeset_ref(oper_p->privset);
+	source_p->localClient->role = oper_p->role;
 
 	rb_dlinkAddAlloc(source_p, &local_oper_list);
 	rb_dlinkAddAlloc(source_p, &oper_list);
 
-	if(IsOperAdmin(source_p) && !IsOperHiddenAdmin(source_p))
+	if(OperCanUmode(source_p, 'a') && !OperCan(source_p, "admin:hidden"))  //TODO: OperExempt() or better umode
 		source_p->umodes |= UMODE_ADMIN;
-	if(!IsOperN(source_p))
+	if(!OperCanSnote(source_p, 'n'))
 		source_p->snomask &= ~SNO_NCHANGE;
-	if(!IsOperOperwall(source_p))
+	if(!OperCanSnote(source_p, 'z'))
 		source_p->umodes &= ~UMODE_OPERWALL;
 	hdata.client = source_p;
 	hdata.oldumodes = old;
@@ -1347,8 +1354,7 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 	sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK),
 		   construct_snobuf(source_p->snomask));
 	sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
-	sendto_one_notice(source_p, ":*** Oper privilege set is %s", oper_p->privset->name);
-	sendto_one_notice(source_p, ":*** Oper privs are %s", oper_p->privset->privs);
+	sendto_one_notice(source_p, ":*** Your role as an operator is %s.", oper_p->role->name);
 	send_oper_motd(source_p);
 
 	return (1);

@@ -33,6 +33,7 @@
 #include "send.h"
 #include "match.h"
 #include "ipv4_from_ipv6.h"
+#include "role.h"
 
 #ifdef RB_IPV6
 static unsigned long hash_ipv6(struct sockaddr *, int);
@@ -719,13 +720,13 @@ show_iline_prefix(struct Client *sptr, struct ConfItem *aconf, char *name)
 		*prefix_ptr++ = '+';
 	if(IsConfDoSpoofIp(aconf))
 		*prefix_ptr++ = '=';
-	if(IsOper(sptr) && IsConfExemptFlood(aconf))
+	if(OperCanStat(sptr, 'i') && IsConfExemptFlood(aconf))
 		*prefix_ptr++ = '|';
-	if(IsOper(sptr) && IsConfExemptDNSBL(aconf) && !IsConfExemptKline(aconf))
+	if(OperCanStat(sptr, 'i') && IsConfExemptDNSBL(aconf) && !IsConfExemptKline(aconf))
 		*prefix_ptr++ = '$';
-	if(IsOper(sptr) && IsConfExemptKline(aconf))
+	if(OperCanStat(sptr, 'i') && IsConfExemptKline(aconf))
 		*prefix_ptr++ = '^';
-	if(IsOper(sptr) && IsConfExemptLimits(aconf))
+	if(OperCanStat(sptr, 'i') && IsConfExemptLimits(aconf))
 		*prefix_ptr++ = '>';
 	*prefix_ptr = '\0';
 	strncpy(prefix_ptr, name, USERLEN);
@@ -753,7 +754,7 @@ report_auth(struct Client *client_p)
 			{
 				aconf = arec->aconf;
 
-				if(!IsOper(client_p) && IsConfDoSpoofIp(aconf))
+				if(!OperCanStat(client_p, 'i') && IsConfDoSpoofIp(aconf))
 					continue;
 
 				get_printable_conf(aconf, &name, &host, &pass, &user, &port,

@@ -45,7 +45,7 @@ struct Message opme_msgtab = {
 
 mapi_clist_av1 opme_clist[] = { &opme_msgtab, NULL };
 
-DECLARE_MODULE_AV1(opme, NULL, NULL, opme_clist, NULL, NULL, "$Revision: 3554 $");
+DECLARE_MODULE_AV1(opme, NULL, NULL, opme_clist, NULL, NULL, "$Revision: 3555 $");
 
 
 /*
@@ -58,13 +58,6 @@ mo_opme(struct Client *client_p, struct Client *source_p, int parc, const char *
 	struct Channel *chptr;
 	struct membership *msptr;
 	rb_dlink_node *ptr;
-
-	/* admins only */
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "admin");
-		return 0;
-	}
 
 	if((chptr = find_channel(parv[1])) == NULL)
 	{

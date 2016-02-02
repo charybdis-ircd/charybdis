@@ -40,6 +40,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
+#include "role.h"
 
 static int m_whowas(struct Client *, struct Client *, int, const char **);
 
@@ -49,7 +50,7 @@ struct Message whowas_msgtab = {
 };
 
 mapi_clist_av1 whowas_clist[] = { &whowas_msgtab, NULL };
-DECLARE_MODULE_AV1(whowas, NULL, NULL, whowas_clist, NULL, NULL, "$Revision: 1717 $");
+DECLARE_MODULE_AV1(whowas, NULL, NULL, whowas_clist, NULL, NULL, "$Revision: 1718 $");
 
 /*
 ** m_whowas
@@ -69,7 +70,7 @@ m_whowas(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	static time_t last_used = 0L;
 
-	if(MyClient(source_p) && !IsOper(source_p))
+	if(MyClient(source_p) && !OperCan(source_p, "WHOWAS")) // TODO: OperExempt()
 	{
 		if(last_used + (parc > 3 ? ConfigFileEntry.pace_wait :
 						ConfigFileEntry.pace_wait_simple

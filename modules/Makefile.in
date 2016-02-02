@@ -289,9 +289,6 @@ m_pong_la_OBJECTS = m_pong.lo
 m_post_la_LIBADD =
 m_post_la_SOURCES = m_post.c
 m_post_la_OBJECTS = m_post.lo
-m_privs_la_LIBADD =
-m_privs_la_SOURCES = m_privs.c
-m_privs_la_OBJECTS = m_privs.lo
 m_rehash_la_LIBADD =
 m_rehash_la_SOURCES = m_rehash.c
 m_rehash_la_OBJECTS = m_rehash.lo
@@ -301,6 +298,9 @@ m_restart_la_OBJECTS = m_restart.lo
 m_resv_la_LIBADD =
 m_resv_la_SOURCES = m_resv.c
 m_resv_la_OBJECTS = m_resv.lo
+m_role_la_LIBADD =
+m_role_la_SOURCES = m_role.c
+m_role_la_OBJECTS = m_role.lo
 m_sasl_la_LIBADD =
 m_sasl_la_SOURCES = m_sasl.c
 m_sasl_la_OBJECTS = m_sasl.lo
@@ -425,8 +425,8 @@ SOURCES = chm_nocolour.c chm_noctcp.c core/m_ban.c core/m_die.c \
 	m_encap.c m_etrace.c m_grant.c m_help.c m_info.c m_invite.c \
 	m_ison.c m_kline.c m_knock.c m_links.c m_list.c m_locops.c \
 	m_lusers.c m_map.c m_monitor.c m_motd.c m_names.c m_oper.c \
-	m_operspy.c m_pass.c m_ping.c m_pong.c m_post.c m_privs.c \
-	m_rehash.c m_restart.c m_resv.c m_sasl.c m_scan.c m_services.c \
+	m_operspy.c m_pass.c m_ping.c m_pong.c m_post.c m_rehash.c \
+	m_restart.c m_resv.c m_role.c m_sasl.c m_scan.c m_services.c \
 	m_set.c m_signon.c m_snote.c m_starttls.c m_stats.c m_svinfo.c \
 	m_tb.c m_testline.c m_testmask.c m_tginfo.c m_time.c m_topic.c \
 	m_trace.c m_unreject.c m_user.c m_userhost.c m_users.c \
@@ -441,8 +441,8 @@ DIST_SOURCES = chm_nocolour.c chm_noctcp.c core/m_ban.c core/m_die.c \
 	m_encap.c m_etrace.c m_grant.c m_help.c m_info.c m_invite.c \
 	m_ison.c m_kline.c m_knock.c m_links.c m_list.c m_locops.c \
 	m_lusers.c m_map.c m_monitor.c m_motd.c m_names.c m_oper.c \
-	m_operspy.c m_pass.c m_ping.c m_pong.c m_post.c m_privs.c \
-	m_rehash.c m_restart.c m_resv.c m_sasl.c m_scan.c m_services.c \
+	m_operspy.c m_pass.c m_ping.c m_pong.c m_post.c m_rehash.c \
+	m_restart.c m_resv.c m_role.c m_sasl.c m_scan.c m_services.c \
 	m_set.c m_signon.c m_snote.c m_starttls.c m_stats.c m_svinfo.c \
 	m_tb.c m_testline.c m_testmask.c m_tginfo.c m_time.c m_topic.c \
 	m_trace.c m_unreject.c m_user.c m_userhost.c m_users.c \
@@ -643,6 +643,7 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 rundir = @rundir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -696,10 +697,10 @@ auto_load_mod_LTLIBRARIES = \
   m_ping.la \
   m_pong.la \
   m_post.la \
-  m_privs.la \
   m_rehash.la \
   m_restart.la \
   m_resv.la \
+  m_role.la \
   m_sasl.la \
   m_scan.la \
   m_services.la \
@@ -1016,9 +1017,6 @@ m_pong.la: $(m_pong_la_OBJECTS) $(m_pong_la_DEPENDENCIES) $(EXTRA_m_pong_la_DEPE
 m_post.la: $(m_post_la_OBJECTS) $(m_post_la_DEPENDENCIES) $(EXTRA_m_post_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_post_la_OBJECTS) $(m_post_la_LIBADD) $(LIBS)
 
-m_privs.la: $(m_privs_la_OBJECTS) $(m_privs_la_DEPENDENCIES) $(EXTRA_m_privs_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_privs_la_OBJECTS) $(m_privs_la_LIBADD) $(LIBS)
-
 m_rehash.la: $(m_rehash_la_OBJECTS) $(m_rehash_la_DEPENDENCIES) $(EXTRA_m_rehash_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_rehash_la_OBJECTS) $(m_rehash_la_LIBADD) $(LIBS)
 
@@ -1027,6 +1025,9 @@ m_restart.la: $(m_restart_la_OBJECTS) $(m_restart_la_DEPENDENCIES) $(EXTRA_m_res
 
 m_resv.la: $(m_resv_la_OBJECTS) $(m_resv_la_DEPENDENCIES) $(EXTRA_m_resv_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_resv_la_OBJECTS) $(m_resv_la_LIBADD) $(LIBS)
+
+m_role.la: $(m_role_la_OBJECTS) $(m_role_la_DEPENDENCIES) $(EXTRA_m_role_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_role_la_OBJECTS) $(m_role_la_LIBADD) $(LIBS)
 
 m_sasl.la: $(m_sasl_la_OBJECTS) $(m_sasl_la_DEPENDENCIES) $(EXTRA_m_sasl_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(auto_load_moddir) $(m_sasl_la_OBJECTS) $(m_sasl_la_LIBADD) $(LIBS)
@@ -1154,10 +1155,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_ping.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_pong.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_post.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_privs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_rehash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_restart.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_resv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_role.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_sasl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_scan.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/m_services.Plo@am__quote@

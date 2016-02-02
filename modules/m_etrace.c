@@ -51,6 +51,7 @@
 #include "modules.h"
 #include "logger.h"
 #include "supported.h"
+#include "role.h"
 
 static int mo_etrace(struct Client *, struct Client *, int, const char **);
 static int me_etrace(struct Client *, struct Client *, int, const char **);
@@ -85,7 +86,7 @@ _moddeinit(void)
 }
 
 mapi_clist_av1 etrace_clist[] = { &etrace_msgtab, &chantrace_msgtab, &masktrace_msgtab, NULL };
-DECLARE_MODULE_AV1(etrace, _modinit, _moddeinit, etrace_clist, NULL, NULL, "$Revision: 3161 $");
+DECLARE_MODULE_AV1(etrace, _modinit, _moddeinit, etrace_clist, NULL, NULL, "$Revision: 3162 $");
 
 static void do_etrace(struct Client *source_p, int ipv4, int ipv6);
 static void do_etrace_full(struct Client *source_p);
@@ -142,7 +143,7 @@ me_etrace(struct Client *client_p, struct Client *source_p, int parc, const char
 {
 	struct Client *target_p;
 
-	if(!IsOper(source_p) || parc < 2 || EmptyString(parv[1]))
+	if(!OperCan(source_p, "ETRACE") || parc < 2 || EmptyString(parv[1]))
 		return 0;
 
 	/* we cant etrace remote clients.. we shouldnt even get sent them */
@@ -240,7 +241,7 @@ m_chantrace(struct Client *client_p, struct Client *source_p, int parc, const ch
 
 	name = parv[1];
 
-	if(IsOperSpy(source_p) && parv[1][0] == '!')
+	if(OperCan(source_p, "CHANTRACE", "spy") && parv[1][0] == '!')
 	{
 		name++;
 		operspy = 1;
@@ -352,7 +353,7 @@ mo_masktrace(struct Client *client_p, struct Client *source_p, int parc,
 	name = LOCAL_COPY(parv[1]);
 	collapse(name);
 
-	if(IsOperSpy(source_p) && parv[1][0] == '!')
+	if(OperCan(source_p, "MASKTRACE", "spy") && parv[1][0] == '!')
 	{
 		name++;
 		mask++;

@@ -92,25 +92,6 @@ static int mo_sendbans(struct Client *client_p, struct Client *source_p, int par
 	struct Client *server_p;
 	struct irc_radixtree_iteration_state state;
 
-	if (!IsOperRemoteBan(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			me.name, source_p->name, "remoteban");
-		return 0;
-	}
-	if (!IsOperXline(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			me.name, source_p->name, "xline");
-		return 0;
-	}
-	if (!IsOperResv(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			me.name, source_p->name, "resv");
-		return 0;
-	}
-
 	target = parv[1];
 	count = 0;
 	RB_DLINK_FOREACH(ptr, global_serv_list.head)

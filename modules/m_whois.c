@@ -70,7 +70,7 @@ mapi_hlist_av1 whois_hlist[] = {
 	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV1(whois, NULL, NULL, whois_clist, whois_hlist, NULL, "$Revision: 3536 $");
+DECLARE_MODULE_AV1(whois, NULL, NULL, whois_clist, whois_hlist, NULL, "$Revision: 3537 $");
 
 /*
  * m_whois
@@ -90,7 +90,7 @@ m_whois(struct Client *client_p, struct Client *source_p, int parc, const char *
 			return 0;
 		}
 
-		if(!IsOper(source_p))
+		if(!OperCan(source_p, "WHOIS"))
 		{
 			/* seeing as this is going across servers, we should limit it */
 			if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time() || !ratelimit_client(source_p, 2))
@@ -186,7 +186,7 @@ do_whois(struct Client *client_p, struct Client *source_p, int parc, const char 
 	if((p = strchr(nick, ',')))
 		*p = '\0';
 
-	if(IsOperSpy(source_p) && *nick == '!')
+	if(OperCan(source_p, "WHOIS", "spy") && *nick == '!')
 	{
 		operspy = 1;
 		nick++;
@@ -317,7 +317,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 		sendto_one_numeric(source_p, RPL_AWAY, form_str(RPL_AWAY),
 				   target_p->name, target_p->user->away);
 
-	if(IsOper(target_p) && (!ConfigFileEntry.hide_opers_in_whois || IsOper(source_p)))
+	if(IsOper(target_p) && (!ConfigFileEntry.hide_opers_in_whois || OperCan(source_p, "WHOIS", "ops")))
 	{
 		sendto_one_numeric(source_p, RPL_WHOISOPERATOR, form_str(RPL_WHOISOPERATOR),
 				   target_p->name,
@@ -326,11 +326,11 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 				    GlobalSetOptions.operstring));
 	}
 
-	if(MyClient(target_p) && !EmptyString(target_p->localClient->opername) && IsOper(source_p))
+	if(MyClient(target_p) && !EmptyString(target_p->localClient->opername) && OperCan(source_p, "WHOIS", "ops"))
 	{
 		char buf[512];
-		rb_snprintf(buf, sizeof(buf), "is opered as %s, privset %s",
-			    target_p->localClient->opername, target_p->localClient->privset->name);
+		rb_snprintf(buf, sizeof(buf), "is opered as %s, role %s",
+			    target_p->localClient->opername, target_p->localClient->role->name);
 		sendto_one_numeric(source_p, RPL_WHOISSPECIAL, form_str(RPL_WHOISSPECIAL),
 				   target_p->name, buf);
 	}
@@ -344,7 +344,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 
 		sendto_one_numeric(source_p, RPL_WHOISSECURE, form_str(RPL_WHOISSECURE),
 				   target_p->name, cbuf);
-		if((source_p == target_p || IsOper(source_p)) &&
+		if((source_p == target_p || OperCan(source_p, "WHOIS", "certfp")) &&
 				target_p->certfp != NULL)
 			sendto_one_numeric(source_p, RPL_WHOISCERTFP,
 					form_str(RPL_WHOISCERTFP),
@@ -353,7 +353,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 
 	if(MyClient(target_p))
 	{
-		if (IsDynSpoof(target_p) && (IsOper(source_p) || source_p == target_p))
+		if (IsDynSpoof(target_p) && (OperCan(source_p, "WHOIS", "host") || source_p == target_p))
 		{
 			/* trick here: show a nonoper their own IP if
 			 * dynamic spoofed but not if auth{} spoofed
@@ -391,7 +391,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	}
 	else
 	{
-		if (IsDynSpoof(target_p) && (IsOper(source_p) || source_p == target_p))
+		if (IsDynSpoof(target_p) && (OperCan(source_p, "WHOIS", "host") || source_p == target_p))
 		{
 			ClearDynSpoof(target_p);
 			sendto_one_numeric(source_p, RPL_WHOISHOST,

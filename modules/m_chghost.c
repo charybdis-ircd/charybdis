@@ -45,7 +45,7 @@ struct Message chghost_msgtab = {
 
 mapi_clist_av1 chghost_clist[] = { &chghost_msgtab, &realhost_msgtab, NULL };
 
-DECLARE_MODULE_AV1(chghost, NULL, NULL, chghost_clist, NULL, NULL, "$Revision: 3424 $");
+DECLARE_MODULE_AV1(chghost, NULL, NULL, chghost_clist, NULL, NULL, "$Revision: 3425 $");
 
 /* clean_host()
  *
@@ -203,13 +203,6 @@ mo_chghost(struct Client *client_p, struct Client *source_p,
 {
 #ifdef ENABLE_OPER_CHGHOST
 	struct Client *target_p;
-
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
 
 	if (!(target_p = find_named_person(parv[1])))
 	{

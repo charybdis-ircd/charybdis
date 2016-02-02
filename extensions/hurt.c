@@ -115,7 +115,7 @@ DECLARE_MODULE_AV1(
 	hurt_clist,
 	NULL,
 	hurt_hfnlist,
-	"$Revision: 3161 $"
+	"$Revision: 3162 $"
 );
 /* }}} */
 
@@ -186,11 +186,6 @@ mo_hurt(struct Client *client_p, struct Client *source_p,
 	hurt_t				*hurt;
 	struct Client			*target_p;
 
-	if (!IsOperK(source_p)) {
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name,
-				source_p->name, "kline");
-		return 0;
-	}
 
 	if (parc == 3)
 		expire = NULL, ip = parv[1], reason = parv[2];
@@ -303,13 +298,6 @@ mo_heal(struct Client *client_p, struct Client *source_p,
 		int parc, const char **parv)
 {
 	struct Client *target_p;
-
-	if (!IsOperUnkline(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-				me.name, source_p->name, "unkline");
-		return 0;
-	}
 
 	if (clean_nick(parv[1], 0))
 	{

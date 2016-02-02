@@ -52,7 +52,7 @@ struct Message operwall_msgtab = {
 };
 
 mapi_clist_av1 wallops_clist[] = { &wallops_msgtab, &operwall_msgtab, NULL };
-DECLARE_MODULE_AV1(wallops, NULL, NULL, wallops_clist, NULL, NULL, "$Revision: 1377 $");
+DECLARE_MODULE_AV1(wallops, NULL, NULL, wallops_clist, NULL, NULL, "$Revision: 1378 $");
 
 /*
  * mo_operwall (write to *all* opers currently online)
@@ -61,13 +61,6 @@ DECLARE_MODULE_AV1(wallops, NULL, NULL, wallops_clist, NULL, NULL, "$Revision: 1
 static int
 mo_operwall(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	if(!IsOperOperwall(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "operwall");
-		return 0;
-	}
-
 	sendto_wallops_flags(UMODE_OPERWALL, source_p, "OPERWALL - %s", parv[1]);
 	sendto_server(client_p, NULL, CAP_TS6, NOCAPS, ":%s OPERWALL :%s",
 		      use_id(source_p), parv[1]);
@@ -99,10 +92,10 @@ ms_wallops(struct Client *client_p, struct Client *source_p, int parc, const cha
 {
 	const char *prefix = "";
 
-	if (MyClient(source_p) && !IsOperMassNotice(source_p))
+	if (MyClient(source_p) && !OperCan(source_p, "WALLOPS"))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "mass_notice");
+			   me.name, source_p->name, "WALLOPS");
 		return 0;
 	}
 

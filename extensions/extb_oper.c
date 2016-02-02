@@ -8,7 +8,7 @@
 #include "stdinc.h"
 #include "modules.h"
 #include "client.h"
-#include "privilege.h"
+#include "role.h"
 #include "s_newconf.h"
 #include "ircd.h"
 
@@ -16,7 +16,7 @@ static int _modinit(void);
 static void _moddeinit(void);
 static int eb_oper(const char *data, struct Client *client_p, struct Channel *chptr, long mode_type);
 
-DECLARE_MODULE_AV1(extb_oper, _modinit, _moddeinit, NULL, NULL, NULL, "$Revision: 1299 $");
+DECLARE_MODULE_AV1(extb_oper, _modinit, _moddeinit, NULL, NULL, NULL, "$Revision: 1300 $");
 
 static int
 _modinit(void)
@@ -41,12 +41,8 @@ static int eb_oper(const char *data, struct Client *client_p,
 
 	if (data != NULL)
 	{
-		struct PrivilegeSet *set = privilegeset_get(data);
-		if (set != NULL && client_p->localClient->privset == set)
-			return EXTBAN_MATCH;
-
-		/* $o:admin or whatever */
-		return HasPrivilege(client_p, data) ? EXTBAN_MATCH : EXTBAN_NOMATCH;
+		struct Role *const role = role_get(data);
+		return role != NULL && client_p->localClient->role == role? EXTBAN_MATCH : EXTBAN_NOMATCH;
 	}
 
 	return IsOper(client_p) ? EXTBAN_MATCH : EXTBAN_NOMATCH;

@@ -19,8 +19,7 @@
 #include "s_user.h"
 #include "s_serv.h"
 #include "numeric.h"
-#include "privilege.h"
-#include "s_newconf.h"
+#include "role.h"
 
 static void check_umode_change(void *data);
 static void hack_channel_access(void *data);
@@ -40,7 +39,6 @@ mapi_hfn_list_av1 override_hfnlist[] = {
 };
 
 #define CHFL_OVERRIDE		0x0004
-#define IsOperOverride(x)	(HasPrivilege((x), "oper:override"))
 
 struct OverrideSession {
 	rb_dlink_node node;
@@ -119,9 +117,9 @@ check_umode_change(void *vdata)
 
 	if (source_p->umodes & user_modes['p'])
 	{
-		if (!IsOperOverride(source_p))
+		if (!OperCanUmode(source_p, 'p'))
 		{
-			sendto_one_notice(source_p, ":*** You need oper:override privilege for +p");
+			sendto_one_notice(source_p, ":*** You lack privilege for +p");
 			source_p->umodes &= ~user_modes['p'];
 			return;
 		}

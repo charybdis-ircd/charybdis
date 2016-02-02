@@ -13,7 +13,6 @@
 #include "s_user.h"
 #include "s_serv.h"
 #include "numeric.h"
-#include "privilege.h"
 #include "s_newconf.h"
 
 static void hack_channel_access(void *data);

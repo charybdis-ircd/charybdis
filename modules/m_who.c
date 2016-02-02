@@ -84,7 +84,7 @@ _moddeinit(void)
 }
 
 mapi_clist_av1 who_clist[] = { &who_msgtab, NULL };
-DECLARE_MODULE_AV1(who, _modinit, _moddeinit, who_clist, NULL, NULL, "$Revision: 3350 $");
+DECLARE_MODULE_AV1(who, _modinit, _moddeinit, who_clist, NULL, NULL, "$Revision: 3351 $");
 
 static void do_who_on_channel(struct Client *source_p, struct Channel *chptr,
 			      int server_oper, int member,
@@ -174,7 +174,7 @@ m_who(struct Client *client_p, struct Client *source_p, int parc, const char *pa
 		return 0;
 	}
 
-	if(IsOperSpy(source_p) && *mask == '!')
+	if(OperCan(source_p, "WHO", "spy") && *mask == '!')
 	{
 		mask++;
 		operspy = 1;
@@ -273,7 +273,7 @@ m_who(struct Client *client_p, struct Client *source_p, int parc, const char *pa
 
 	/* Note: operspy_dont_care_user_info does not apply to
 	 * who on channels */
-	if(IsOperSpy(source_p) && ConfigFileEntry.operspy_dont_care_user_info)
+	if(OperCan(source_p, "WHO", "spy") && ConfigFileEntry.operspy_dont_care_user_info)
 		operspy = 1;
 
 	/* '/who 0' for a global list.  this forces clients to actually

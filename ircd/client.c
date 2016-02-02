@@ -250,8 +250,6 @@ free_local_client(struct Client *client_p)
 	rb_free(client_p->localClient->fullcaps);
 	rb_free(client_p->localClient->opername);
 	rb_free(client_p->localClient->mangledhost);
-	if (client_p->localClient->privset)
-		privilegeset_unref(client_p->localClient->privset);
 
 	if(IsSSL(client_p))
 	    ssld_decrement_clicount(client_p->localClient->ssl_ctl);
@@ -1705,7 +1703,7 @@ show_ip(struct Client *source_p, struct Client *target_p)
 			return 1;
 		return 0;
 	}
-	else if(IsDynSpoof(target_p) && (source_p != NULL && !IsOper(source_p)))
+	else if(IsDynSpoof(target_p) && (source_p != NULL && !OperCan(source_p, "show", "ip"))) //TODO: OperExempt()
 		return 0;
 	else
 		return 1;
@@ -1732,7 +1730,7 @@ show_ip_whowas(struct Whowas *whowas, struct Client *source_p)
 		if(ConfigFileEntry.hide_spoof_ips || !MyOper(source_p))
 			return 0;
 	if(whowas->flags & WHOWAS_DYNSPOOF)
-		if(!IsOper(source_p))
+		if(!OperCan(source_p, "show", "ip", "whowas")) //TODO: OperExempt()
 			return 0;
 	return 1;
 }

@@ -61,7 +61,7 @@ struct Message scan_msgtab = {
 };
 
 mapi_clist_av1 scan_clist[] = { &scan_msgtab, NULL };
-DECLARE_MODULE_AV1(scan, NULL, NULL, scan_clist, NULL, NULL, "$Revision: 1853 $");
+DECLARE_MODULE_AV1(scan, NULL, NULL, scan_clist, NULL, NULL, "$Revision: 1854 $");
 
 typedef int (*scan_handler)(struct Client *, struct Client *, int,
 	const char **);
@@ -93,8 +93,7 @@ mo_scan(struct Client *client_p, struct Client *source_p, int parc,
 	{
 		if (!irccmp(sptr->name, parv[1]))
 		{
-			if (sptr->operlevel == L_ADMIN &&
-				!IsOperAdmin(source_p))
+			if (sptr->operlevel == L_ADMIN && !OperCan(source_p, "SCAN", "admin"))
 				return -1;
 			else
 				return sptr->handler(client_p, source_p, parc, parv);
@@ -190,7 +189,7 @@ scan_umodes(struct Client *client_p, struct Client *source_p, int parc,
 	}
 	if (target_list == &global_client_list && list_users)
 	{
-		if (IsOperSpy(source_p))
+		if (OperCan(source_p, "UMODES", "spy"))
 		{
 			if (!ConfigFileEntry.operspy_dont_care_user_info)
 			{
@@ -206,7 +205,7 @@ scan_umodes(struct Client *client_p, struct Client *source_p, int parc,
 		else
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "oper_spy");
+				   me.name, source_p->name, "UMODES:spy");
 			return -1;
 		}
 	}

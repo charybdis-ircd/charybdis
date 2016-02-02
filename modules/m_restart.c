@@ -50,7 +50,7 @@ struct Message restart_msgtab = {
 };
 
 mapi_clist_av1 restart_clist[] = { &restart_msgtab, NULL };
-DECLARE_MODULE_AV1(restart, NULL, NULL, restart_clist, NULL, NULL, "$Revision: 3161 $");
+DECLARE_MODULE_AV1(restart, NULL, NULL, restart_clist, NULL, NULL, "$Revision: 3162 $");
 
 /*
  * mo_restart
@@ -62,13 +62,6 @@ mo_restart(struct Client *client_p, struct Client *source_p, int parc, const cha
 	char buf[BUFSIZE];
 	rb_dlink_node *ptr;
 	struct Client *target_p;
-
-	if(!IsOperDie(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "die");
-		return 0;
-	}
 
 	if(parc < 2 || EmptyString(parv[1]))
 	{

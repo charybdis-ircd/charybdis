@@ -49,7 +49,7 @@ static struct Message die_msgtab = {
 
 mapi_clist_av1 die_clist[] = { &die_msgtab, NULL };
 
-DECLARE_MODULE_AV1(die, NULL, NULL, die_clist, NULL, NULL, "$Revision: 3295 $");
+DECLARE_MODULE_AV1(die, NULL, NULL, die_clist, NULL, NULL, "$Revision: 3296 $");
 
 /*
  * mo_die - DIE command handler
@@ -57,12 +57,6 @@ DECLARE_MODULE_AV1(die, NULL, NULL, die_clist, NULL, NULL, "$Revision: 3295 $");
 static int
 mo_die(struct Client *client_p __unused, struct Client *source_p, int parc, const char *parv[])
 {
-	if(!IsOperDie(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "die");
-		return 0;
-	}
-
 	if(parc < 2 || EmptyString(parv[1]))
 	{
 		sendto_one_notice(source_p, ":Need server name /die %s", me.name);

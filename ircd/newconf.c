@@ -28,7 +28,6 @@
 #include "snomask.h"
 #include "blacklist.h"
 #include "sslproc.h"
-#include "privilege.h"
 #include "chmode.h"
 
 #define CF_TYPE(x) ((x) & CF_MTYPE)
@@ -60,8 +59,6 @@ static char *yy_blacklist_reason = NULL;
 static int yy_blacklist_ipv4 = 1;
 static int yy_blacklist_ipv6 = 0;
 static rb_dlink_list yy_blacklist_filters;
-
-static char *yy_privset_extends = NULL;
 
 static const char *
 conf_strtype(int type)
@@ -455,60 +452,6 @@ set_modes_from_table(int *modes, const char *whatis, struct mode_table *tab, con
 	}
 }
 
-static void
-conf_set_privset_extends(void *data)
-{
-	yy_privset_extends = rb_strdup((char *) data);
-}
-
-static void
-conf_set_privset_privs(void *data)
-{
-	char *privs = NULL;
-	conf_parm_t *args = data;
-
-	for (; args; args = args->next)
-	{
-		if (privs == NULL)
-			privs = rb_strdup(args->v.string);
-		else
-		{
-			char *privs_old = privs;
-
-			privs = rb_malloc(strlen(privs_old) + 1 + strlen(args->v.string) + 1);
-			strcpy(privs, privs_old);
-			strcat(privs, " ");
-			strcat(privs, args->v.string);
-
-			rb_free(privs_old);
-		}
-	}
-
-	if (privs)
-	{
-		if (yy_privset_extends)
-		{
-			struct PrivilegeSet *set = privilegeset_get(yy_privset_extends);
-
-			if (!set)
-			{
-				conf_report_error("Warning -- unknown parent privilege set %s for %s; assuming defaults", yy_privset_extends, conf_cur_block_name);
-
-				set = privilegeset_get("default");
-			}
-
-			privilegeset_extend(set, conf_cur_block_name != NULL ? conf_cur_block_name : "<unknown>", privs, 0);
-
-			rb_free(yy_privset_extends);
-			yy_privset_extends = NULL;
-		}
-		else
-			privilegeset_set_new(conf_cur_block_name != NULL ? conf_cur_block_name : "<unknown>", privs, 0);
-
-		rb_free(privs);
-	}
-}
-
 static int
 conf_begin_oper(struct TopConf *tc)
 {
@@ -565,10 +508,6 @@ conf_end_oper(struct TopConf *tc)
 		return 0;
 	}
 
-
-	if (!yy_oper->privset)
-		yy_oper->privset = privilegeset_get("default");
-
 	/* now, yy_oper_list contains a stack of oper_conf's with just user
 	 * and host in, yy_oper contains the rest of the information which
 	 * we need to copy into each element in yy_oper_list
@@ -586,7 +525,7 @@ conf_end_oper(struct TopConf *tc)
 		yy_tmpoper->flags = yy_oper->flags;
 		yy_tmpoper->umodes = yy_oper->umodes;
 		yy_tmpoper->snomask = yy_oper->snomask;
-		yy_tmpoper->privset = yy_oper->privset;
+		yy_tmpoper->role = yy_oper->role;
 
 #ifdef HAVE_LIBCRYPTO
 		if(yy_oper->rsa_pubkey_file)
@@ -647,9 +586,9 @@ conf_set_oper_fingerprint(void *data)
 }
 
 static void
-conf_set_oper_privset(void *data)
+conf_set_oper_role(void *data)
 {
-	yy_oper->privset = privilegeset_get((char *) data);
+	yy_oper->role = role_get((const char *)data);
 }
 
 static void
@@ -2295,19 +2234,12 @@ static struct ConfEntry conf_operator_table[] =
 	{ "rsa_public_key_file",  CF_QSTRING, conf_set_oper_rsa_public_key_file, 0, NULL },
 	{ "flags",	CF_STRING | CF_FLIST, conf_set_oper_flags,	0, NULL },
 	{ "umodes",	CF_STRING | CF_FLIST, conf_set_oper_umodes,	0, NULL },
-	{ "privset",	CF_QSTRING, conf_set_oper_privset,	0, NULL },
+	{ "role",	CF_QSTRING, conf_set_oper_role,	0, NULL },
 	{ "snomask",    CF_QSTRING, conf_set_oper_snomask,      0, NULL },
 	{ "user",	CF_QSTRING, conf_set_oper_user,		0, NULL },
 	{ "password",	CF_QSTRING, conf_set_oper_password,	0, NULL },
 	{ "fingerprint",	CF_QSTRING, conf_set_oper_fingerprint,	0, NULL },
 	{ "\0",	0, NULL, 0, NULL }
-};
-
-static struct ConfEntry conf_privset_table[] =
-{
-	{ "extends",	CF_QSTRING,		conf_set_privset_extends,	0, NULL },
-	{ "privs",	CF_STRING | CF_FLIST,	conf_set_privset_privs,		0, NULL },
-	{ "\0", 0, NULL, 0, NULL }
 };
 
 static struct ConfEntry conf_class_table[] =
@@ -2493,7 +2425,6 @@ newconf_init()
 	add_top_conf("log", NULL, NULL, conf_log_table);
 	add_top_conf("operator", conf_begin_oper, conf_end_oper, conf_operator_table);
 	add_top_conf("class", conf_begin_class, conf_end_class, conf_class_table);
-	add_top_conf("privset", NULL, NULL, conf_privset_table);
 
 	add_top_conf("listen", conf_begin_listen, conf_end_listen, NULL);
 	add_conf_item("listen", "defer_accept", CF_YESNO, conf_set_listen_defer_accept);

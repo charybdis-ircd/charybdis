@@ -1202,8 +1202,10 @@ sendto_realops_snomask(int flags, int level, const char *pattern, ...)
 		/* If we're sending it to opers and theyre an admin, skip.
 		 * If we're sending it to admins, and theyre not, skip.
 		 */
-		if(((level == L_ADMIN) && !IsOperAdmin(client_p)) ||
-		   ((level == L_OPER) && IsOperAdmin(client_p)))
+		if(level == L_OPER && (client_p->umodes & UMODE_ADMIN))
+			continue;
+
+		if(level == L_ADMIN && (~client_p->umodes & UMODE_ADMIN))
 			continue;
 
 		if(client_p->snomask & flags)
@@ -1242,8 +1244,10 @@ sendto_realops_snomask_from(int flags, int level, struct Client *source_p,
 		/* If we're sending it to opers and theyre an admin, skip.
 		 * If we're sending it to admins, and theyre not, skip.
 		 */
-		if(((level == L_ADMIN) && !IsOperAdmin(client_p)) ||
-		   ((level == L_OPER) && IsOperAdmin(client_p)))
+		if(level == L_OPER && (client_p->umodes & UMODE_ADMIN))
+			continue;
+
+		if(level == L_ADMIN && (~client_p->umodes & UMODE_ADMIN))
 			continue;
 
 		if(client_p->snomask & flags)

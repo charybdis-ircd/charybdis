@@ -53,7 +53,7 @@ struct Message omode_msgtab = {
 
 mapi_clist_av1 omode_clist[] = { &omode_msgtab, NULL };
 
-DECLARE_MODULE_AV1(omode, NULL, NULL, omode_clist, NULL, NULL, "$Revision: 3121 $");
+DECLARE_MODULE_AV1(omode, NULL, NULL, omode_clist, NULL, NULL, "$Revision: 3122 $");
 
 /*
  * mo_omode - MODE command handler
@@ -67,13 +67,6 @@ mo_omode(struct Client *client_p, struct Client *source_p, int parc, const char 
 	char params[512];
 	int i;
 	int wasonchannel;
-
-	/* admins only */
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "admin");
-		return 0;
-	}
 
 	/* Now, try to find the channel in question */
 	if(!IsChanPrefix(parv[1][0]) || !check_channel_name(parv[1]))

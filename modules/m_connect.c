@@ -49,7 +49,7 @@ struct Message connect_msgtab = {
 };
 
 mapi_clist_av1 connect_clist[] = { &connect_msgtab, NULL };
-DECLARE_MODULE_AV1(connect, NULL, NULL, connect_clist, NULL, NULL, "$Revision: 3161 $");
+DECLARE_MODULE_AV1(connect, NULL, NULL, connect_clist, NULL, NULL, "$Revision: 3162 $");
 
 /*
  * mo_connect - CONNECT command handler
@@ -71,10 +71,10 @@ mo_connect(struct Client *client_p, struct Client *source_p, int parc, const cha
 
 	/* always privileged with handlers */
 
-	if(MyConnect(source_p) && !IsOperRemote(source_p) && parc > 3)
+	if(MyConnect(source_p) && !OperCan(source_p, "CONNECT", "remote") && parc > 3)
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "remote");
+			   me.name, source_p->name, "CONNECT:remote");
 		return 0;
 	}
 

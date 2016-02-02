@@ -648,7 +648,8 @@ change_local_nick(struct Client *client_p, struct Client *source_p,
 		source_p->localClient->last_nick_change = rb_current_time();
 		source_p->localClient->number_of_nick_changes++;
 
-		if(ConfigFileEntry.anti_nick_flood && !IsOper(source_p) &&
+		//TODO: OperExempt()
+		if(ConfigFileEntry.anti_nick_flood && !OperCan(source_p, "NICK", "flood") &&
 				source_p->localClient->number_of_nick_changes > ConfigFileEntry.max_nick_changes)
 		{
 			sendto_one(source_p, form_str(ERR_NICKTOOFAST),

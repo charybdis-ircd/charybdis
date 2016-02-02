@@ -36,7 +36,7 @@
 #define INCLUDED_s_newconf_h
 
 #include "setup.h"
-#include "privilege.h"
+#include "role.h"
 
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/rsa.h>
@@ -123,6 +123,7 @@ struct oper_conf
 	unsigned int snomask;
 
 	struct PrivilegeSet *privset;
+	struct Role *role;
 
 #ifdef HAVE_LIBCRYPTO
 	char *rsa_pubkey_file;
@@ -148,26 +149,6 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 
 #define IsOperConfEncrypted(x)	((x)->flags & OPER_ENCRYPTED)
 #define IsOperConfNeedSSL(x)	((x)->flags & OPER_NEEDSSL)
-
-#define HasPrivilege(x, y)	((x)->localClient != NULL && (x)->localClient->privset != NULL && privilegeset_in_set((x)->localClient->privset, (y)))
-
-#define IsOperGlobalKill(x)     (HasPrivilege((x), "oper:global_kill"))
-#define IsOperLocalKill(x)      (HasPrivilege((x), "oper:local_kill"))
-#define IsOperRemote(x)         (HasPrivilege((x), "oper:routing"))
-#define IsOperUnkline(x)        (HasPrivilege((x), "oper:unkline"))
-#define IsOperN(x)              (HasPrivilege((x), "snomask:nick_changes"))
-#define IsOperK(x)              (HasPrivilege((x), "oper:kline"))
-#define IsOperXline(x)          (HasPrivilege((x), "oper:xline"))
-#define IsOperResv(x)           (HasPrivilege((x), "oper:resv"))
-#define IsOperDie(x)            (HasPrivilege((x), "oper:die"))
-#define IsOperRehash(x)         (HasPrivilege((x), "oper:rehash"))
-#define IsOperHiddenAdmin(x)    (HasPrivilege((x), "oper:hidden_admin"))
-#define IsOperAdmin(x)          (HasPrivilege((x), "oper:admin") || HasPrivilege((x), "oper:hidden_admin"))
-#define IsOperOperwall(x)       (HasPrivilege((x), "oper:operwall"))
-#define IsOperSpy(x)            (HasPrivilege((x), "oper:spy"))
-#define IsOperInvis(x)          (HasPrivilege((x), "oper:hidden"))
-#define IsOperRemoteBan(x)	(HasPrivilege((x), "oper:remoteban"))
-#define IsOperMassNotice(x)	(HasPrivilege((x), "oper:mass_notice"))
 
 extern struct oper_conf *make_oper_conf(void);
 extern void free_oper_conf(struct oper_conf *);

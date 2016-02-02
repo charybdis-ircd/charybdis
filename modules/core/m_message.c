@@ -78,7 +78,7 @@ struct Message notice_msgtab = {
 
 mapi_clist_av1 message_clist[] = { &privmsg_msgtab, &notice_msgtab, NULL };
 
-DECLARE_MODULE_AV1(message, modinit, moddeinit, message_clist, NULL, NULL, "$Revision: 3173 $");
+DECLARE_MODULE_AV1(message, modinit, moddeinit, message_clist, NULL, NULL, "$Revision: 3174 $");
 
 struct entity
 {
@@ -415,7 +415,7 @@ build_target_list(enum message_type msgtype, struct Client *client_p,
 			continue;
 		}
 
-		if(strchr(nick, '@') || (IsOper(source_p) && (*nick == '$')))
+		if(strchr(nick, '@') || (OperCan(source_p, "MSG", "special") && (*nick == '$')))
 		{
 			handle_special(msgtype, client_p, source_p, nick, text);
 			continue;
@@ -754,7 +754,8 @@ msg_client(enum message_type msgtype,
 			source_p->localClient->last = rb_current_time();
 
 		/* auto cprivmsg/cnotice */
-		do_floodcount = !IsOper(source_p) &&
+		//TODO: OperExempt()
+		do_floodcount = !OperCan(source_p, "MSG", "flood") &&
 			!find_allowing_channel(source_p, target_p);
 
 		/* target change stuff, dont limit ctcp replies as that
@@ -822,7 +823,7 @@ msg_client(enum message_type msgtype,
 					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])))
 		{
 			/* Here is the anti-flood bot/spambot code -db */
-			if(accept_message(source_p, target_p) || IsOper(source_p))
+			if(accept_message(source_p, target_p) || OperCan(source_p, "MSG", "accept"))
 			{
 				add_reply_target(target_p, source_p);
 				sendto_one(target_p, ":%s!%s@%s %s %s :%s",
@@ -1028,10 +1029,10 @@ handle_special(enum message_type msgtype, struct Client *client_p,
 			return;
 		}
 
-		if(MyClient(source_p) && !IsOperMassNotice(source_p))
+		if(MyClient(source_p) && !OperCan(source_p, "MSG", "special", "mass_notice"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "mass_notice");
+				   me.name, source_p->name, "MSG:special:mass_notice");
 			return;
 		}
 

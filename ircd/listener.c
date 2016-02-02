@@ -149,7 +149,7 @@ show_ports(struct Client *source_p)
 		sendto_one_numeric(source_p, RPL_STATSPLINE,
 			   form_str(RPL_STATSPLINE), 'P',
 			   get_listener_port(listener),
-			   IsOperAdmin(source_p) ? listener->name : me.name,
+			   OperCanStat(source_p, 'P') ? listener->name : me.name,
 			   listener->ref_count, (listener->active) ? "active" : "disabled",
 			   listener->ssl ? " ssl" : "");
 	}
