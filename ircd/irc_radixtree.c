@@ -219,6 +219,7 @@ irc_radixtree_destroy(struct irc_radixtree *dtree, void (*destroy_cb)(const char
 	}
 
 	rb_dlinkDelete(&dtree->node, &radixtree_list);
+	rb_free(dtree->id);
 	rb_free(dtree);
 }
 
