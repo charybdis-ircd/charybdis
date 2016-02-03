@@ -47,6 +47,7 @@
 #define RPL_MAP		     15	/* Undernet extension */
 #define RPL_MAPMORE	     16	/* Undernet extension */
 #define RPL_MAPEND	     17	/* Undernet extension */
+#define RPL_EXMASK	     24
 #define RPL_SAVENICK         43 /* From ircnet */
 
 /*

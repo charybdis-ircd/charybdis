@@ -39,6 +39,7 @@
 #define NUMERIC_STR_10       "%s %d :Please use this Server/Port instead"
 #define NUMERIC_STR_15       ":%s"
 #define NUMERIC_STR_17       ":End of /MAP"
+#define NUMERIC_STR_24       "%s :Exemption mask"
 #define NUMERIC_STR_43       "%s :Nick collision, forcing nick change to your unique ID"
 #define NUMERIC_STR_200      "Link %s %s %s"
 #define NUMERIC_STR_201      "Try. %s %s"

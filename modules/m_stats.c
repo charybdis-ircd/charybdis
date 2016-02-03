@@ -197,7 +197,7 @@ m_stats(struct Client *client_p, struct Client *source_p, int parc, const char *
 
 	statchar = parv[1][0];
 
-	if(MyClient(source_p) && !IsOper(source_p))
+	if(MyClient(source_p) && !IsExempt(source_p, EX_FLOOD))
 	{
 		/* Check the user is actually allowed to do /stats, and isnt flooding */
 		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
@@ -312,7 +312,7 @@ stats_connect(struct Client *source_p)
 	rb_dlink_node *ptr;
 
 	if((ConfigFileEntry.stats_c_oper_only ||
-	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
+	    (ConfigServerHide.flatten_links && !IsExempt(source_p, EX_SHIDE))) &&
 	    !OperCanStat(source_p, 'c'))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -514,7 +514,7 @@ stats_hubleaf(struct Client *source_p)
 	rb_dlink_node *ptr;
 
 	if((ConfigFileEntry.stats_h_oper_only ||
-	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
+	    (ConfigServerHide.flatten_links && !IsExempt(source_p, EX_SHIDE))) &&
 	    !OperCanStat(source_p, 'h'))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -843,8 +843,7 @@ stats_operedup (struct Client *source_p)
 	{
 		target_p = oper_ptr->data;
 
-		//TODO: if(OperExempt(target_p, 'p') && !IsOper(source_p))
-		if(OperCan(target_p, "STATS", "hidden") && !IsOper(source_p))
+		if(IsExempt(target_p, EX_STATSP) && !IsOper(source_p))
 			continue;
 
 		if(target_p->user->away)
@@ -1177,7 +1176,7 @@ stats_servers (struct Client *source_p)
 	int j = 0;
 
 	if(ConfigServerHide.flatten_links && !OperCanStat(source_p, 'v') &&
-	   !IsExemptShide(source_p))
+	   !IsExempt(source_p, EX_SHIDE))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -1520,7 +1519,7 @@ stats_servlinks (struct Client *source_p)
 	char buf[128];
 
 	if(ConfigServerHide.flatten_links && !OperCanStat(source_p, '?') &&
-	   !IsExemptShide(source_p))
+	   !IsExempt(source_p, EX_SHIDE))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -1579,11 +1578,7 @@ stats_servlinks (struct Client *source_p)
 static int
 stats_l_should_show_oper(struct Client *target_p)
 {
-	//if (OperExempt(target_p, 'l'))
-	if (OperCan(target_p, "STATS", "hidden"))
-		return 0;
-
-	return 1;
+	return !IsExempt(target_p, EX_STATSL);
 }
 
 static void
@@ -1659,7 +1654,7 @@ stats_ltrace(struct Client *source_p, int parc, const char *parv[])
 		}
 
 		if (!ConfigServerHide.flatten_links || OperCanStat(source_p, 'l') ||
-				IsExemptShide(source_p))
+				IsExempt(source_p, EX_SHIDE))
 			stats_l_list(source_p, name, doall, wilds, &serv_list, statchar, NULL);
 
 		return;

@@ -119,7 +119,7 @@ part_one_client(struct Client *client_p, struct Client *source_p, char *name, co
 		return;
 	}
 
-	if(MyConnect(source_p) && !IsOper(source_p) && !IsExemptSpambot(source_p))
+	if(MyConnect(source_p) && !IsExempt(source_p, EX_SPAM))
 		check_spambot_warning(source_p, NULL);
 
 	/*

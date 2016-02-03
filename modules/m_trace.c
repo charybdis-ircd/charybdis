@@ -125,8 +125,7 @@ m_trace(struct Client *client_p, struct Client *source_p, int parc, const char *
 			/* giving this out with flattened links defeats the
 			 * object --fl
 			 */
-			if(IsOper(source_p) || IsExemptShide(source_p) ||
-			   !ConfigServerHide.flatten_links)
+			if(IsExempt(source_p, EX_SHIDE) || !ConfigServerHide.flatten_links)
 				sendto_one_numeric(source_p, RPL_TRACELINK,
 						   form_str(RPL_TRACELINK),
 						   ircd_version,
@@ -207,7 +206,7 @@ m_trace(struct Client *client_p, struct Client *source_p, int parc, const char *
 			report_this_status(source_p, target_p);
 		}
 
-		if (IsExemptShide(source_p) || !ConfigServerHide.flatten_links)
+		if (IsExempt(source_p, EX_SHIDE) || !ConfigServerHide.flatten_links)
 		{
 			RB_DLINK_FOREACH(ptr, serv_list.head)
 			{

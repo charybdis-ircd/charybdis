@@ -436,8 +436,7 @@ client_exit_hook(hook_data_client_exit *data)
 static void
 new_local_user_hook(struct Client *source_p)
 {
-	if (IsAnyDead(source_p) || !EmptyString(source_p->user->suser) ||
-			IsExemptKline(source_p))
+	if (IsAnyDead(source_p) || !EmptyString(source_p->user->suser) || IsExempt(source_p, EX_KLINE))
 		return;
 
 	if (hurt_find(source_p->sockhost) || hurt_find(source_p->orighost))

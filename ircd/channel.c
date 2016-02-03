@@ -846,8 +846,7 @@ can_send(struct Channel *chptr, struct Client *source_p, struct membership *mspt
 	if(IsServer(source_p) || IsService(source_p))
 		return CAN_SEND_OPV;
 
-	if(MyClient(source_p) && hash_find_resv(chptr->chname) &&
-	   !IsOper(source_p) && !IsExemptResv(source_p))
+	if(MyClient(source_p) && hash_find_resv(chptr->chname) && !IsExempt(source_p, EX_RESV))
 		moduledata.approved = CAN_SEND_NO;
 
 	if(msptr == NULL)
@@ -1373,7 +1372,7 @@ resv_chan_forcepart(const char *name, const char *reason, int temp_time)
 			msptr = ptr->data;
 			target_p = msptr->client_p;
 
-			if(IsExemptResv(target_p))
+			if(IsExempt(target_p, EX_RESV))
 				continue;
 
 			sendto_server(target_p, chptr, CAP_TS6, NOCAPS,

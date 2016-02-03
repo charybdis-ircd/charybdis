@@ -99,7 +99,7 @@ int user_modes[256] = {
 	0,			/* b */
 	0,			/* c */
 	0,			/* d */
-	0,			/* e */
+	UMODE_EXEMPT,		/* e */
 	0,			/* f */
 	UMODE_CALLERID,		/* g */
 	0,			/* h */
@@ -417,7 +417,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	}
 
 	/* kline exemption extends to xline too */
-	if(!IsExemptKline(source_p) &&
+	if(!IsExempt(source_p, EX_KLINE) &&
 	   (xconf = find_xline(source_p->info, 1)) != NULL)
 	{
 		ServerStats.is_ref++;
@@ -429,7 +429,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	/* dnsbl check */
 	if (source_p->preClient->dnsbl_listed != NULL)
 	{
-		if (IsExemptKline(source_p) || IsConfExemptDNSBL(aconf))
+		if (IsExempt(source_p, EX_KLINE) || IsConfExemptDNSBL(aconf))
 			sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s, but you are exempt",
 					source_p->sockhost, source_p->preClient->dnsbl_listed->host);
 		else
@@ -824,7 +824,7 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 	/* If this user is in the exception class, Set it "E lined" */
 	if(IsConfExemptKline(aconf))
 	{
-		SetExemptKline(source_p);
+		SetExempt(source_p, EX_KLINE);
 		sendto_one_notice(source_p, ":*** You are exempt from K/X lines");
 	}
 
@@ -841,37 +841,37 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 
 	if(IsConfExemptFlood(aconf))
 	{
-		SetExemptFlood(source_p);
+		SetExempt(source_p, EX_FLOOD);
 		sendto_one_notice(source_p, ":*** You are exempt from flood limits");
 	}
 
 	if(IsConfExemptSpambot(aconf))
 	{
-		SetExemptSpambot(source_p);
-		sendto_one_notice(source_p, ":*** You are exempt from spambot checks");
+		SetExempt(source_p, EX_SPAM);
+		sendto_one_notice(source_p, ":*** You are exempt from spam checks");
 	}
 
 	if(IsConfExemptJupe(aconf))
 	{
-		SetExemptJupe(source_p);
+		SetExempt(source_p, EX_JUPE);
 		sendto_one_notice(source_p, ":*** You are exempt from juped channel warnings");
 	}
 
 	if(IsConfExemptResv(aconf))
 	{
-		SetExemptResv(source_p);
+		SetExempt(source_p, EX_RESV);
 		sendto_one_notice(source_p, ":*** You are exempt from resvs");
 	}
 
 	if(IsConfExemptShide(aconf))
 	{
-		SetExemptShide(source_p);
+		SetExempt(source_p, EX_SHIDE);
 		sendto_one_notice(source_p, ":*** You are exempt from serverhiding");
 	}
 
 	if(IsConfExtendChans(aconf))
 	{
-		SetExtendChans(source_p);
+		SetExempt(source_p, EX_EXTENDCHANS);
 		sendto_one_notice(source_p, ":*** You are exempt from normal channel limits");
 	}
 }
@@ -918,6 +918,7 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	int what, setflags;
 	int badflag = NO;	/* Only send one bad flag notice */
 	int showsnomask = NO;
+	int showexmask = NO;
 	unsigned int setsnomask;
 	char buf[BUFSIZE];
 	hook_data_umode_changed hdata;
@@ -1025,7 +1026,12 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 						source_p->snomask = 0;
 						showsnomask = YES;
 					}
-					source_p->flags2 &= ~OPER_FLAGS;
+
+					if (!(source_p->umodes & UMODE_EXEMPT) && source_p->exmask != 0)
+					{
+						source_p->exmask = 0;
+						showexmask = YES;
+					}
 
 					rb_free(source_p->localClient->opername);
 					source_p->localClient->opername = NULL;
@@ -1050,6 +1056,38 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 		case '\r':
 		case '\t':
 			break;
+
+		case 'e':
+			if(MyConnect(source_p))
+			{
+				if(what == MODE_ADD)
+				{
+					if(ConfigFileEntry.oper_only_umodes & UMODE_EXEMPT && !OperCanUmode(source_p, 'e'))
+					{
+						badflag = YES;
+						continue;
+					}
+
+					if(parc > 3)
+					{
+						source_p->exmask = exmask_to_mask(source_p->exmask, parv[3]);
+						if(ConfigFileEntry.oper_only_umodes & UMODE_EXEMPT)
+							for(uint i = 1; i; i <<= 1)
+								if(source_p->exmask & i && !OperCanExempt(source_p, exmask_to_mode(i)))
+									source_p->exmask &= ~i;
+					}
+				}
+				else if(what == MODE_DEL)
+					source_p->exmask = 0;
+
+				if(source_p->exmask != 0)
+					source_p->umodes |= UMODE_EXEMPT;
+				else
+					source_p->umodes &= ~UMODE_EXEMPT;
+
+				showexmask = YES;
+				break;
+			}
 
 		case 's':
 			if (MyConnect(source_p))
@@ -1159,6 +1197,10 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	if (showsnomask && MyConnect(source_p))
 		sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK),
 			construct_snobuf(source_p->snomask));
+
+	if (showexmask && MyConnect(source_p))
+		sendto_one_numeric(source_p, RPL_EXMASK, form_str(RPL_EXMASK),
+			exmask_to_modes(source_p->exmask));
 
 	return (0);
 }
@@ -1306,6 +1348,12 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 	else
 		source_p->umodes |= DEFAULT_OPER_UMODES;
 
+	if(oper_p->exmask)
+	{
+		source_p->exmask |= oper_p->exmask;
+		source_p->umodes |= UMODE_EXEMPT;
+	}
+
 	if (oper_p->snomask)
 	{
 		source_p->snomask |= oper_p->snomask;
@@ -1322,17 +1370,13 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 
 	Count.oper++;
 
-	SetExtendChans(source_p);
-	SetExemptKline(source_p);
-
-	source_p->flags2 |= oper_p->flags;
 	source_p->localClient->opername = rb_strdup(oper_p->name);
 	source_p->localClient->role = oper_p->role;
 
 	rb_dlinkAddAlloc(source_p, &local_oper_list);
 	rb_dlinkAddAlloc(source_p, &oper_list);
 
-	if(OperCanUmode(source_p, 'a') && !OperCan(source_p, "admin:hidden"))  //TODO: OperExempt() or better umode
+	if(OperCanUmode(source_p, 'a'))           //TODO: hidden admin was removed; could be added back.
 		source_p->umodes |= UMODE_ADMIN;
 	if(!OperCanSnote(source_p, 'n'))
 		source_p->snomask &= ~SNO_NCHANGE;
@@ -1353,6 +1397,8 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 	send_umode_out(source_p, source_p, old);
 	sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK),
 		   construct_snobuf(source_p->snomask));
+	sendto_one_numeric(source_p, RPL_EXMASK, form_str(RPL_EXMASK),
+		   construct_snobuf(source_p->exmask));
 	sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
 	sendto_one_notice(source_p, ":*** Your role as an operator is %s.", oper_p->role->name);
 	send_oper_motd(source_p);

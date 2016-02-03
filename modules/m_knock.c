@@ -142,8 +142,7 @@ m_knock(struct Client *client_p, struct Client *source_p, int parc, const char *
 		 * allow one knock per user per knock_delay
 		 * allow one knock per channel per knock_delay_channel
 		 */
-		 //TODO: OperExempt()
-		if(!OperCan(source_p, "KNOCK", "flood") &&
+		if(!IsExempt(source_p, EX_FLOOD) &&
 		   (source_p->localClient->last_knock + ConfigChannel.knock_delay) > rb_current_time())
 		{
 			sendto_one(source_p, form_str(ERR_TOOMANYKNOCK),

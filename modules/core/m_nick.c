@@ -194,7 +194,7 @@ m_nick(struct Client *client_p, struct Client *source_p, int parc, const char *p
 		return 0;
 	}
 
-	if(!IsExemptResv(source_p) && find_nick_resv(nick))
+	if(!IsExempt(source_p, EX_RESV) && find_nick_resv(nick))
 	{
 		sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME), me.name, source_p->name, nick);
 		return 0;
@@ -648,8 +648,7 @@ change_local_nick(struct Client *client_p, struct Client *source_p,
 		source_p->localClient->last_nick_change = rb_current_time();
 		source_p->localClient->number_of_nick_changes++;
 
-		//TODO: OperExempt()
-		if(ConfigFileEntry.anti_nick_flood && !OperCan(source_p, "NICK", "flood") &&
+		if(ConfigFileEntry.anti_nick_flood && !IsExempt(source_p, EX_FLOOD) &&
 				source_p->localClient->number_of_nick_changes > ConfigFileEntry.max_nick_changes)
 		{
 			sendto_one(source_p, form_str(ERR_NICKTOOFAST),

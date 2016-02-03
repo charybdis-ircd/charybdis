@@ -90,7 +90,7 @@ m_whois(struct Client *client_p, struct Client *source_p, int parc, const char *
 			return 0;
 		}
 
-		if(!OperCan(source_p, "WHOIS"))
+		if(!IsExempt(source_p, EX_FLOOD))
 		{
 			/* seeing as this is going across servers, we should limit it */
 			if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time() || !ratelimit_client(source_p, 2))
@@ -317,7 +317,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 		sendto_one_numeric(source_p, RPL_AWAY, form_str(RPL_AWAY),
 				   target_p->name, target_p->user->away);
 
-	if(IsOper(target_p) && (!ConfigFileEntry.hide_opers_in_whois || OperCan(source_p, "WHOIS", "ops")))
+	if(IsOper(target_p) && (!ConfigFileEntry.hide_opers_in_whois || IsExempt(source_p, EX_WHOISOPS)))
 	{
 		sendto_one_numeric(source_p, RPL_WHOISOPERATOR, form_str(RPL_WHOISOPERATOR),
 				   target_p->name,
@@ -326,7 +326,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 				    GlobalSetOptions.operstring));
 	}
 
-	if(MyClient(target_p) && !EmptyString(target_p->localClient->opername) && OperCan(source_p, "WHOIS", "ops"))
+	if(MyClient(target_p) && !EmptyString(target_p->localClient->opername) && IsExempt(source_p, EX_WHOISOPS))
 	{
 		char buf[512];
 		rb_snprintf(buf, sizeof(buf), "is opered as %s, role %s",
@@ -353,7 +353,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 
 	if(MyClient(target_p))
 	{
-		if (IsDynSpoof(target_p) && (OperCan(source_p, "WHOIS", "host") || source_p == target_p))
+		if (IsDynSpoof(target_p) && (IsExempt(source_p, EX_DYNSPOOF) || source_p == target_p))
 		{
 			/* trick here: show a nonoper their own IP if
 			 * dynamic spoofed but not if auth{} spoofed
@@ -391,7 +391,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	}
 	else
 	{
-		if (IsDynSpoof(target_p) && (OperCan(source_p, "WHOIS", "host") || source_p == target_p))
+		if (IsDynSpoof(target_p) && (IsExempt(source_p, EX_DYNSPOOF) || source_p == target_p))
 		{
 			ClearDynSpoof(target_p);
 			sendto_one_numeric(source_p, RPL_WHOISHOST,

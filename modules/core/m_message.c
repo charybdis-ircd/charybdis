@@ -731,7 +731,7 @@ msg_client(enum message_type msgtype,
 				(IsSetCallerId(source_p) ||
 				 (IsSetRegOnlyMsg(source_p) && !target_p->user->suser[0])) &&
 				!accept_message(target_p, source_p) &&
-				!IsOper(target_p))
+				!IsExempt(target_p, EX_ACCEPT))
 		{
 			if(rb_dlink_list_length(&source_p->localClient->allow_list) <
 					(unsigned long)ConfigFileEntry.max_accept)
@@ -754,8 +754,7 @@ msg_client(enum message_type msgtype,
 			source_p->localClient->last = rb_current_time();
 
 		/* auto cprivmsg/cnotice */
-		//TODO: OperExempt()
-		do_floodcount = !OperCan(source_p, "MSG", "flood") &&
+		do_floodcount = !IsExempt(source_p, EX_FLOOD) &&
 			!find_allowing_channel(source_p, target_p);
 
 		/* target change stuff, dont limit ctcp replies as that
@@ -823,7 +822,7 @@ msg_client(enum message_type msgtype,
 					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])))
 		{
 			/* Here is the anti-flood bot/spambot code -db */
-			if(accept_message(source_p, target_p) || OperCan(source_p, "MSG", "accept"))
+			if(accept_message(source_p, target_p) || IsExempt(source_p, EX_ACCEPT))
 			{
 				add_reply_target(target_p, source_p);
 				sendto_one(target_p, ":%s!%s@%s %s %s :%s",

@@ -98,7 +98,7 @@ struct Role
 	const char *chmodes;              // String of all channel modes role can manipulate.
 	const char *stats;                // String of all stats characters available.
 	const char *snotes;               // String of all snomask letters permitted.
-	const char *exempts;              // String of all exemption letters (not yet implemented).
+	const char *exempts;              // String of all exemption letters.
 };
 
 

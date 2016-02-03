@@ -62,7 +62,7 @@ mo_extendchans(struct Client *client_p, struct Client *source_p, int parc, const
 	{
 		sendto_one_notice(target_p, ":*** %s (%s@%s) is extending your channel limit",
 			source_p->name, source_p->username, source_p->host);
-		SetExtendChans(target_p);
+		SetExempt(target_p, EX_EXTENDCHANS);
 	}
 	else /* Target user isn't local, so pass it on. */
 	{
@@ -100,7 +100,7 @@ me_extendchans(struct Client *client_p, struct Client *source_p, int parc, const
 
 	sendto_one_notice(target_p, ":*** %s (%s@%s) is extending your channel limit",
 		source_p->name, source_p->username, source_p->host);
-	SetExtendChans(target_p);
+	SetExempt(target_p, EX_EXTENDCHANS);
 
 	return 0;
 }

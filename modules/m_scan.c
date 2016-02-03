@@ -93,7 +93,7 @@ mo_scan(struct Client *client_p, struct Client *source_p, int parc,
 	{
 		if (!irccmp(sptr->name, parv[1]))
 		{
-			if (sptr->operlevel == L_ADMIN && !OperCan(source_p, "SCAN", "admin"))
+			if (sptr->operlevel == L_ADMIN && !IsAdmin(source_p))
 				return -1;
 			else
 				return sptr->handler(client_p, source_p, parc, parv);

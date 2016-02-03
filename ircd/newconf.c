@@ -26,6 +26,7 @@
 #include "cache.h"
 #include "ircd.h"
 #include "snomask.h"
+#include "exmask.h"
 #include "blacklist.h"
 #include "sslproc.h"
 #include "chmode.h"
@@ -309,6 +310,7 @@ struct mode_table
 static struct mode_table umode_table[] = {
 	{"callerid",	UMODE_CALLERID	},
 	{"deaf",	UMODE_DEAF	},
+	{"exempt",	UMODE_EXEMPT	},
 	{"invisible",	UMODE_INVISIBLE	},
 	{"locops",	UMODE_LOCOPS	},
 	{"noforward",	UMODE_NOFORWARD	},
@@ -657,6 +659,12 @@ static void
 conf_set_oper_snomask(void *data)
 {
 	yy_oper->snomask = parse_snobuf_to_mask(0, (const char *) data);
+}
+
+static void
+conf_set_oper_exmask(void *data)
+{
+	yy_oper->exmask = exmask_to_mask(0, (const char *) data);
 }
 
 static int
@@ -2236,6 +2244,7 @@ static struct ConfEntry conf_operator_table[] =
 	{ "umodes",	CF_STRING | CF_FLIST, conf_set_oper_umodes,	0, NULL },
 	{ "role",	CF_QSTRING, conf_set_oper_role,	0, NULL },
 	{ "snomask",    CF_QSTRING, conf_set_oper_snomask,      0, NULL },
+	{ "exempt",     CF_QSTRING, conf_set_oper_exmask,      0, NULL },
 	{ "user",	CF_QSTRING, conf_set_oper_user,		0, NULL },
 	{ "password",	CF_QSTRING, conf_set_oper_password,	0, NULL },
 	{ "fingerprint",	CF_QSTRING, conf_set_oper_fingerprint,	0, NULL },

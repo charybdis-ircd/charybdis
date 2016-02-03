@@ -88,7 +88,7 @@ m_names(struct Client *client_p, struct Client *source_p, int parc, const char *
 	}
 	else
 	{
-		if(!IsOper(source_p))
+		if(!IsExempt(source_p, EX_FLOOD))
 		{
 			if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
 			{

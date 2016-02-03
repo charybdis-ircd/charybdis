@@ -70,7 +70,7 @@ m_whowas(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	static time_t last_used = 0L;
 
-	if(MyClient(source_p) && !OperCan(source_p, "WHOWAS")) // TODO: OperExempt()
+	if(MyClient(source_p) && !IsExempt(source_p, EX_FLOOD))
 	{
 		if(last_used + (parc > 3 ? ConfigFileEntry.pace_wait :
 						ConfigFileEntry.pace_wait_simple
