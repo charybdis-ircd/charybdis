@@ -27,6 +27,7 @@
 
 /* Conf items & defaults */
 size_t conf_limit            = 5;
+size_t conf_nicklen_min      = 4;
 size_t conf_bloom_size       = 1024 * 64;
 size_t conf_bloom_bits       = 16;
 time_t conf_bloom_refresh    = 86400;
@@ -288,7 +289,7 @@ uint count_nicks(const unsigned char *const text,
 			continue;
 		}
 
-		if(j > 1 && j <= NICKLEN)
+		if(j >= conf_nicklen_min && j <= NICKLEN)
 		{
 			char token[NICKLEN+1];
 			rb_strlcpy(token,text+i-j,j+1);
@@ -360,6 +361,7 @@ int conf_spamfilter_nicks_end(struct TopConf *const tc)
 
 
 static void set_conf_limit(void *const val)          { conf_limit = *(int *)val;                 }
+static void set_conf_nicklen_min(void *const val)    { conf_nicklen_min = *(int *)val;           }
 static void set_conf_bloom_size(void *const val)     { conf_bloom_size = *(int *)val;            }
 static void set_conf_bloom_bits(void *const val)     { conf_bloom_bits = *(int *)val;            }
 static void set_conf_bloom_refresh(void *const val)  { conf_bloom_refresh = *(time_t *)val;      }
@@ -368,6 +370,7 @@ static void set_conf_bloom_refresh(void *const val)  { conf_bloom_refresh = *(ti
 struct ConfEntry conf_spamfilter_nicks[] =
 {
 	{ "limit",           CF_INT,   set_conf_limit,              0, NULL },
+	{ "nicklen_min",     CF_INT,   set_conf_nicklen_min,        0, NULL },
 	{ "bloom_size",      CF_INT,   set_conf_bloom_size,         0, NULL },
 	{ "bloom_bits",      CF_INT,   set_conf_bloom_bits,         0, NULL },
 	{ "bloom_refresh",   CF_TIME,  set_conf_bloom_refresh,      0, NULL },
