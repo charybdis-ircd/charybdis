@@ -657,8 +657,7 @@ charybdis_main(int argc, char *argv[])
 	init_reject();
 	init_cache();
 	init_monitor();
-
-        construct_cflags_strings();
+	chmode_init();
 
 	load_all_modules(1);
 	load_core_modules(1);

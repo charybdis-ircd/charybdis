@@ -239,12 +239,12 @@ static const char *
 isupport_chanmodes(const void *ptr)
 {
 	static char result[80];
+	rb_snprintf(result, sizeof result, "%s,%s,%s,%s",
+	            chmode_class[CHM_A],
+	            chmode_class[CHM_B],
+	            chmode_class[CHM_C],
+	            chmode_class[CHM_D]);
 
-	rb_snprintf(result, sizeof result, "%s%sbq,k,%slj,%s",
-			ConfigChannel.use_except ? "e" : "",
-			ConfigChannel.use_invex ? "I" : "",
-			ConfigChannel.use_forward ? "f" : "",
-			cflagsbuf);
 	return result;
 }
 
