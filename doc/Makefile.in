@@ -308,7 +308,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 exec_suffix = @exec_suffix@
 MANPAGES = ircd.8
-CONFS = ircd.conf.example reference.conf
+CONFS = ircd.conf.example reference.conf spamfilter.conf.example
 all: all-am
 
 .SUFFIXES:
