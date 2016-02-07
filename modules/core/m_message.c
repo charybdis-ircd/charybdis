@@ -512,8 +512,14 @@ msg_channel(enum message_type msgtype,
 		return;
 	}
 
-	/* chanops and voiced can flood their own channel with impunity */
-	if((result = can_send(chptr, source_p, NULL)))
+	if (IsService(source_p))
+		/* services can always send to any channel */
+		result = CAN_SEND_OPV;
+	else
+		/* chanops and voiced can flood their own channel with impunity */
+		result = can_send(chptr, source_p, NULL);
+
+	if(result)
 	{
 		if(result != CAN_SEND_OPV && MyClient(source_p) &&
 		   !IsOper(source_p) &&
