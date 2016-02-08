@@ -37,7 +37,7 @@ time_t conf_bloom_refresh    = 86400;
 static
 uint64_t bloom_hash_fnv(const char *const str)
 {
-	return fnv_hash_upper((const unsigned char *)str,conf_bloom_bits);
+	return fnv_hash_upper((const unsigned char *)str, conf_bloom_bits);
 }
 
 static
@@ -71,7 +71,7 @@ static
 void bloom_flush(void)
 {
 	for(size_t i = 0; i < NUM_HASHES; i++)
-		memset(bloom[i],0x0,bloom_size);
+		memset(bloom[i], 0x0, bloom_size);
 
 	bloom_flushed = rb_current_time();
 	bloom_members = 0;
@@ -126,7 +126,7 @@ static
 void bloom_add_str(const char *const str)
 {
 	for(size_t i = 0; i < NUM_HASHES; i++)
-		bloom_add(i,bloom_hashes[i](str));
+		bloom_add(i, bloom_hashes[i](str));
 
 	bloom_members++;
 }
@@ -136,7 +136,7 @@ int bloom_test_str(const char *const str)
 {
 	uint count = 0;
 	for(size_t i = 0; i < NUM_HASHES; i++)
-		count += bloom_test(i,bloom_hashes[i](str));
+		count += bloom_test(i, bloom_hashes[i](str));
 
 	return count >= NUM_HASHES;
 }
@@ -145,17 +145,17 @@ int bloom_test_str(const char *const str)
 static
 int chans_has(const struct Channel *const chptr)
 {
-	return irc_radixtree_retrieve(chans,chptr->chname) != NULL;
+	return irc_radixtree_retrieve(chans, chptr->chname) != NULL;
 }
 
 static
 int chans_add(struct Channel *const chptr)
 {
-	if(!irc_radixtree_add(chans,chptr->chname,chptr))
+	if(!irc_radixtree_add(chans, chptr->chname, chptr))
 		return 0;
 
 	rb_dlink_node *ptr;
-	RB_DLINK_FOREACH(ptr,chptr->members.head)
+	RB_DLINK_FOREACH(ptr, chptr->members.head)
 	{
 		const struct membership *const msptr = ptr->data;
 		bloom_add_str(msptr->client_p->name);
@@ -178,9 +178,9 @@ void reset(void)
 		bloom_flush();
 
 	if(chans)
-		irc_radixtree_destroy(chans,NULL,NULL);
+		irc_radixtree_destroy(chans, NULL, NULL);
 
-	chans = irc_radixtree_create("chans",irc_radixtree_irccasecanon);
+	chans = irc_radixtree_create("chans", irc_radixtree_irccasecanon);
 }
 
 static
@@ -204,14 +204,14 @@ int real_test_token(const char *const token,
                     struct Channel *const chptr)
 {
 	struct Client *const client = find_named_client(token);
-	return client && IsMember(client,chptr);
+	return client && IsMember(client, chptr);
 }
 
 
 static
 void false_positive_message(void)
 {
-	sendto_realops_snomask(SNO_GENERAL,L_ALL,
+	sendto_realops_snomask(SNO_GENERAL, L_ALL,
 	                       "spamfilter: Nickname bloom filter false positive (size: %zu members: %zu channels: %zu flushed: %zu ago)",
 	                       bloom_size,
 	                       bloom_members,
@@ -283,7 +283,7 @@ uint count_nicks(const unsigned char *const text,
 	const uint len = strlen(text);
 	for(uint i = 0, j = 0, k = 0; i + 6 < len; i++)
 	{
-		if(!is_delim(text+i,&k))
+		if(!is_delim(text+i, &k))
 		{
 			j++;
 			continue;
@@ -292,10 +292,10 @@ uint count_nicks(const unsigned char *const text,
 		if(j >= conf_nicklen_min && j <= NICKLEN)
 		{
 			char token[NICKLEN+1];
-			rb_strlcpy(token,text+i-j,j+1);
+			rb_strlcpy(token, text+i-j, j+1);
 			if(prob_test_token(token))
 			{
-				if(rb_likely(real_test_token(token,chptr)))
+				if(rb_likely(real_test_token(token, chptr)))
 					ret++;
 				else
 					false_positive_message();
@@ -320,12 +320,12 @@ void hook_spamfilter_query(hook_data_privmsg_channel *const hook)
 	if(!bloom[0])
 		return;
 
-	const uint counted = count_nicks(hook->text,hook->chptr);
+	const uint counted = count_nicks(hook->text, hook->chptr);
 	if(counted < conf_limit)
 		return;
 
 	static char reason[64];
-	snprintf(reason,sizeof(reason),"nicks: counted at least %u names",counted);
+	snprintf(reason, sizeof(reason), "nicks: counted at least %u names", counted);
 	hook->reason = reason;
 	hook->approved = -1;
 }
@@ -381,8 +381,8 @@ struct ConfEntry conf_spamfilter_nicks[] =
 static
 int modinit(void)
 {
-	add_top_conf("spamfilter_nicks",NULL,conf_spamfilter_nicks_end,conf_spamfilter_nicks);
-	rb_get_random(&bloom_salt,sizeof(bloom_salt));
+	add_top_conf("spamfilter_nicks", NULL, conf_spamfilter_nicks_end, conf_spamfilter_nicks);
+	rb_get_random(&bloom_salt, sizeof(bloom_salt));
 	resize(conf_bloom_size);
 	return 0;
 }
@@ -392,7 +392,7 @@ static
 void modfini(void)
 {
 	bloom_destroy();
-	irc_radixtree_destroy(chans,NULL,NULL);
+	irc_radixtree_destroy(chans, NULL, NULL);
 	remove_top_conf("spamfilter_nicks");
 }
 

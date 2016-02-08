@@ -73,4 +73,4 @@ extension_LTLIBRARIES =		\
   spamfilter_nicks.la			\
   example_module.la
 
-spamfilter_expr_la_LIBADD = -lpcre
+spamfilter_expr_la_LIBADD = -lpcre2-8

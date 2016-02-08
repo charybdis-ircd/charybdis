@@ -52,12 +52,12 @@ void hook_privmsg_channel(hook_data_privmsg_channel *const hook)
 		return;
 
 	// Invoke the active spamfilters
-	call_hook(h_spamfilter_query,hook);
+	call_hook(h_spamfilter_query, hook);
 	if(hook->approved == 0)
 		return;
 
-	call_hook(h_spamfilter_reject,hook);
-	sendto_realops_snomask(SNO_REJ|SNO_BOTS,L_NETWIDE,
+	call_hook(h_spamfilter_reject, hook);
+	sendto_realops_snomask(SNO_REJ|SNO_BOTS, L_NETWIDE,
 	                       "spamfilter: REJECT %s[%s@%s] on %s to %s (%s)",
 	                       hook->source_p->name,
 	                       hook->source_p->username,
@@ -74,10 +74,10 @@ static
 void substitute_reject_reason(void)
 {
 	rb_dlink_list subs = {0};
-	substitution_append_var(&subs,"network-name",ServerInfo.network_name?: "${network-name}");
-	substitution_append_var(&subs,"admin-email",AdminInfo.email?: "${admin-email}");
-	const char *const substituted = substitution_parse(reject_reason,&subs);
-	rb_strlcpy(reject_reason,substituted,sizeof(reject_reason));
+	substitution_append_var(&subs, "network-name", ServerInfo.network_name?: "${network-name}");
+	substitution_append_var(&subs, "admin-email", AdminInfo.email?: "${admin-email}");
+	const char *const substituted = substitution_parse(reject_reason, &subs);
+	rb_strlcpy(reject_reason, substituted, sizeof(reject_reason));
 	substitution_free(&subs);
 }
 
@@ -85,7 +85,7 @@ void substitute_reject_reason(void)
 static
 void set_reject_reason(void *const str)
 {
-	rb_strlcpy(reject_reason,str,sizeof(reject_reason));
+	rb_strlcpy(reject_reason, str, sizeof(reject_reason));
 	substitute_reject_reason();
 }
 
@@ -93,18 +93,18 @@ void set_reject_reason(void *const str)
 struct ConfEntry conf_spamfilter[] =
 {
 	{ "reject_reason",     CF_QSTRING,   set_reject_reason, 0,  NULL },
-	{ "\0", 0, NULL, 0, NULL }
+	{ "\0",                0,            NULL,              0,  NULL }
 };
 
 
 static
 int modinit(void)
 {
-	chm_spamfilter = cflag_add(MODE_SPAMFILTER,CHM_D,chm_staff);
+	chm_spamfilter = cflag_add(MODE_SPAMFILTER, CHM_D, chm_staff);
 	if(!chm_spamfilter)
 		return -1;
 
-	add_top_conf("spamfilter",NULL,NULL,conf_spamfilter);
+	add_top_conf("spamfilter", NULL, NULL, conf_spamfilter);
 	return 0;
 }
 
@@ -116,11 +116,6 @@ void modfini(void)
 	cflag_orphan(MODE_SPAMFILTER);
 }
 
-
-mapi_clist_av1 clist[] =
-{
-	NULL
-};
 
 mapi_hlist_av1 hlist[] =
 {
@@ -140,7 +135,7 @@ DECLARE_MODULE_AV1
 	spamfilter,
 	modinit,
 	modfini,
-	clist,
+	NULL,
 	hlist,
 	hfnlist,
 	"$Revision: 0 $"

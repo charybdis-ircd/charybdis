@@ -26,11 +26,14 @@
 #include "irc_dictionary.h"
 #include "spamfilter.h"
 
-#define PCRE_STATIC 1
-#include <pcre.h>
+#define PCRE2_STATIC 1
+#define PCRE2_CODE_UNIT_WIDTH 8
+#define CODE_UNIT uint8_t
+#define CODE_SIZE(bytes) (((bytes) * 8) / PCRE2_CODE_UNIT_WIDTH)
+#include <pcre2.h>
 
 
-/* From PCRESTACK(3) for reference:
+/* From PCRE2STACK(3) for reference:
  *	As a very rough rule of thumb, you should reckon on about 500 bytes per recursion.
  *	Thus, if you want to limit your stack usage to 8Mb, you should set the limit at 16000
  *	recursions. A 64Mb stack, on the other hand, can support around 128000 recursions.
@@ -38,8 +41,9 @@
  */
 #define JIT_STACK_FRAME_LOWERBOUND  512
 #define JIT_STACK_FRAME_UPPERBOUND  768
-#define DEFAULT_RECURSION_LIMIT     512
 #define DEFAULT_MATCH_LIMIT         1024
+#define DEFAULT_RECURSION_LIMIT     512
+#define DEFAULT_PARENS_NEST_LIMIT   32
 #define PATTERN_HASH_BITS           18
 
 
@@ -47,15 +51,18 @@
 #define EXPR_ERROR_EXISTS           -255
 #define EXPR_ERROR_DICTFAIL         -254
 
+
 struct Expr
 {
 	uint id;
 	uint comp_opts;
-	uint exec_opts;
-	uint stud_opts;
+	uint match_opts;
+	uint jit_opts;
 	char *pattern;
-	pcre *expr;
-	pcre_extra *extra;
+	pcre2_compile_context *cctx;
+	pcre2_code *expr;
+	pcre2_match_context *mctx;
+	pcre2_match_data *match;
 	time_t added;
 	time_t last;
 	uint hits;
@@ -70,11 +77,12 @@ struct Expr
 size_t conf_limit               = 1024;
 size_t conf_match_limit         = DEFAULT_MATCH_LIMIT;
 size_t conf_recursion_limit     = DEFAULT_RECURSION_LIMIT;
+size_t conf_parens_nest_limit   = DEFAULT_PARENS_NEST_LIMIT;
 size_t conf_jit_stack_size      = DEFAULT_RECURSION_LIMIT * JIT_STACK_FRAME_LOWERBOUND;
 size_t conf_jit_stack_max_size  = DEFAULT_RECURSION_LIMIT * JIT_STACK_FRAME_UPPERBOUND;
 uint conf_compile_opts          = 0;
-uint conf_execute_opts          = PCRE_NOTEOL|PCRE_NOTBOL;
-uint conf_study_opts            = PCRE_STUDY_JIT_COMPILE;
+uint conf_match_opts            = PCRE2_NOTBOL | PCRE2_NOTEOL | PCRE2_NOTEMPTY;
+uint conf_jit_opts              = PCRE2_JIT_COMPLETE;
 
 
 /*
@@ -82,56 +90,27 @@ uint conf_study_opts            = PCRE_STUDY_JIT_COMPILE;
  */
 
 struct Dictionary *exprs;       /* Expressions indexed by ID number (a hash of the pattern string) */
-pcre_jit_stack *jstack;
+pcre2_general_context *gctx;
+pcre2_jit_stack *jstack;
 
 
 
 static inline
 uint hash_pattern(const char *const pattern)
 {
-	return fnv_hash((const unsigned char *)pattern,PATTERN_HASH_BITS);
+	return fnv_hash((const unsigned char *)pattern, PATTERN_HASH_BITS);
 }
 
+static
+void *expr_malloc_cb(PCRE2_SIZE size, void *const ptr)
+{
+	return rb_malloc(size);
+}
 
 static
-struct Expr *new_expr(const char *const pattern,
-                      const uint comp_opts,
-                      const uint exec_opts,
-                      const int stud_opts,
-                      int *const errcodeptr,
-                      const char **const errptr,
-                      int *const erroffset,
-                      const unsigned char *const tableptr)
+void expr_free_cb(void *const ptr, void *const priv)
 {
-	pcre *const expr = pcre_compile2(pattern,comp_opts,errcodeptr,errptr,erroffset,tableptr);
-	if(!expr)
-		return NULL;
-
-	struct Expr *const ret = rb_malloc(sizeof(struct Expr));
-	ret->id = hash_pattern(pattern);
-	ret->comp_opts = comp_opts;
-	ret->exec_opts = exec_opts;
-	ret->stud_opts = stud_opts;
-	ret->pattern = rb_strdup(pattern);
-	ret->expr = expr;
-	ret->extra = ret->stud_opts >= 0? pcre_study(expr,ret->stud_opts,errptr) : NULL;
-	ret->added = 0;
-	ret->last = 0;
-	ret->hits = 0;
-
-	if(ret->extra && conf_match_limit)
-	{
-		ret->extra->match_limit = conf_match_limit;
-		ret->extra->flags |= PCRE_EXTRA_MATCH_LIMIT;
-	}
-
-	if(ret->extra && conf_recursion_limit)
-	{
-		ret->extra->match_limit_recursion = conf_recursion_limit;
-		ret->extra->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-	}
-
-	return ret;
+	rb_free(ptr);
 }
 
 
@@ -141,17 +120,72 @@ void free_expr(struct Expr *const expr)
 	if(!expr)
 		return;
 
-	pcre_free_study(expr->extra);
-	pcre_free(expr->expr);
+	pcre2_match_data_free(expr->match);
+	pcre2_code_free(expr->expr);
+	pcre2_match_context_free(expr->mctx);
+	pcre2_compile_context_free(expr->cctx);
 	rb_free(expr->pattern);
 	rb_free(expr);
 }
 
 
 static
+struct Expr *new_expr(const char *const pattern,
+                      const uint comp_opts,
+                      const uint match_opts,
+                      const uint jit_opts,
+                      const unsigned char *const tables,
+                      int *const errcode,
+                      PCRE2_SIZE *const erroff)
+{
+	struct Expr *const ret = rb_malloc(sizeof(struct Expr));
+	ret->id = hash_pattern(pattern);
+	ret->comp_opts = comp_opts;
+	ret->match_opts = match_opts;
+	ret->jit_opts = jit_opts;
+	ret->pattern = rb_strdup(pattern);
+
+	if((ret->cctx = pcre2_compile_context_create(gctx)))
+	{
+		pcre2_set_character_tables(ret->cctx, tables);
+		pcre2_set_parens_nest_limit(ret->cctx, conf_parens_nest_limit);
+	}
+
+	const CODE_UNIT *const sptr = pattern;
+	if(!(ret->expr = pcre2_compile(sptr, PCRE2_ZERO_TERMINATED, comp_opts, errcode, erroff, ret->cctx)))
+	{
+		free_expr(ret);
+		return NULL;
+	}
+
+	if((*errcode = pcre2_jit_compile(ret->expr, jit_opts)))
+	{
+		*erroff = 0;
+		free_expr(ret);
+		return NULL;
+	}
+
+	if((ret->mctx = pcre2_match_context_create(gctx)))
+	{
+		if(conf_match_limit)
+			pcre2_set_match_limit(ret->mctx, conf_match_limit);
+
+		if(conf_recursion_limit)
+			pcre2_set_recursion_limit(ret->mctx, conf_recursion_limit);
+	}
+
+	ret->match = pcre2_match_data_create_from_pattern(ret->expr, gctx);
+	ret->added = 0;
+	ret->last = 0;
+	ret->hits = 0;
+	return ret;
+}
+
+
+static
 struct Expr *find_expr(const uint id)
 {
-	return irc_dictionary_retrieve(exprs,&id);
+	return irc_dictionary_retrieve(exprs, &id);
 }
 
 
@@ -164,27 +198,40 @@ struct Expr *find_expr_by_str(const char *const pattern)
 
 static
 int activate_expr(struct Expr *const expr,
-                  int *const errcodeptr,
-                  const char **const errptr)
+                  int *const errcode,
+                  char *const errbuf,
+                  const size_t errmax)
 {
 	if(irc_dictionary_size(exprs) >= conf_limit)
 	{
-		*errcodeptr = EXPR_ERROR_TOOMANY;
-		*errptr = "Maximum active expressions has been reached";
+		if(errcode && errbuf)
+		{
+			*errcode = EXPR_ERROR_TOOMANY;
+			rb_strlcpy(errbuf, "Maximum active expressions has been reached", errmax);
+		}
+
 		return 0;
 	}
 
 	if(find_expr_by_str(expr->pattern))
 	{
-		*errcodeptr = EXPR_ERROR_EXISTS;
-		*errptr = "The pattern is already active";
+		if(errcode && errbuf)
+		{
+			*errcode = EXPR_ERROR_EXISTS;
+			rb_strlcpy(errbuf, "The pattern is already active", errmax);
+		}
+
 		return 0;
 	}
 
-	if(!irc_dictionary_add(exprs,&expr->id,expr))
+	if(!irc_dictionary_add(exprs, &expr->id, expr))
 	{
-		*errcodeptr = EXPR_ERROR_DICTFAIL;
-		*errptr = "Failed to activate this expression";
+		if(errcode && errbuf)
+		{
+			*errcode = EXPR_ERROR_DICTFAIL;
+			rb_strlcpy(errbuf, "Failed to activate this expression", errmax);
+		}
+
 		return 0;
 	}
 
@@ -196,27 +243,33 @@ int activate_expr(struct Expr *const expr,
 static
 struct Expr *deactivate_expr(const uint id)
 {
-	return irc_dictionary_delete(exprs,&id);
+	return irc_dictionary_delete(exprs, &id);
 }
 
 
 static
 struct Expr *activate_new_expr(const char *const pattern,
                                const uint comp_opts,
-                               const uint exec_opts,
-                               const int stud_opts,
-                               int *const errcodeptr,
-                               const char **const errptr,
-                               int *const erroffset,
-                               const unsigned char *const tableptr)
+                               const uint match_opts,
+                               const uint jit_opts,
+                               const unsigned char *const tables,
+                               int *const errcode,
+                               size_t *const erroff,
+                               char *const errbuf,
+                               const size_t errmax)
 {
-	struct Expr *const expr = new_expr(pattern,comp_opts,exec_opts,stud_opts,errcodeptr,errptr,erroffset,tableptr);
+	struct Expr *const expr = new_expr(pattern, comp_opts, match_opts, jit_opts, tables, errcode, erroff);
 	if(!expr)
-		return NULL;
-
-	if(!activate_expr(expr,errcodeptr,errptr))
 	{
-		*erroffset = 0;
+		if(errbuf)
+			pcre2_get_error_message(*errcode, errbuf, errmax);
+
+		return NULL;
+	}
+
+	if(!activate_expr(expr, errcode, errbuf, errmax))
+	{
+		*erroff = 0;
 		free_expr(expr);
 		return NULL;
 	}
@@ -228,50 +281,9 @@ struct Expr *activate_new_expr(const char *const pattern,
 static
 int deactivate_and_free_expr(const uint id)
 {
-	struct Expr *const expr = irc_dictionary_delete(exprs,&id);
+	struct Expr *const expr = irc_dictionary_delete(exprs, &id);
 	free_expr(expr);
 	return expr != NULL;
-}
-
-
-static
-const char *strerror_pcre(const long val)
-{
-	switch(val)
-	{
-		case 1:
-		case 0:                              return "SUCCESS";
-		case PCRE_ERROR_NOMATCH:             return "NOMATCH";
-		case PCRE_ERROR_NULL:                return "NULL";
-		case PCRE_ERROR_BADOPTION:           return "BADOPTION";
-		case PCRE_ERROR_BADMAGIC:            return "BADMAGIC";
-		case PCRE_ERROR_UNKNOWN_OPCODE:      return "UNKNOWN_OPCODE";
-		case PCRE_ERROR_NOMEMORY:            return "NOMEMORY";
-		case PCRE_ERROR_NOSUBSTRING:         return "NOSUBSTRING";
-		case PCRE_ERROR_MATCHLIMIT:          return "MATCHLIMIT";
-		case PCRE_ERROR_CALLOUT:             return "CALLOUT";
-		case PCRE_ERROR_BADUTF8:             return "BADUTF8";
-		case PCRE_ERROR_BADUTF8_OFFSET:      return "BADUTF8_OFFSET";
-		case PCRE_ERROR_PARTIAL:             return "PARTIAL";
-		case PCRE_ERROR_BADPARTIAL:          return "BADPARTIAL";
-		case PCRE_ERROR_INTERNAL:            return "INTERNAL";
-		case PCRE_ERROR_BADCOUNT:            return "BADCOUNT";
-		case PCRE_ERROR_RECURSIONLIMIT:      return "RECURSIONLIMIT";
-		case PCRE_ERROR_BADNEWLINE:          return "BADNEWLINE";
-		case PCRE_ERROR_BADOFFSET:           return "BADOFFSET";
-		case PCRE_ERROR_SHORTUTF8:           return "SHORTUTF8";
-		case PCRE_ERROR_RECURSELOOP:         return "RECURSELOOP";
-		case PCRE_ERROR_JIT_STACKLIMIT:      return "JIT_STACKLIMIT";
-		case PCRE_ERROR_BADMODE:             return "BADMODE";
-		case PCRE_ERROR_BADENDIANNESS:       return "BADENDIANNESS";
-		case PCRE_ERROR_JIT_BADOPTION:       return "JIT_BADOPTION";
-		case PCRE_ERROR_BADLENGTH:           return "BADLENGTH";
-		case PCRE_ERROR_UNSET:               return "UNSET";
-		case EXPR_ERROR_EXISTS:              return "EXISTS";
-		case EXPR_ERROR_TOOMANY:             return "TOOMANY";
-		case EXPR_ERROR_DICTFAIL:            return "DICTFAIL";
-		default:                             return "????????";
-	}
 }
 
 
@@ -280,104 +292,96 @@ const char *str_pcre_info(const long val)
 {
 	switch(val)
 	{
-		case PCRE_INFO_BACKREFMAX:           return "BACKREFMAX";
-		case PCRE_INFO_CAPTURECOUNT:         return "CAPTURECOUNT";
-		case PCRE_INFO_FIRSTBYTE:            return "FIRSTBYTE";
-		case PCRE_INFO_HASCRORLF:            return "HASCRORLF";
-		case PCRE_INFO_JCHANGED:             return "JCHANGED";
-		case PCRE_INFO_JIT:                  return "JIT";
-		case PCRE_INFO_LASTLITERAL:          return "LASTLITERAL";
-		case PCRE_INFO_MINLENGTH:            return "MINLENGTH";
-		case PCRE_INFO_MATCH_EMPTY:          return "MATCH_EMPTY";
-		case PCRE_INFO_MAXLOOKBEHIND:        return "MAXLOOKBEHIND";
-		case PCRE_INFO_NAMECOUNT:            return "NAMECOUNT";
-		case PCRE_INFO_NAMETABLE:            return "NAMETABLE";
-		case PCRE_INFO_NAMEENTRYSIZE:        return "NAMEENTRYSIZE";
-		case PCRE_INFO_OKPARTIAL:            return "OKPARTIAL";
-		case PCRE_INFO_FIRSTCHARACTERFLAGS:  return "FIRSTCHARACTERFLAGS";
-		case PCRE_INFO_REQUIREDCHARFLAGS:    return "REQUIREDCHARFLAGS";
-		case PCRE_INFO_FIRSTCHARACTER:       return "FIRSTCHARACTER";
-		case PCRE_INFO_MATCHLIMIT:           return "MATCHLIMIT";
-		case PCRE_INFO_RECURSIONLIMIT:       return "RECURSIONLIMIT";
-		case PCRE_INFO_REQUIREDCHAR:         return "REQUIREDCHAR";
-		case PCRE_INFO_OPTIONS:              return "OPTIONS";
-		case PCRE_INFO_SIZE:                 return "SIZE";
-		case PCRE_INFO_JITSIZE:              return "JITSIZE";
-		case PCRE_INFO_STUDYSIZE:            return "STUDYSIZE";
-		default:                             return "";
+		case PCRE2_INFO_ALLOPTIONS:         return "ALLOPTIONS";
+		case PCRE2_INFO_ARGOPTIONS:         return "ARGOPTIONS";
+		case PCRE2_INFO_BACKREFMAX:         return "BACKREFMAX";
+		case PCRE2_INFO_BSR:                return "BSR";
+		case PCRE2_INFO_CAPTURECOUNT:       return "CAPTURECOUNT";
+		case PCRE2_INFO_FIRSTCODEUNIT:      return "FIRSTCODEUNIT";
+		case PCRE2_INFO_FIRSTCODETYPE:      return "FIRSTCODETYPE";
+		case PCRE2_INFO_FIRSTBITMAP:        return "FIRSTBITMAP";
+		case PCRE2_INFO_HASCRORLF:          return "HASCRORLF";
+		case PCRE2_INFO_JCHANGED:           return "JCHANGED";
+		case PCRE2_INFO_JITSIZE:            return "JITSIZE";
+		case PCRE2_INFO_LASTCODEUNIT:       return "LASTCODEUNIT";
+		case PCRE2_INFO_LASTCODETYPE:       return "LASTCODETYPE";
+		case PCRE2_INFO_MATCHEMPTY:         return "MATCHEMPTY";
+		case PCRE2_INFO_MATCHLIMIT:         return "MATCHLIMIT";
+		case PCRE2_INFO_MAXLOOKBEHIND:      return "MAXLOOKBEHIND";
+		case PCRE2_INFO_MINLENGTH:          return "MINLENGTH";
+		case PCRE2_INFO_NAMECOUNT:          return "NAMECOUNT";
+		case PCRE2_INFO_NAMEENTRYSIZE:      return "NAMEENTRYSIZE";
+		case PCRE2_INFO_NAMETABLE:          return "NAMETABLE";
+		case PCRE2_INFO_NEWLINE:            return "NEWLINE";
+		case PCRE2_INFO_RECURSIONLIMIT:     return "RECURSIONLIMIT";
+		case PCRE2_INFO_SIZE:               return "SIZE";
+		default:                            return "";
 	}
 }
 
 
 static
-const char *str_pcre_opt(const long val)
+const char *str_pcre_comp(const long val)
 {
 	switch(val)
 	{
-		case PCRE_CASELESS:                  return "CASELESS";
-		case PCRE_MULTILINE:                 return "MULTILINE";
-		case PCRE_DOTALL:                    return "DOTALL";
-		case PCRE_EXTENDED:                  return "EXTENDED";
-		case PCRE_ANCHORED:                  return "ANCHORED";
-		case PCRE_DOLLAR_ENDONLY:            return "DOLLAR_ENDONLY";
-		case PCRE_EXTRA:                     return "EXTRA";
-		case PCRE_NOTBOL:                    return "NOTBOL";
-		case PCRE_NOTEOL:                    return "NOTEOL";
-		case PCRE_UNGREEDY:                  return "UNGREEDY";
-		case PCRE_NOTEMPTY:                  return "NOTEMPTY";
-		case PCRE_UTF8:                      return "UTF8";
-		case PCRE_NO_AUTO_CAPTURE:           return "NO_AUTO_CAPTURE";
-		case PCRE_NO_UTF8_CHECK:             return "NO_UTF8_CHECK";
-		case PCRE_AUTO_CALLOUT:              return "AUTO_CALLOUT";
-		case PCRE_PARTIAL:                   return "PARTIAL";
-		case PCRE_NEVER_UTF:                 return "NEVER_UTF";
-		case PCRE_NO_AUTO_POSSESS:           return "NO_AUTO_POSSESS";
-		case PCRE_FIRSTLINE:                 return "FIRSTLINE";
-		case PCRE_DUPNAMES:                  return "DUPNAMES";
-		case PCRE_NEWLINE_CR:                return "NEWLINE_CR";
-		case PCRE_NEWLINE_LF:                return "NEWLINE_LF";
-		case PCRE_NEWLINE_CRLF:              return "NEWLINE_CRLF";
-		case PCRE_NEWLINE_ANY:               return "NEWLINE_ANY";
-		case PCRE_NEWLINE_ANYCRLF:           return "NEWLINE_ANYCRLF";
-		case PCRE_BSR_ANYCRLF:               return "BSR_ANYCRLF";
-		case PCRE_BSR_UNICODE:               return "BSR_UNICODE";
-		case PCRE_JAVASCRIPT_COMPAT:         return "JAVASCRIPT_COMPAT";
-		case PCRE_NO_START_OPTIMIZE:         return "NO_START_OPTIMIZE";
-		case PCRE_PARTIAL_HARD:              return "PARTIAL_HARD";
-		case PCRE_NOTEMPTY_ATSTART:          return "NOTEMPTY_ATSTART";
-		case PCRE_UCP:                       return "UCP";
-		default:                             return "";
+		case PCRE2_ALLOW_EMPTY_CLASS:       return "ALLOW_EMPTY_CLASS";       /* C       */
+		case PCRE2_ALT_BSUX:                return "ALT_BSUX";                /* C       */
+		case PCRE2_AUTO_CALLOUT:            return "AUTO_CALLOUT";            /* C       */
+		case PCRE2_CASELESS:                return "CASELESS";                /* C       */
+		case PCRE2_DOLLAR_ENDONLY:          return "DOLLAR_ENDONLY";          /*   J M D */
+		case PCRE2_DOTALL:                  return "DOTALL";                  /* C       */
+		case PCRE2_DUPNAMES:                return "DUPNAMES";                /* C       */
+		case PCRE2_EXTENDED:                return "EXTENDED";                /* C       */
+		case PCRE2_FIRSTLINE:               return "FIRSTLINE";               /*   J M D */
+		case PCRE2_MATCH_UNSET_BACKREF:     return "MATCH_UNSET_BACKREF";     /* C J M   */
+		case PCRE2_MULTILINE:               return "MULTILINE";               /* C       */
+		case PCRE2_NEVER_UCP:               return "NEVER_UCP";               /* C       */
+		case PCRE2_NEVER_UTF:               return "NEVER_UTF";               /* C       */
+		case PCRE2_NO_AUTO_CAPTURE:         return "NO_AUTO_CAPTURE";         /* C       */
+		case PCRE2_NO_AUTO_POSSESS:         return "NO_AUTO_POSSESS";         /* C       */
+		case PCRE2_NO_DOTSTAR_ANCHOR:       return "NO_DOTSTAR_ANCHOR";       /* C       */
+		case PCRE2_NO_START_OPTIMIZE:       return "NO_START_OPTIMIZE";       /*   J M D */
+		case PCRE2_UCP:                     return "UCP";                     /* C J M D */
+		case PCRE2_UNGREEDY:                return "UNGREEDY";                /* C       */
+		case PCRE2_UTF:                     return "UTF";                     /* C J M D */
+		case PCRE2_NEVER_BACKSLASH_C:       return "NEVER_BACKSLASH_C";       /* C       */
+		case PCRE2_ALT_CIRCUMFLEX:          return "ALT_CIRCUMFLEX";          /*   J M D */
+		case PCRE2_ANCHORED:                return "ANCHORED";                /* C   M D */
+		case PCRE2_NO_UTF_CHECK:            return "NO_UTF_CHECK";            /* C   M D */
+		default:                            return "";
 	}
 }
 
 
 static
-const char *str_pcre_extra(const long val)
+const char *str_pcre_jit(const long val)
 {
 	switch(val)
 	{
-		case PCRE_EXTRA_STUDY_DATA:              return "STUDY_DATA";
-		case PCRE_EXTRA_MATCH_LIMIT:             return "MATCH_LIMIT";
-		case PCRE_EXTRA_CALLOUT_DATA:            return "CALLOUT_DATA";
-		case PCRE_EXTRA_TABLES:                  return "TABLES";
-		case PCRE_EXTRA_MATCH_LIMIT_RECURSION:   return "MATCH_LIMIT_RECURSION";
-		case PCRE_EXTRA_MARK:                    return "MARK";
-		case PCRE_EXTRA_EXECUTABLE_JIT:          return "EXECUTABLE_JIT";
-		default:                                 return "";
+		case PCRE2_JIT_COMPLETE:            return "COMPLETE";
+		case PCRE2_JIT_PARTIAL_SOFT:        return "PARTIAL_SOFT";
+		case PCRE2_JIT_PARTIAL_HARD:        return "PARTIAL_HARD";
+		default:                            return "";
 	}
 }
 
 
 static
-const char *str_pcre_study(const long val)
+const char *str_pcre_match(const long val)
 {
 	switch(val)
 	{
-		case PCRE_STUDY_JIT_COMPILE:                return "JIT_COMPILE";
-		case PCRE_STUDY_JIT_PARTIAL_SOFT_COMPILE:   return "JIT_PARTIAL_SOFT_COMPILE";
-		case PCRE_STUDY_JIT_PARTIAL_HARD_COMPILE:   return "JIT_PARTIAL_HARD_COMPILE";
-		case PCRE_STUDY_EXTRA_NEEDED:               return "EXTRA_NEEDED";
-		default:                                    return "";
+		case PCRE2_NOTBOL:                  return "NOTBOL";
+		case PCRE2_NOTEOL:                  return "NOTEOL";
+		case PCRE2_NOTEMPTY:                return "NOTEMPTY";
+		case PCRE2_NOTEMPTY_ATSTART:        return "NOTEMPTY_ATSTART";
+		case PCRE2_PARTIAL_SOFT:            return "PARTIAL_SOFT";
+		case PCRE2_PARTIAL_HARD:            return "PARTIAL_HARD";
+		case PCRE2_DFA_RESTART:             return "DFA_RESTART";
+		case PCRE2_DFA_SHORTEST:            return "DFA_SHORTEST";
+		case PCRE2_SUBSTITUTE_GLOBAL:       return "SUBSTITUTE_GLOBAL";
+		default:                            return "";
 	}
 }
 
@@ -386,7 +390,7 @@ static
 long reflect_pcre_info(const char *const str)
 {
 	for(int i = 0; i < 48; i++)
-		if(irccmp(str_pcre_info(i),str) == 0)
+		if(irccmp(str_pcre_info(i), str) == 0)
 			return i;
 
 	return -1;
@@ -394,11 +398,11 @@ long reflect_pcre_info(const char *const str)
 
 
 static
-long reflect_pcre_opt(const char *const str)
+long reflect_pcre_comp(const char *const str)
 {
 	ulong i = 1;
 	for(; i; i <<= 1)
-		if(irccmp(str_pcre_opt(i),str) == 0)
+		if(irccmp(str_pcre_comp(i), str) == 0)
 			return i;
 
 	return i;
@@ -406,11 +410,11 @@ long reflect_pcre_opt(const char *const str)
 
 
 static
-long reflect_pcre_extra(const char *const str)
+long reflect_pcre_jit(const char *const str)
 {
 	ulong i = 1;
 	for(; i; i <<= 1)
-		if(irccmp(str_pcre_extra(i),str) == 0)
+		if(irccmp(str_pcre_jit(i), str) == 0)
 			return i;
 
 	return i;
@@ -418,11 +422,11 @@ long reflect_pcre_extra(const char *const str)
 
 
 static
-long reflect_pcre_study(const char *const str)
+long reflect_pcre_match(const char *const str)
 {
 	ulong i = 1;
 	for(; i; i <<= 1)
-		if(irccmp(str_pcre_study(i),str) == 0)
+		if(irccmp(str_pcre_match(i), str) == 0)
 			return i;
 
 	return i;
@@ -437,12 +441,12 @@ long parse_pcre_opts(const char *const str,
 	static const char *delim = "|";
 
 	ulong ret = 0;
-	rb_strlcpy(s,str,sizeof(s));
-	char *ctx, *tok = strtok_r(s,delim,&ctx); do
+	rb_strlcpy(s, str, sizeof(s));
+	char *ctx, *tok = strtok_r(s, delim, &ctx); do
 	{
 		ret |= reflector(tok);
 	}
-	while((tok = strtok_r(NULL,delim,&ctx)) != NULL);
+	while((tok = strtok_r(NULL, delim, &ctx)) != NULL);
 
 	return ret;
 }
@@ -462,8 +466,8 @@ int strlcat_pcre_opts(const long opts,
 			const char *const str = strfun(o);
 			if(strlen(str))
 			{
-				ret = rb_strlcat(buf,str,max);
-				ret = rb_strlcat(buf,"|",max);
+				ret = rb_strlcat(buf, str, max);
+				ret = rb_strlcat(buf, "|", max);
 			}
 		}
 	}
@@ -472,7 +476,7 @@ int strlcat_pcre_opts(const long opts,
 		buf[ret-1] = '\0';
 
 	if(!ret)
-		ret = rb_strlcat(buf,"0",max);
+		ret = rb_strlcat(buf, "0", max);
 
 	return ret;
 }
@@ -486,55 +490,46 @@ size_t expr_info_val(struct Expr *const expr,
 {
 	union
 	{
-		int v_int;
-		uint v_uint;
-		long v_long;
-		ulong v_ulong;
+		int32_t v_int;
+		uint32_t v_uint;
 		size_t v_size;
-		uint8_t *v_uint8;
-		unsigned char *v_uchar;
 	} v;
 
-	const int ret = pcre_fullinfo(expr->expr,expr->extra,what,&v);
+	const int ret = pcre2_pattern_info(expr->expr, what, &v);
 	if(ret < 0)
-		return snprintf(buf,len,"Error: %s",strerror_pcre(ret));
+		return pcre2_get_error_message(ret, buf, len);
 
 	switch(what)
 	{
-		case PCRE_INFO_BACKREFMAX:
-		case PCRE_INFO_CAPTURECOUNT:
-		case PCRE_INFO_FIRSTBYTE:
-		case PCRE_INFO_HASCRORLF:
-		case PCRE_INFO_JCHANGED:
-		case PCRE_INFO_JIT:
-		case PCRE_INFO_LASTLITERAL:
-		case PCRE_INFO_MINLENGTH:
-		case PCRE_INFO_MATCH_EMPTY:
-		case PCRE_INFO_MAXLOOKBEHIND:
-		case PCRE_INFO_NAMECOUNT:
-		case PCRE_INFO_NAMETABLE:
-		case PCRE_INFO_NAMEENTRYSIZE:
-		case PCRE_INFO_OKPARTIAL:
-		case PCRE_INFO_FIRSTCHARACTERFLAGS:
-		case PCRE_INFO_REQUIREDCHARFLAGS:
-			return snprintf(buf,len,"%d",v.v_int);
+		case PCRE2_INFO_ALLOPTIONS:
+		case PCRE2_INFO_ARGOPTIONS:
+		case PCRE2_INFO_BACKREFMAX:
+		case PCRE2_INFO_BSR:
+		case PCRE2_INFO_CAPTURECOUNT:
+		case PCRE2_INFO_FIRSTCODEUNIT:
+		case PCRE2_INFO_FIRSTCODETYPE:
+		case PCRE2_INFO_FIRSTBITMAP:
+		case PCRE2_INFO_HASCRORLF:
+		case PCRE2_INFO_JCHANGED:
+		case PCRE2_INFO_LASTCODEUNIT:
+		case PCRE2_INFO_LASTCODETYPE:
+		case PCRE2_INFO_MATCHEMPTY:
+		case PCRE2_INFO_MATCHLIMIT:
+		case PCRE2_INFO_MAXLOOKBEHIND:
+		case PCRE2_INFO_MINLENGTH:
+		case PCRE2_INFO_NAMECOUNT:
+		case PCRE2_INFO_NAMEENTRYSIZE:
+		case PCRE2_INFO_NAMETABLE:
+		case PCRE2_INFO_NEWLINE:
+		case PCRE2_INFO_RECURSIONLIMIT:
+			return snprintf(buf, len, "%u", v.v_uint);
 
-		case PCRE_INFO_FIRSTCHARACTER:
-		case PCRE_INFO_MATCHLIMIT:
-		case PCRE_INFO_RECURSIONLIMIT:
-		case PCRE_INFO_REQUIREDCHAR:
-			return snprintf(buf,len,"%u",v.v_uint);
-
-		case PCRE_INFO_OPTIONS:
-			return snprintf(buf,len,"0x%08lx",v.v_ulong);
-
-		case PCRE_INFO_SIZE:
-		case PCRE_INFO_JITSIZE:
-		case PCRE_INFO_STUDYSIZE:
-			return snprintf(buf,len,"%zu",v.v_size);
+		case PCRE2_INFO_SIZE:
+		case PCRE2_INFO_JITSIZE:
+			return snprintf(buf, len, "%zu", v.v_size);
 
 		default:
-			return rb_strlcpy(buf,"Requested information unsupported.",len);
+			return rb_strlcpy(buf, "Requested information unsupported.", len);
 	}
 }
 
@@ -551,8 +546,8 @@ size_t expr_info(struct Expr *const expr,
 	ssize_t boff = 0;
 	for(size_t i = 0; i < num_what && boff < len; i++)
 	{
-		expr_info_val(expr,what[i],valbuf,sizeof(valbuf));
-		boff += snprintf(buf+boff,len-boff,"%s[%s] ",str_pcre_info(what[i]),valbuf);
+		expr_info_val(expr, what[i], valbuf, sizeof(valbuf));
+		boff += snprintf(buf+boff, len-boff, "%s[%s] ", str_pcre_info(what[i]), valbuf);
 	}
 
 	return boff;
@@ -562,28 +557,32 @@ size_t expr_info(struct Expr *const expr,
 static
 int match_expr(struct Expr *const expr,
                const char *const text,
-               const int len,
-               const int off,
+               const size_t len,
+               const size_t off,
                const uint options)
 {
-	static const int ovlen = 64;
-	static int ovec[64];
-
-	const uint opts = options | expr->exec_opts;
-	const int jit = expr->extra && (expr->extra->flags & PCRE_EXTRA_EXECUTABLE_JIT);
-	const int ret = jit? pcre_jit_exec(expr->expr,expr->extra,text,len,off,expr->exec_opts,ovec,ovlen,jstack):
-	                     pcre_exec(expr->expr,expr->extra,text,len,off,opts,ovec,ovlen);
+	const CODE_UNIT *const sptr = text;
+	const PCRE2_SIZE slen = CODE_SIZE(len);
+	const PCRE2_SIZE soff = CODE_SIZE(off);
+	const uint opts = options | expr->match_opts;
+	const int ret = jstack? pcre2_jit_match(expr->expr, sptr, slen, soff, opts, expr->match, expr->mctx):
+	                        pcre2_match(expr->expr, sptr, slen, soff, opts, expr->match, expr->mctx);
 	if(ret > 0)
 	{
 		expr->hits++;
 		expr->last = rb_current_time();
 	}
 	else if(rb_unlikely(ret < -1))
-		sendto_realops_snomask(SNO_GENERAL,L_ALL,
+	{
+		static char errbuf[BUFSIZE];
+		pcre2_get_error_message(ret, errbuf, sizeof(errbuf));
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 		                       "spamfilter: Expression #%u error (%d): %s",
 		                       expr->id,
 		                       ret,
-		                       strerror_pcre(ret));
+		                       errbuf);
+	}
+
 	return ret;
 }
 
@@ -596,9 +595,9 @@ struct Expr *match_any_expr(const char *const text,
 {
 	struct Expr *expr;
 	struct DictionaryIter state;
-	DICTIONARY_FOREACH(expr,&state,exprs)
+	DICTIONARY_FOREACH(expr, &state, exprs)
 	{
-		if(match_expr(expr,text,len,off,options) > 0)
+		if(match_expr(expr, text, len, off, options) > 0)
 			return expr;
 	}
 
@@ -616,66 +615,80 @@ int dump_pcre_config(struct Client *client_p, struct Client *source_p, int parc,
 {
 	union
 	{
-		int v_int;
-		ulong v_ulong;
-		char *v_char;
+		uint32_t v_uint;
+		uint64_t v_ulong;
+		char *v_buf;
 	} v;
 
-	sendto_one_notice(source_p,":\2%-30s\2: %s","PCRE VERSION",pcre_version());
+	if((v.v_ulong = pcre2_config(PCRE2_CONFIG_VERSION, NULL)) > 0)
+	{
+		v.v_ulong *= (PCRE2_CODE_UNIT_WIDTH / 8);
+		v.v_buf = rb_malloc(v.v_ulong);
+		pcre2_config(PCRE2_CONFIG_VERSION, v.v_buf);
+		sendto_one_notice(source_p, ":\2%-30s\2: (%s)", "PCRE2 VERSION", v.v_buf);
+		rb_free(v.v_buf);
+	}
 
-	if(pcre_config(PCRE_CONFIG_JIT,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d (%s)","PCRE JIT",v.v_int,
-		                  v.v_int == 0? "UNAVAILABLE":
-		                  v.v_int == 1? "AVAILABLE":
-		                                "???");
+	if(pcre2_config(PCRE2_CONFIG_BSR, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d (%s)", "PCRE2 BSR", v.v_uint,
+		                  v.v_uint == PCRE2_BSR_UNICODE? "all Unicode line endings":
+		                  v.v_uint == PCRE2_BSR_ANYCRLF? "CR, LF, or CRLF only":
+		                                                 "???");
 
-	if(pcre_config(PCRE_CONFIG_JITTARGET,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %s","PCRE JITTARGET",v.v_char);
-
-	if(pcre_config(PCRE_CONFIG_LINK_SIZE,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d","PCRE LINK_SIZE",v.v_int);
-
-	if(pcre_config(PCRE_CONFIG_PARENS_LIMIT,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %lu","PCRE PARENS_LIMIT",v.v_ulong);
-
-	if(pcre_config(PCRE_CONFIG_MATCH_LIMIT,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %lu","PCRE MATCH_LIMIT",v.v_ulong);
-
-	if(pcre_config(PCRE_CONFIG_MATCH_LIMIT_RECURSION,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %lu","PCRE MATCH_LIMIT_RECURSION",v.v_ulong);
-
-	if(pcre_config(PCRE_CONFIG_NEWLINE,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d (%s)","PCRE NEWLINE",v.v_int,
-		                  v.v_int == 13?    "CR":
-		                  v.v_int == 10?    "LF":
-		                  v.v_int == 3338?  "CRLF":
-		                  v.v_int == -2?    "ANYCRLF":
-		                  v.v_int == -1?    "ANY":
-		                                    "???");
-
-	if(pcre_config(PCRE_CONFIG_BSR,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d (%s)","PCRE BSR",v.v_int,
-		                  v.v_int == 0? "all Unicode line endings":
-		                  v.v_int == 1? "CR, LF, or CRLF only":
+	if(pcre2_config(PCRE2_CONFIG_JIT, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d (%s)", "PCRE2 JIT", v.v_uint,
+		                  v.v_uint == 0? "UNAVAILABLE":
+		                  v.v_uint == 1? "AVAILABLE":
 		                                 "???");
 
-	if(pcre_config(PCRE_CONFIG_POSIX_MALLOC_THRESHOLD,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d","PCRE POSIX_MALLOC_THRESHOLD",v.v_int);
+	if((v.v_ulong = pcre2_config(PCRE2_CONFIG_JITTARGET, NULL)) > 0)
+	{
+		v.v_ulong *= (PCRE2_CODE_UNIT_WIDTH / 8);
+		v.v_buf = rb_malloc(v.v_ulong);
+		pcre2_config(PCRE2_CONFIG_JITTARGET, v.v_buf);
+		sendto_one_notice(source_p, ":\2%-30s\2: (%s)", "PCRE2 JITTARGET", v.v_buf);
+		rb_free(v.v_buf);
+	}
 
-	if(pcre_config(PCRE_CONFIG_STACKRECURSE,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d","PCRE STACKRECURSE",v.v_int);
+	if(pcre2_config(PCRE2_CONFIG_LINKSIZE, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d", "PCRE2 LINKSIZE", v.v_uint);
 
-	if(pcre_config(PCRE_CONFIG_UTF16,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d","PCRE UTF16",v.v_int);
+	if(pcre2_config(PCRE2_CONFIG_MATCHLIMIT, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %lu", "PCRE2 MATCHLIMIT", v.v_uint);
 
-	if(pcre_config(PCRE_CONFIG_UTF32,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d","PCRE UTF32",v.v_int);
+	if(pcre2_config(PCRE2_CONFIG_PARENSLIMIT, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %lu", "PCRE2 PARENSLIMIT", v.v_uint);
 
-	if(pcre_config(PCRE_CONFIG_UNICODE_PROPERTIES,&v) == 0)
-		sendto_one_notice(source_p,":\2%-30s\2: %d (%s)","PCRE UNICODE_PROPERTIES",v.v_int,
-		                  v.v_int == 0? "UNAVAILABLE":
-		                  v.v_int == 1? "AVAILABLE":
-		                                "???");
+	if(pcre2_config(PCRE2_CONFIG_RECURSIONLIMIT, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %lu", "PCRE2 RECURSIONLIMIT", v.v_uint);
+
+	if(pcre2_config(PCRE2_CONFIG_NEWLINE, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d (%s)", "PCRE2 NEWLINE", v.v_uint,
+		                  v.v_uint == PCRE2_NEWLINE_CR?       "CR":
+		                  v.v_uint == PCRE2_NEWLINE_LF?       "LF":
+		                  v.v_uint == PCRE2_NEWLINE_CRLF?     "CRLF":
+		                  v.v_uint == PCRE2_NEWLINE_ANYCRLF?  "ANYCRLF":
+		                  v.v_uint == PCRE2_NEWLINE_ANY?      "ANY":
+		                                                      "???");
+
+	if(pcre2_config(PCRE2_CONFIG_STACKRECURSE, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d", "PCRE2 STACKRECURSE", v.v_uint);
+
+	if(pcre2_config(PCRE2_CONFIG_UNICODE, &v) == 0)
+		sendto_one_notice(source_p, ":\2%-30s\2: %d (%s)", "PCRE2 UNICODE", v.v_uint,
+		                  v.v_uint == 0? "UNAVAILABLE":
+		                  v.v_uint == 1? "AVAILABLE":
+		                                 "???");
+
+	if((v.v_ulong = pcre2_config(PCRE2_CONFIG_UNICODE_VERSION, NULL)) > 0)
+	{
+		v.v_ulong *= (PCRE2_CODE_UNIT_WIDTH / 8);
+		v.v_buf = rb_malloc(v.v_ulong);
+		pcre2_config(PCRE2_CONFIG_UNICODE_VERSION, v.v_buf);
+		sendto_one_notice(source_p, ":\2%-30s\2: (%s)", "PCRE2 UNICODE_VERSION", v.v_buf);
+		rb_free(v.v_buf);
+	}
+
 	return 0;
 }
 
@@ -686,13 +699,13 @@ int spamexpr_info(struct Client *client_p, struct Client *source_p, int parc, co
 	if(parc > 0 && !IsOper(source_p))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "SPAMEXPR INFO");
-		sendto_one_notice(source_p,":Only operators can give arguments to this command.");
+		sendto_one_notice(source_p, ":Only operators can give arguments to this command.");
 		return 0;
 	}
 
 	if(parc < 1 && IsOper(source_p))
 	{
-		dump_pcre_config(client_p,source_p,parc,parv);
+		dump_pcre_config(client_p, source_p, parc, parv);
 		return 0;
 	}
 
@@ -700,7 +713,7 @@ int spamexpr_info(struct Client *client_p, struct Client *source_p, int parc, co
 	struct Expr *const expr = find_expr(id);
 	if(!expr)
 	{
-		sendto_one_notice(source_p,":Failed to find any expression with ID %u.",id);
+		sendto_one_notice(source_p, ":Failed to find any expression with ID %u.", id);
 		return 0;
 	}
 
@@ -710,20 +723,20 @@ int spamexpr_info(struct Client *client_p, struct Client *source_p, int parc, co
 		what[i] = reflect_pcre_info(parv[i+1]);
 
 	static char buf[BUFSIZE];
-	expr_info(expr,what,num_what,buf,sizeof(buf));
+	expr_info(expr, what, num_what, buf, sizeof(buf));
 
-	char comp_opts[128] = {0}, exec_opts[128] = {0}, stud_opts[128] = {0};
-	strlcat_pcre_opts(expr->comp_opts,comp_opts,sizeof(comp_opts),str_pcre_opt);
-	strlcat_pcre_opts(expr->exec_opts,exec_opts,sizeof(exec_opts),str_pcre_opt);
-	strlcat_pcre_opts(expr->stud_opts,stud_opts,sizeof(stud_opts),str_pcre_study);
-	sendto_one_notice(source_p,":#%u time[%lu] last[%lu] hits[%d] [%s][%s][%s] %s %s",
+	char comp_opts[128] = {0}, match_opts[128] = {0}, jit_opts[128] = {0};
+	strlcat_pcre_opts(expr->comp_opts, comp_opts, sizeof(comp_opts), str_pcre_comp);
+	strlcat_pcre_opts(expr->match_opts, match_opts, sizeof(match_opts), str_pcre_match);
+	strlcat_pcre_opts(expr->jit_opts, jit_opts, sizeof(jit_opts), str_pcre_jit);
+	sendto_one_notice(source_p, ":#%u time[%lu] last[%lu] hits[%d] [%s][%s][%s] %s %s",
 	                  expr->id,
 	                  expr->added,
 	                  expr->last,
 	                  expr->hits,
 	                  comp_opts,
-	                  exec_opts,
-	                  stud_opts,
+	                  match_opts,
+	                  jit_opts,
 	                  buf,
 	                  expr->pattern);
 	return 0;
@@ -736,7 +749,7 @@ int spamexpr_list(struct Client *client_p, struct Client *source_p, int parc, co
 	if(parc > 0 && !IsOper(source_p))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "SPAMEXPR LIST");
-		sendto_one_notice(source_p,":Only operators can give arguments to this command.");
+		sendto_one_notice(source_p, ":Only operators can give arguments to this command.");
 		return 0;
 	}
 
@@ -749,13 +762,13 @@ int spamexpr_list(struct Client *client_p, struct Client *source_p, int parc, co
 
 	struct Expr *expr;
 	struct DictionaryIter state;
-	DICTIONARY_FOREACH(expr,&state,exprs)
+	DICTIONARY_FOREACH(expr, &state, exprs)
 	{
-		snprintf(id,sizeof(id),"%u",expr->id);
-		spamexpr_info(client_p,source_p,parc+1,nparv);
+		snprintf(id, sizeof(id), "%u", expr->id);
+		spamexpr_info(client_p, source_p, parc+1, nparv);
 	}
 
-	sendto_one_notice(source_p,":End of expression list.");
+	sendto_one_notice(source_p, ":End of expression list.");
 	return 0;
 }
 
@@ -776,29 +789,26 @@ int spamexpr_add(struct Client *client_p, struct Client *source_p, int parc, con
 
 	if(parc < 4)
 	{
-		sendto_one_notice(source_p, ":Usage: ADD <compile opts|0> <exec opts|0> <study opts|0> <expression>");
+		sendto_one_notice(source_p, ":Usage: ADD <compile opts|0> <match opts|0> <jit opts|0> <expression>");
 		return 0;
 	}
 
-	const long comp_opts = parse_pcre_opts(parv[0],reflect_pcre_opt)    | conf_compile_opts;
-	const long exec_opts = parse_pcre_opts(parv[1],reflect_pcre_opt)    | conf_execute_opts;
-	const long stud_opts = parse_pcre_opts(parv[2],reflect_pcre_study)  | conf_study_opts;
+	const long comp_opts = parse_pcre_opts(parv[0], reflect_pcre_comp)    | conf_compile_opts;
+	const long match_opts = parse_pcre_opts(parv[1], reflect_pcre_match)  | conf_match_opts;
+	const long jit_opts = parse_pcre_opts(parv[2], reflect_pcre_jit)      | conf_jit_opts;
 	const char *const pattern = parv[3];
 
-	/* not yet used */
-	const unsigned char *tableptr = NULL;
-
-	int erroff;
+	size_t erroff;
 	int errcode;
-	const char *errstr;
-	struct Expr *const expr = activate_new_expr(pattern,comp_opts,exec_opts,stud_opts,&errcode,&errstr,&erroff,tableptr);
+	static char errbuf[BUFSIZE];
+	struct Expr *const expr = activate_new_expr(pattern, comp_opts, match_opts, jit_opts, NULL, &errcode, &erroff, errbuf, sizeof(errbuf));
 	if(!expr)
 	{
 		if(IsPerson(source_p))
-			sendto_one_notice(source_p,":Invalid expression (%d) @%d: %s.",
+			sendto_one_notice(source_p, ":Invalid expression (%d) @%d: %s.",
 			                  errcode,
 			                  erroff,
-			                  errstr);
+			                  errbuf);
 		return 0;
 	}
 
@@ -817,7 +827,7 @@ int spamexpr_add(struct Client *client_p, struct Client *source_p, int parc, con
 		                       expr->id,
 		                       expr->pattern);
 
-		sendto_one_notice(source_p,":Added expression #%u.",expr->id);
+		sendto_one_notice(source_p, ":Added expression #%u.", expr->id);
 	}
 
 	return 0;
@@ -842,7 +852,7 @@ int spamexpr_del(struct Client *client_p, struct Client *source_p, int parc, con
 	const uint id = atol(parv[0]);
 	if(!deactivate_and_free_expr(id))
 	{
-		sendto_one_notice(source_p, ":Failed to deactivate any expression with ID #%u.",id);
+		sendto_one_notice(source_p, ":Failed to deactivate any expression with ID #%u.", id);
 		return 0;
 	}
 
@@ -857,7 +867,7 @@ int spamexpr_del(struct Client *client_p, struct Client *source_p, int parc, con
 		                       "spamfilter: Expression #%u removed.",
 		                       id);
 
-		sendto_one_notice(source_p,":Removed expression #%u.",id);
+		sendto_one_notice(source_p, ":Removed expression #%u.", id);
 	}
 
 	return 0;
@@ -893,21 +903,21 @@ int spamexpr_test(struct Client *client_p, struct Client *source_p, int parc, co
 		struct Expr *expr = find_expr(id);
 		if(!expr)
 		{
-			sendto_one_notice(source_p, ":Failed to find expression with ID #%u",id);
+			sendto_one_notice(source_p, ":Failed to find expression with ID #%u", id);
 			return 0;
 		}
 
-		const int ret = match_expr(expr,parv[1],len,0,0);
-		sendto_one_notice(source_p, ":#%-2d: (%d) %s",id,ret,strerror_pcre(ret));
+		const int ret = match_expr(expr, parv[1], len, 0,0);
+		sendto_one_notice(source_p, ":#%-2d: (%d) %s", id, ret, ret > 0? "POSITIVE" : "NEGATIVE");
 		return 0;
 	}
 
 	struct Expr *expr;
 	struct DictionaryIter state;
-	DICTIONARY_FOREACH(expr,&state,exprs)
+	DICTIONARY_FOREACH(expr, &state, exprs)
 	{
-		const int ret = match_expr(expr,parv[1],len,0,0);
-		sendto_one_notice(source_p, ":#%-2u: (%d): %s",expr->id,ret,strerror_pcre(ret));
+		const int ret = match_expr(expr, parv[1], len, 0,0);
+		sendto_one_notice(source_p, ":#%-2d: (%d) %s", id, ret, ret > 0? "POSITIVE" : "NEGATIVE");
 	}
 
 	return 0;
@@ -925,18 +935,18 @@ int spamexpr_sync(struct Client *client_p, struct Client *source_p, int parc, co
 
 	struct Expr *expr;
 	struct DictionaryIter state;
-	DICTIONARY_FOREACH(expr,&state,exprs)
+	DICTIONARY_FOREACH(expr, &state, exprs)
 	{
-		char comp_opts[128] = {0}, exec_opts[128] = {0}, stud_opts[128] = {0};
-		strlcat_pcre_opts(expr->comp_opts,comp_opts,sizeof(comp_opts),str_pcre_opt);
-		strlcat_pcre_opts(expr->exec_opts,exec_opts,sizeof(exec_opts),str_pcre_opt);
-		strlcat_pcre_opts(expr->stud_opts,stud_opts,sizeof(stud_opts),str_pcre_study);
+		char comp_opts[128] = {0}, match_opts[128] = {0}, jit_opts[128] = {0};
+		strlcat_pcre_opts(expr->comp_opts, comp_opts, sizeof(comp_opts), str_pcre_comp);
+		strlcat_pcre_opts(expr->match_opts, match_opts, sizeof(match_opts), str_pcre_match);
+		strlcat_pcre_opts(expr->jit_opts, jit_opts, sizeof(jit_opts), str_pcre_jit);
 		sendto_server(&me, NULL, CAP_ENCAP, NOCAPS,
 		              ":%s ENCAP * SPAMEXPR ADD %s %s %s :%s",
 		              me.id,
 		              comp_opts,
-		              exec_opts,
-		              stud_opts,
+		              match_opts,
+		              jit_opts,
 		              expr->pattern);
 	}
 
@@ -953,23 +963,23 @@ int spamexpr(struct Client *client_p, struct Client *source_p, int parc, const c
 		return 0;
 	}
 
-	if(irccmp(parv[1],"LIST") == 0)
-		return spamexpr_list(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "LIST") == 0)
+		return spamexpr_list(client_p, source_p, parc-2, parv+2);
 
-	if(irccmp(parv[1],"INFO") == 0)
-		return spamexpr_info(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "INFO") == 0)
+		return spamexpr_info(client_p, source_p, parc-2, parv+2);
 
-	if(irccmp(parv[1],"ADD") == 0)
-		return spamexpr_add(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "ADD") == 0)
+		return spamexpr_add(client_p, source_p, parc-2, parv+2);
 
-	if(irccmp(parv[1],"DEL") == 0)
-		return spamexpr_del(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "DEL") == 0)
+		return spamexpr_del(client_p, source_p, parc-2, parv+2);
 
-	if(irccmp(parv[1],"TEST") == 0)
-		return spamexpr_test(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "TEST") == 0)
+		return spamexpr_test(client_p, source_p, parc-2, parv+2);
 
-	if(irccmp(parv[1],"SYNC") == 0)
-		return spamexpr_sync(client_p,source_p,parc-2,parv+2);
+	if(irccmp(parv[1], "SYNC") == 0)
+		return spamexpr_sync(client_p, source_p, parc-2, parv+2);
 
 	sendto_one_notice(source_p, ":Command not found.");
 	return 0;
@@ -1002,11 +1012,11 @@ void hook_spamfilter_query(hook_data_privmsg_channel *const hook)
 	if(hook->approved != 0)
 		return;
 
-	struct Expr *const expr = match_any_expr(hook->text,strlen(hook->text),0,0);
+	struct Expr *const expr = match_any_expr(hook->text, strlen(hook->text), 0,0);
 	if(!expr)
 		return;
 
-	snprintf(reason,sizeof(reason),"expr: matched #%ld",expr->id);
+	snprintf(reason, sizeof(reason), "expr: matched #%ld", expr->id);
 	hook->reason = reason;
 	hook->approved = -1;
 }
@@ -1021,11 +1031,11 @@ void hook_doing_stats(hook_data_int *const data)
 
 	struct Expr *expr;
 	struct DictionaryIter state;
-	DICTIONARY_FOREACH(expr,&state,exprs)
+	DICTIONARY_FOREACH(expr, &state, exprs)
 	{
-		char comp_opts[128] = {0}, exec_opts[128] = {0};
-		strlcat_pcre_opts(expr->comp_opts,comp_opts,sizeof(comp_opts),str_pcre_opt);
-		strlcat_pcre_opts(expr->exec_opts,exec_opts,sizeof(exec_opts),str_pcre_opt);
+		char comp_opts[128] = {0}, match_opts[128] = {0};
+		strlcat_pcre_opts(expr->comp_opts, comp_opts, sizeof(comp_opts), str_pcre_comp);
+		strlcat_pcre_opts(expr->match_opts, match_opts, sizeof(match_opts), str_pcre_match);
 		sendto_one_numeric(data->client, RPL_STATSDEBUG,
 		                   "%c %u %lu %lu %s %s :%s",
 		                   statchar,
@@ -1033,7 +1043,7 @@ void hook_doing_stats(hook_data_int *const data)
 		                   expr->last,
 		                   expr->added,
 		                   strlen(comp_opts)? comp_opts : "*",
-		                   strlen(exec_opts)? exec_opts : "*",
+		                   strlen(match_opts)? match_opts : "*",
 		                   expr->pattern);
 	}
 }
@@ -1044,7 +1054,7 @@ void hook_server_introduced(hook_data_client *const data)
 {
 	if(data && data->target)
 	{
-		spamexpr_sync(data->target,data->target,0,NULL);
+		spamexpr_sync(data->target, data->target, 0,NULL);
 		sendto_server(&me, NULL, CAP_ENCAP, NOCAPS,
 		              ":%s ENCAP %s SPAMEXPR SYNC",
 		              me.id,
@@ -1102,8 +1112,8 @@ void set_parm_opts(const conf_parm_t *const val,
                    const char *const optname)
 {
 	for(const conf_parm_t *parm = val; parm; parm = parm->next)
-		if(!set_parm_opt(parm,dest,reflector))
-			conf_report_error("Unrecognized PCRE %s option: %s",optname,parm->v.string);
+		if(!set_parm_opt(parm, dest, reflector))
+			conf_report_error("Unrecognized PCRE %s option: %s", optname, parm->v.string);
 }
 
 
@@ -1111,6 +1121,7 @@ void set_parm_opts(const conf_parm_t *const val,
 static void set_conf_limit(void *const val)               { conf_limit = *(int *)val;               }
 static void set_conf_match_limit(void *const val)         { conf_match_limit = *(int *)val;         }
 static void set_conf_recursion_limit(void *const val)     { conf_recursion_limit = *(int *)val;     }
+static void set_conf_parens_nest_limit(void *const val)   { conf_parens_nest_limit = *(int *)val;   }
 static void set_conf_jit_stack_size(void *const val)      { conf_jit_stack_size = *(int *)val;      }
 static void set_conf_jit_stack_max_size(void *const val)  { conf_jit_stack_max_size = *(int *)val;  }
 
@@ -1118,21 +1129,21 @@ static
 void set_conf_compile_opts(void *const val)
 {
 	conf_compile_opts = 0;
-	set_parm_opts(val,&conf_compile_opts,reflect_pcre_opt,"compile");
+	set_parm_opts(val, &conf_compile_opts, reflect_pcre_comp, "compile");
 }
 
 static
-void set_conf_execute_opts(void *const val)
+void set_conf_match_opts(void *const val)
 {
-	conf_execute_opts = 0;
-	set_parm_opts(val,&conf_execute_opts,reflect_pcre_opt,"execute");
+	conf_match_opts = 0;
+	set_parm_opts(val, &conf_match_opts, reflect_pcre_match, "match");
 }
 
 static
-void set_conf_study_opts(void *const val)
+void set_conf_jit_opts(void *const val)
 {
-	conf_study_opts = 0;
-	set_parm_opts(val,&conf_study_opts,reflect_pcre_study,"study");
+	conf_jit_opts = 0;
+	set_parm_opts(val, &conf_jit_opts, reflect_pcre_jit, "jit");
 }
 
 
@@ -1145,27 +1156,27 @@ struct
 {
 	char pattern[BUFSIZE];
 	uint comp_opts;
-	uint exec_opts;
-	int stud_opts;
+	uint match_opts;
+	int jit_opts;
 }
 conf_spamexpr_cur;
 
 static
 void conf_spamexpr_comp_opts(void *const val)
 {
-	set_parm_opts(val,&conf_spamexpr_cur.comp_opts,reflect_pcre_opt,"compile");
+	set_parm_opts(val, &conf_spamexpr_cur.comp_opts, reflect_pcre_comp, "compile");
 }
 
 static
-void conf_spamexpr_exec_opts(void *const val)
+void conf_spamexpr_match_opts(void *const val)
 {
-	set_parm_opts(val,&conf_spamexpr_cur.exec_opts,reflect_pcre_opt,"execute");
+	set_parm_opts(val, &conf_spamexpr_cur.match_opts, reflect_pcre_match, "match");
 }
 
 static
-void conf_spamexpr_stud_opts(void *const val)
+void conf_spamexpr_jit_opts(void *const val)
 {
-	set_parm_opts(val,&conf_spamexpr_cur.stud_opts,reflect_pcre_study,"study");
+	set_parm_opts(val, &conf_spamexpr_cur.jit_opts, reflect_pcre_jit, "jit");
 }
 
 
@@ -1173,17 +1184,17 @@ static
 void conf_spamexpr_pattern(void *const val)
 {
 	const char *const pattern = val;
-	rb_strlcpy(conf_spamexpr_cur.pattern,pattern,sizeof(conf_spamexpr_cur.pattern));
+	rb_strlcpy(conf_spamexpr_cur.pattern, pattern, sizeof(conf_spamexpr_cur.pattern));
 }
 
 
 static
 int conf_spamexpr_start(struct TopConf *const tc)
 {
-	memset(&conf_spamexpr_cur,0x0,sizeof(conf_spamexpr_cur));
+	memset(&conf_spamexpr_cur, 0x0, sizeof(conf_spamexpr_cur));
 	conf_spamexpr_cur.comp_opts |= conf_compile_opts;
-	conf_spamexpr_cur.exec_opts |= conf_execute_opts;
-	conf_spamexpr_cur.stud_opts |= conf_study_opts;
+	conf_spamexpr_cur.match_opts |= conf_match_opts;
+	conf_spamexpr_cur.jit_opts |= conf_jit_opts;
 	return 0;
 }
 
@@ -1197,23 +1208,23 @@ int conf_spamexpr_end(struct TopConf *const tc)
 		return -1;
 	}
 
-	int erroff;
 	int errcode;
-	const char *errstr;
-	const unsigned char *const tableptr = NULL;
+	size_t erroff;
+	static char errbuf[BUFSIZE];
 	struct Expr *const expr = activate_new_expr(conf_spamexpr_cur.pattern,
 	                                            conf_spamexpr_cur.comp_opts,
-	                                            conf_spamexpr_cur.exec_opts,
-	                                            conf_spamexpr_cur.stud_opts,
+	                                            conf_spamexpr_cur.match_opts,
+	                                            conf_spamexpr_cur.jit_opts,
+	                                            NULL,
 	                                            &errcode,
-	                                            &errstr,
 	                                            &erroff,
-	                                            tableptr);
+	                                            errbuf,
+	                                            sizeof(errbuf));
 	if(!expr && errcode != EXPR_ERROR_EXISTS)
 		conf_report_error("Invalid spamexpr block (%d) @%d: %s.",
 			              errcode,
 			              erroff,
-			              errstr);
+			              errbuf);
 	return 0;
 }
 
@@ -1221,10 +1232,10 @@ int conf_spamexpr_end(struct TopConf *const tc)
 struct ConfEntry conf_spamexpr[] =
 {
 	{ "compile_opts",     CF_STRING | CF_FLIST,   conf_spamexpr_comp_opts,   0, NULL },
-	{ "execute_opts",     CF_STRING | CF_FLIST,   conf_spamexpr_exec_opts,   0, NULL },
-	{ "study_opts",       CF_STRING | CF_FLIST,   conf_spamexpr_stud_opts,   0, NULL },
+	{ "match_opts",       CF_STRING | CF_FLIST,   conf_spamexpr_match_opts,  0, NULL },
+	{ "jit_opts",         CF_STRING | CF_FLIST,   conf_spamexpr_jit_opts,    0, NULL },
 	{ "pattern",          CF_QSTRING,             conf_spamexpr_pattern,     0, NULL },
-	{ "\0", 0, NULL ,0, NULL }
+	{ "\0",               0,                      NULL,                      0, NULL }
 };
 
 
@@ -1233,12 +1244,12 @@ int conf_spamfilter_expr_end(struct TopConf *const tc)
 {
 	if(jstack)
 	{
-		pcre_jit_stack_free(jstack);
+		pcre2_jit_stack_free(jstack);
 		jstack = NULL;
 	}
 
 	if(conf_jit_stack_size && conf_jit_stack_max_size)
-		jstack = pcre_jit_stack_alloc(conf_jit_stack_size,conf_jit_stack_max_size);
+		jstack = pcre2_jit_stack_create(conf_jit_stack_size, conf_jit_stack_max_size, gctx);
 
 	return 0;
 }
@@ -1249,12 +1260,13 @@ struct ConfEntry conf_spamfilter_expr[] =
 	{ "limit",              CF_INT,                set_conf_limit,               0,  NULL },
 	{ "match_limit",        CF_INT,                set_conf_match_limit,         0,  NULL },
 	{ "recursion_limit",    CF_INT,                set_conf_recursion_limit,     0,  NULL },
+	{ "parens_nest_limit",  CF_INT,                set_conf_parens_nest_limit,   0,  NULL },
 	{ "jit_stack_size",     CF_INT,                set_conf_jit_stack_size,      0,  NULL },
 	{ "jit_stack_max_size", CF_INT,                set_conf_jit_stack_max_size,  0,  NULL },
 	{ "compile_opts",       CF_STRING | CF_FLIST,  set_conf_compile_opts,        0,  NULL },
-	{ "execute_opts",       CF_STRING | CF_FLIST,  set_conf_execute_opts,        0,  NULL },
-	{ "study_opts",         CF_STRING | CF_FLIST,  set_conf_study_opts,          0,  NULL },
-	{ "\0", 0, NULL ,0, NULL }
+	{ "match_opts",         CF_STRING | CF_FLIST,  set_conf_match_opts,          0,  NULL },
+	{ "jit_opts",           CF_STRING | CF_FLIST,  set_conf_jit_opts,            0,  NULL },
+	{ "\0",                 0,                     NULL,                         0,  NULL }
 };
 
 
@@ -1265,19 +1277,18 @@ struct ConfEntry conf_spamfilter_expr[] =
 static
 int modinit(void)
 {
-	exprs = irc_dictionary_create("exprs",exprs_comparator);
+	exprs = irc_dictionary_create("exprs", exprs_comparator);
+	gctx = pcre2_general_context_create(expr_malloc_cb, expr_free_cb, NULL);
 
 	/* Block for general configuration */
-	add_top_conf("spamfilter_expr",NULL,conf_spamfilter_expr_end,conf_spamfilter_expr);
+	add_top_conf("spamfilter_expr", NULL, conf_spamfilter_expr_end, conf_spamfilter_expr);
 
 	/* Block(s) for any expressions */
-	add_top_conf("spamexpr",conf_spamexpr_start,conf_spamexpr_end,conf_spamexpr);
+	add_top_conf("spamexpr", conf_spamexpr_start, conf_spamexpr_end, conf_spamexpr);
 
 	/* If the module was loaded but no rehash occurs, we still need action with the defaults */
 	conf_spamfilter_expr_end(NULL);
-
 	hook_server_introduced(NULL);
-
 	return 0;
 }
 
@@ -1286,11 +1297,12 @@ static
 void modfini(void)
 {
 	if(jstack)
-		pcre_jit_stack_free(jstack);
+		pcre2_jit_stack_free(jstack);
 
 	remove_top_conf("spamexpr");
 	remove_top_conf("spamfilter_expr");
-	irc_dictionary_destroy(exprs,exprs_destructor,NULL);
+	pcre2_general_context_free(gctx);
+	irc_dictionary_destroy(exprs, exprs_destructor, NULL);
 }
 
 

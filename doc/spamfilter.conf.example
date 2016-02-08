@@ -24,29 +24,26 @@ spamfilter_expr {
 	/* Maximum number of regular expressions allowed */
 	limit = 1024;
 
-	/* List of PCRE compile options added by default to all expressions.
-	 * See PCRE_COMPILE(3) for a complete list. You omit the PCRE_ prefix for this list. */
+	/* List of PCRE2 compile options added by default to all expressions.
+	 * See PCRE2_COMPILE(3) for a complete list. You omit the PCRE2_ prefix for this list. */
 	compile_opts = caseless;
 
-	/* List of PCRE execution options added by default to all expressions.
-	 * See PCRE_EXEC(3) for a complete list. You omit the PCRE_ prefix for this list. */
-	execute_opts = noteol, notbol;
+	/* List of PCRE2 match (execution) options added by default to all expressions.
+	 * See PCRE2_MATCH(3) for a complete list. You omit the PCRE2_ prefix for this list. */
+	match_opts = noteol, notbol;
 
-	/* List of PCRE study options added by default to all expressions.
-	 * See PCRE_STUDY(3) and PCREAPI(3) for details. It is recommended to retain at least
-	 * extra_needed to allow the match and recursion limits to be effective.
-	 * You omit the PCRE_STUDY_ prefix for this list. */
-	study_opts = extra_needed, jit_compile;
+	/* List of PCRE2 JIT options added by default to all expressions.
+	 * See PCRE2JIT(3) and PCRE2API(3) for details.
+	 * You omit the PCRE2_JIT_ prefix for this list. */
+	jit_opts = complete;
 
 	/*
 	 * You ought to know what you're doing with these.
 	 */
 
-	/* PCRE_EXTRA_MATCH_LIMIT in the pcre_extra structure */
 	match_limit = 512;
-
-	/* PCRE_EXTRA_MATCH_LIMIT_RECURSION in the pcre_extra structure */
 	recursion_limit = 512;
+	parens_nest_limit = 32;
 
 	/* The starting size of the allocated JIT stack. */
 	jit_stack_size = 262144;
@@ -67,7 +64,7 @@ spamexpr {
 
 	/* Compile options specific to this pattern. This is or'ed with the compile_opts
 	 * specified in the general spamfilter_expr block. The rules are the same. */
-	compile_opts = anchored, caseless;
+	compile_opts = caseless;
 };
 
 spamexpr {
@@ -81,6 +78,9 @@ spamexpr {
 spamfilter_nicks {
 	/* Number of nicknames in a message to trigger the nickspam filter. */
 	limit = 5;
+
+	/* Minimum length of a word considered a nickname candidate. */
+	nicklen_min = 4;
 
 	/* Size in bytes for the nickname bloom filter. */
 	bloom_size = 65536;
