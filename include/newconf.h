@@ -61,7 +61,7 @@ typedef struct conf_parm_t_stru
 conf_parm_t;
 
 extern struct TopConf *conf_cur_block;
-
+extern char *conf_cur_block_name;
 extern char *current_file;
 
 int read_config(char *);

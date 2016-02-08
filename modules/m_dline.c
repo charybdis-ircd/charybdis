@@ -84,12 +84,6 @@ mo_dline(struct Client *client_p, struct Client *source_p, int parc, const char 
 	const char *target_server = NULL;
 	int loc = 1;
 
-	if(!IsOperK(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "kline");
-		return 0;
-	}
-
 	if((tdline_time = valid_temp_time(parv[loc])) >= 0)
 		loc++;
 
@@ -106,10 +100,10 @@ mo_dline(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	if(parc >= loc + 2 && !irccmp(parv[loc], "ON"))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "DLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "DLINE:remote");
 			return 0;
 		}
 
@@ -147,20 +141,14 @@ mo_undline(struct Client *client_p, struct Client *source_p, int parc, const cha
 	const char *cidr;
 	const char *target_server = NULL;
 
-	if(!IsOperK(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "unkline");
-		return 0;
-	}
-
 	cidr = parv[1];
 
 	if(parc >= 4 && !irccmp(parv[2], "ON"))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "UNDLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "UNDLINE:remote");
 			return 0;
 		}
 
@@ -237,7 +225,7 @@ apply_dline(struct Client *source_p, const char *dlhost, int tdline_time, char *
 		t = AF_INET;
 
 	/* This means dlines wider than /16 cannot be set remotely */
-	if(IsOperAdmin(source_p))
+	if(OperCan(source_p, "DLINE", "local"))
 	{
 		if(b < 8)
 		{

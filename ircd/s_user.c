@@ -99,7 +99,7 @@ int user_modes[256] = {
 	0,			/* b */
 	0,			/* c */
 	0,			/* d */
-	0,			/* e */
+	UMODE_EXEMPT,		/* e */
 	0,			/* f */
 	UMODE_CALLERID,		/* g */
 	0,			/* h */
@@ -417,7 +417,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	}
 
 	/* kline exemption extends to xline too */
-	if(!IsExemptKline(source_p) &&
+	if(!IsExempt(source_p, EX_KLINE) &&
 	   (xconf = find_xline(source_p->info, 1)) != NULL)
 	{
 		ServerStats.is_ref++;
@@ -429,7 +429,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	/* dnsbl check */
 	if (source_p->preClient->dnsbl_listed != NULL)
 	{
-		if (IsExemptKline(source_p) || IsConfExemptDNSBL(aconf))
+		if (IsExempt(source_p, EX_KLINE) || IsConfExemptDNSBL(aconf))
 			sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s, but you are exempt",
 					source_p->sockhost, source_p->preClient->dnsbl_listed->host);
 		else
@@ -824,7 +824,7 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 	/* If this user is in the exception class, Set it "E lined" */
 	if(IsConfExemptKline(aconf))
 	{
-		SetExemptKline(source_p);
+		SetExempt(source_p, EX_KLINE);
 		sendto_one_notice(source_p, ":*** You are exempt from K/X lines");
 	}
 
@@ -841,37 +841,37 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 
 	if(IsConfExemptFlood(aconf))
 	{
-		SetExemptFlood(source_p);
+		SetExempt(source_p, EX_FLOOD);
 		sendto_one_notice(source_p, ":*** You are exempt from flood limits");
 	}
 
 	if(IsConfExemptSpambot(aconf))
 	{
-		SetExemptSpambot(source_p);
-		sendto_one_notice(source_p, ":*** You are exempt from spambot checks");
+		SetExempt(source_p, EX_SPAM);
+		sendto_one_notice(source_p, ":*** You are exempt from spam checks");
 	}
 
 	if(IsConfExemptJupe(aconf))
 	{
-		SetExemptJupe(source_p);
+		SetExempt(source_p, EX_JUPE);
 		sendto_one_notice(source_p, ":*** You are exempt from juped channel warnings");
 	}
 
 	if(IsConfExemptResv(aconf))
 	{
-		SetExemptResv(source_p);
+		SetExempt(source_p, EX_RESV);
 		sendto_one_notice(source_p, ":*** You are exempt from resvs");
 	}
 
 	if(IsConfExemptShide(aconf))
 	{
-		SetExemptShide(source_p);
+		SetExempt(source_p, EX_SHIDE);
 		sendto_one_notice(source_p, ":*** You are exempt from serverhiding");
 	}
 
 	if(IsConfExtendChans(aconf))
 	{
-		SetExtendChans(source_p);
+		SetExempt(source_p, EX_EXTENDCHANS);
 		sendto_one_notice(source_p, ":*** You are exempt from normal channel limits");
 	}
 }
@@ -900,6 +900,96 @@ show_other_user_mode(struct Client *source_p, struct Client *target_p)
 				target_p->name, buf);
 }
 
+static
+int user_mode_case_s(struct Client *source_p, int parc, const char *parv[], const int what)
+{
+	if(what == MODE_ADD)
+	{
+		if(ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE && !OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, 's'))
+			return 0;
+
+		if(parc > 3)
+			source_p->snomask = parse_snobuf_to_mask(source_p->snomask, parv[3]);
+		else
+			source_p->snomask |= SNO_GENERAL;
+	}
+	else if(what == MODE_DEL)
+		source_p->snomask = 0;
+
+	/* Make an explicit pass to correct the flags based on the role access. */
+	if(ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE)
+	{
+		char *const buf = construct_snobuf(source_p->snomask);
+		for(size_t i = 0; i < strlen(buf); i++)
+			if(!OperMode(source_p, ROLE_SNO, ROLE_AVAIL, buf[i]))
+				source_p->snomask &= ~snomask_modes[(uint8_t)buf[i]];
+
+		for(size_t i = 0; i < 128; i++)
+			if(OperMode(source_p, ROLE_SNO, ROLE_LOCKED, (char)i))
+				source_p->snomask |= snomask_modes[i];
+	}
+
+	/* The umode is only indicated if something is enabled */
+	if(source_p->snomask != 0)
+		source_p->umodes |= UMODE_SERVNOTICE;
+	else
+		source_p->umodes &= ~UMODE_SERVNOTICE;
+
+	return 1;
+}
+
+static
+int user_mode_case_e(struct Client *source_p, int parc, const char *parv[], const int what)
+{
+	if(what == MODE_ADD)
+	{
+		if(ConfigFileEntry.oper_only_umodes & UMODE_EXEMPT && !OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, 'e'))
+			return 0;
+
+		if(parc > 3)
+			source_p->exmask = exmask_to_mask(source_p->exmask, parv[3]);
+	}
+	else if(what == MODE_DEL)
+		source_p->exmask = 0;
+
+	/* Make an explicit pass to correct the flags based on the role access. */
+	if(ConfigFileEntry.oper_only_umodes & UMODE_EXEMPT)
+		for(uint i = 1; i; i <<= 1)
+			if(source_p->exmask & i && !OperMode(source_p, ROLE_EXEMPT, ROLE_AVAIL, exmask_to_mode(i)))
+				source_p->exmask &= ~i;
+			else if(~source_p->exmask & i && OperMode(source_p, ROLE_EXEMPT, ROLE_LOCKED, exmask_to_mode(i)))
+				source_p->exmask |= i;
+
+	/* The umode is only indicated if something is enabled */
+	if(source_p->exmask != 0)
+		source_p->umodes |= UMODE_EXEMPT;
+	else
+		source_p->umodes &= ~UMODE_EXEMPT;
+
+	return 1;
+}
+
+static
+int user_mode_case_default(struct Client *source_p, const int what, const int umode, const char ch)
+{
+	if(what == MODE_ADD)
+	{
+		if(ConfigFileEntry.oper_only_umodes & umode && !OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, ch))
+			return 0;
+
+		source_p->umodes |= umode;
+	}
+	else if(what == MODE_DEL)
+	{
+		if(ConfigFileEntry.oper_only_umodes & umode && OperMode(source_p, ROLE_UMODE, ROLE_LOCKED, ch))
+			return 0;
+
+		source_p->umodes &= ~umode;
+	}
+
+	return 1;
+}
+
 /*
  * user_mode - set get current users mode
  *
@@ -917,7 +1007,9 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	struct Client *target_p;
 	int what, setflags;
 	int badflag = NO;	/* Only send one bad flag notice */
+	int deniedflag = NO;	/* More informative than badflag */
 	int showsnomask = NO;
+	int showexmask = NO;
 	unsigned int setsnomask;
 	char buf[BUFSIZE];
 	hook_data_umode_changed hdata;
@@ -985,6 +1077,7 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	 * parse mode change string(s)
 	 */
 	for (pm = parv[2]; *pm; pm++)
+	{
 		switch (*pm)
 		{
 		case '+':
@@ -992,6 +1085,15 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 			break;
 		case '-':
 			what = MODE_DEL;
+			break;
+
+		/* can only be set on burst */
+		case 'S':
+		case 'Z':
+		case ' ':
+		case '\n':
+		case '\r':
+		case '\t':
 			break;
 
 		case 'o':
@@ -1002,7 +1104,12 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 					++Count.oper;
 					SetOper(source_p);
 					rb_dlinkAddAlloc(source_p, &oper_list);
+					// For backwards compat, +e is tied to +o and fully masked
+					source_p->exmask = -1;
+					source_p->umodes |= UMODE_EXEMPT;
 				}
+				else if(MyConnect(source_p) && !IsOper(source_p))
+					deniedflag = YES;
 			}
 			else
 			{
@@ -1025,76 +1132,80 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 						source_p->snomask = 0;
 						showsnomask = YES;
 					}
-					source_p->flags2 &= ~OPER_FLAGS;
+
+					if (!(source_p->umodes & UMODE_EXEMPT) && source_p->exmask != 0)
+					{
+						source_p->exmask = 0;
+						showexmask = YES;
+					}
 
 					rb_free(source_p->localClient->opername);
 					source_p->localClient->opername = NULL;
 
 					rb_dlinkFindDestroy(source_p, &local_oper_list);
-					privilegeset_unref(source_p->localClient->privset);
-					source_p->localClient->privset = NULL;
+					source_p->localClient->role = NULL;
+				}
+				else
+				{
+					// For backwards compat, -o is tied to -e here
+					source_p->exmask = 0;
+					source_p->umodes &= ~UMODE_EXEMPT;
 				}
 
 				rb_dlinkFindDestroy(source_p, &oper_list);
 			}
 			break;
 
-			/* we may not get these,
-			 * but they shouldnt be in default
-			 */
+		case 'e':
+			if(MyConnect(source_p))
+			{
+				if(user_mode_case_e(source_p, parc, parv, what))
+					showexmask = YES;
+				else
+					deniedflag = YES;
+			}
+			else if(what == MODE_ADD)
+			{
+				// Without umode parameters in the server protocol, remote +e is all-on.
+				source_p->exmask = -1;
+				source_p->umodes |= UMODE_EXEMPT;
+			}
+			else if(what == MODE_DEL)
+			{
+				// Without umode parameters in the server protocol, remote -e is all-off.
+				source_p->exmask = 0;
+				source_p->umodes &= ~UMODE_EXEMPT;
+			}
+			break;
 
-		/* can only be set on burst */
-		case 'S':
-		case 'Z':
-		case ' ':
-		case '\n':
-		case '\r':
-		case '\t':
+		case 'Q':
+			if(what == MODE_ADD && ConfigChannel.use_forward)
+				source_p->umodes |= UMODE_NOFORWARD;
+			else if(what == MODE_DEL)
+				source_p->umodes &= ~UMODE_NOFORWARD;
+			else if(MyConnect(source_p))
+				badflag = YES;
 			break;
 
 		case 's':
-			if (MyConnect(source_p))
+			if(MyConnect(source_p))
 			{
-				if(!IsOper(source_p)
-						&& (ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE))
-				{
-					if (what == MODE_ADD || source_p->umodes & UMODE_SERVNOTICE)
-						badflag = YES;
-					continue;
-				}
-				showsnomask = YES;
-				if(what == MODE_ADD)
-				{
-					if (parc > 3)
-						source_p->snomask = parse_snobuf_to_mask(source_p->snomask, parv[3]);
-					else
-						source_p->snomask |= SNO_GENERAL;
-				}
+				if(user_mode_case_s(source_p, parc, parv, what))
+					showsnomask = YES;
 				else
-					source_p->snomask = 0;
-				if (source_p->snomask != 0)
-					source_p->umodes |= UMODE_SERVNOTICE;
-				else
-					source_p->umodes &= ~UMODE_SERVNOTICE;
-				break;
+					deniedflag = YES;
 			}
-			/* FALLTHROUGH */
-		default:
-			if (MyConnect(source_p) && *pm == 'Q' && !ConfigChannel.use_forward)
-			{
-				badflag = YES;
-				break;
-			}
+			break;
 
+		default:
 			if((flag = user_modes[(unsigned char) *pm]))
 			{
-				if(MyConnect(source_p)
-						&& ((!IsOper(source_p)
-							&& (ConfigFileEntry.oper_only_umodes & flag))
-						|| (orphaned_umodes & flag)))
+				if(MyConnect(source_p))
 				{
-					if (what == MODE_ADD || source_p->umodes & flag)
+					if((orphaned_umodes & flag) && (what == MODE_ADD || source_p->umodes & flag))
 						badflag = YES;
+					else if(!user_mode_case_default(source_p, what, flag, *pm))
+						deniedflag = YES;
 				}
 				else
 				{
@@ -1104,35 +1215,17 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 						source_p->umodes &= ~flag;
 				}
 			}
-			else
-			{
-				if(MyConnect(source_p))
-					badflag = YES;
-			}
+			else if(MyConnect(source_p))
+				badflag = YES;
 			break;
 		}
+	}
 
 	if(badflag)
 		sendto_one(source_p, form_str(ERR_UMODEUNKNOWNFLAG), me.name, source_p->name);
 
-	if(MyClient(source_p) && (source_p->snomask & SNO_NCHANGE) && !IsOperN(source_p))
-	{
-		sendto_one_notice(source_p, ":*** You need oper and nick_changes flag for +s +n");
-		source_p->snomask &= ~SNO_NCHANGE;	/* only tcm's really need this */
-	}
-
-	if(MyClient(source_p) && (source_p->umodes & UMODE_OPERWALL) && !IsOperOperwall(source_p))
-	{
-		sendto_one_notice(source_p, ":*** You need oper and operwall flag for +z");
-		source_p->umodes &= ~UMODE_OPERWALL;
-	}
-
-	if(MyConnect(source_p) && (source_p->umodes & UMODE_ADMIN) &&
-	   (!IsOperAdmin(source_p) || IsOperHiddenAdmin(source_p)))
-	{
-		sendto_one_notice(source_p, ":*** You need oper and admin flag for +a");
-		source_p->umodes &= ~UMODE_ADMIN;
-	}
+	if(deniedflag)
+		sendto_one(source_p, form_str(ERR_NOPRIVILEGES));
 
 	/* let modules providing usermodes know that we've changed our usermode --nenolod */
 	hdata.client = source_p;
@@ -1152,6 +1245,10 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	if (showsnomask && MyConnect(source_p))
 		sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK),
 			construct_snobuf(source_p->snomask));
+
+	if (showexmask && MyConnect(source_p))
+		sendto_one_numeric(source_p, RPL_EXMASK, form_str(RPL_EXMASK),
+			exmask_to_modes(source_p->exmask));
 
 	return (0);
 }
@@ -1287,71 +1384,53 @@ user_welcome(struct Client *source_p)
 int
 oper_up(struct Client *source_p, struct oper_conf *oper_p)
 {
-	unsigned int old = source_p->umodes, oldsnomask = source_p->snomask;
 	hook_data_umode_changed hdata;
+	hdata.client = source_p;
+	const uint oldumodes = hdata.oldumodes = source_p->umodes;
+	const uint oldsnomask = hdata.oldsnomask = source_p->snomask;
 
-	SetOper(source_p);
-
-	if(oper_p->umodes)
-		source_p->umodes |= oper_p->umodes;
-	else if(ConfigFileEntry.oper_umodes)
-		source_p->umodes |= ConfigFileEntry.oper_umodes;
-	else
-		source_p->umodes |= DEFAULT_OPER_UMODES;
-
-	if (oper_p->snomask)
-	{
-		source_p->snomask |= oper_p->snomask;
-		source_p->umodes |= UMODE_SERVNOTICE;
-	}
-	else if (source_p->umodes & UMODE_SERVNOTICE)
-	{
-		/* Only apply these if +s is already set -- jilles */
-		if (ConfigFileEntry.oper_snomask)
-			source_p->snomask |= ConfigFileEntry.oper_snomask;
-		else
-			source_p->snomask |= DEFAULT_OPER_SNOMASK;
-	}
-
-	Count.oper++;
-
-	SetExtendChans(source_p);
-	SetExemptKline(source_p);
-
-	source_p->flags2 |= oper_p->flags;
+	struct Role *const role = oper_p->role;
+	source_p->localClient->role = role;
 	source_p->localClient->opername = rb_strdup(oper_p->name);
-	source_p->localClient->privset = privilegeset_ref(oper_p->privset);
 
+	/* Set the role's default modes and forced modes */
+	source_p->snomask = parse_snobuf_to_mask(0,role->mode[ROLE_SNO][ROLE_DEFAULT]);
+	source_p->snomask |= parse_snobuf_to_mask(0,role->mode[ROLE_SNO][ROLE_LOCKED]);
+	source_p->exmask = exmask_to_mask(0,role->mode[ROLE_EXEMPT][ROLE_DEFAULT]);
+	source_p->exmask |= exmask_to_mask(0,role->mode[ROLE_EXEMPT][ROLE_LOCKED]);
+	for(uint i = 0; i < 128; i++)
+		if((OperMode(source_p, ROLE_UMODE, ROLE_DEFAULT, (char)i)) ||
+		   (OperMode(source_p, ROLE_UMODE, ROLE_LOCKED, (char)i)))
+			source_p->umodes |= user_modes[i];
+
+	/* Consider oper'ed */
+	SetOper(source_p);
+	Count.oper++;
 	rb_dlinkAddAlloc(source_p, &local_oper_list);
 	rb_dlinkAddAlloc(source_p, &oper_list);
 
-	if(IsOperAdmin(source_p) && !IsOperHiddenAdmin(source_p))
-		source_p->umodes |= UMODE_ADMIN;
-	if(!IsOperN(source_p))
-		source_p->snomask &= ~SNO_NCHANGE;
-	if(!IsOperOperwall(source_p))
-		source_p->umodes &= ~UMODE_OPERWALL;
-	hdata.client = source_p;
-	hdata.oldumodes = old;
-	hdata.oldsnomask = oldsnomask;
 	call_hook(h_umode_changed, &hdata);
 
-	sendto_realops_snomask(SNO_GENERAL, L_ALL,
-			     "%s (%s!%s@%s) is now an operator", oper_p->name, source_p->name,
-			     source_p->username, source_p->host);
-	if(!(old & UMODE_INVISIBLE) && IsInvisible(source_p))
+	if(!(oldumodes & UMODE_INVISIBLE) && IsInvisible(source_p))
 		++Count.invisi;
-	if((old & UMODE_INVISIBLE) && !IsInvisible(source_p))
+	if((oldumodes & UMODE_INVISIBLE) && !IsInvisible(source_p))
 		--Count.invisi;
-	send_umode_out(source_p, source_p, old);
-	sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK),
-		   construct_snobuf(source_p->snomask));
-	sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
-	sendto_one_notice(source_p, ":*** Oper privilege set is %s", oper_p->privset->name);
-	sendto_one_notice(source_p, ":*** Oper privs are %s", oper_p->privset->privs);
-	send_oper_motd(source_p);
 
-	return (1);
+	/* Announcements */
+	sendto_realops_snomask(SNO_GENERAL, L_ALL, "%s (%s!%s@%s) is now an operator with the role of %s.",
+	                       oper_p->name,
+	                       source_p->name,
+	                       source_p->username,
+	                       source_p->host,
+	                       role->name);
+
+	send_umode_out(source_p, source_p, oldumodes);
+	sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
+	sendto_one_numeric(source_p, RPL_SNOMASK, form_str(RPL_SNOMASK), construct_snobuf(source_p->snomask));
+	sendto_one_numeric(source_p, RPL_EXMASK, form_str(RPL_EXMASK), exmask_to_modes(source_p->exmask));
+	sendto_one_notice(source_p, ":*** Your role as an operator is %s.", oper_p->role->name);
+	send_oper_motd(source_p);
+	return 1;
 }
 
 /*

@@ -96,7 +96,7 @@ mapi_hfn_list_av1 services_hfnlist[] = {
 	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV1(services, _modinit, _moddeinit, services_clist, NULL, services_hfnlist, "$Revision: 1907 $");
+DECLARE_MODULE_AV1(services, _modinit, _moddeinit, services_clist, NULL, services_hfnlist, "$Revision: 1908 $");
 
 static int
 _modinit(void)
@@ -341,7 +341,7 @@ h_svc_stats(hook_data_int *data)
 	char statchar = (char) data->arg2;
 	rb_dlink_node *ptr;
 
-	if (statchar == 'U' && IsOper(data->client))
+	if (statchar == 'U' && OperCanStat(data->client, 'U'))
 	{
 		RB_DLINK_FOREACH(ptr, service_list.head)
 		{

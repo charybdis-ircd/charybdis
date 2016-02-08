@@ -46,7 +46,7 @@ struct Message findforwards_msgtab = {
 
 mapi_clist_av1 findforwards_clist[] = { &findforwards_msgtab, NULL };
 
-DECLARE_MODULE_AV1(findforwards, NULL, NULL, findforwards_clist, NULL, NULL, "$Revision: 986 $");
+DECLARE_MODULE_AV1(findforwards, NULL, NULL, findforwards_clist, NULL, NULL, "$Revision: 987 $");
 
 /*
 ** mo_findforwards
@@ -64,7 +64,7 @@ m_findforwards(struct Client *client_p, struct Client *source_p, int parc, const
 	*p = '\0';
 
 	/* Allow ircops to search for forwards to nonexistent channels */
-	if(!IsOper(source_p))
+	if(!OperCan(source_p, "FINDFORWARDS"))
 	{
 		if((chptr = find_channel(parv[1])) == NULL || (msptr = find_channel_membership(chptr, source_p)) == NULL)
 		{

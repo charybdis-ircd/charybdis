@@ -47,7 +47,6 @@
 #include "reject.h"
 #include "cache.h"
 #include "blacklist.h"
-#include "privilege.h"
 #include "sslproc.h"
 #include "bandbi.h"
 #include "operhash.h"
@@ -768,10 +767,7 @@ set_default_conf(void)
 	ConfigFileEntry.compression_level = 4;
 #endif
 
-	ConfigFileEntry.oper_umodes = UMODE_LOCOPS | UMODE_SERVNOTICE |
-		UMODE_OPERWALL | UMODE_WALLOP;
-	ConfigFileEntry.oper_only_umodes = UMODE_SERVNOTICE;
-	ConfigFileEntry.oper_snomask = SNO_GENERAL;
+	ConfigFileEntry.oper_only_umodes = UMODE_SERVNOTICE | UMODE_EXEMPT;
 
 	ConfigChannel.use_except = YES;
 	ConfigChannel.use_invex = YES;
@@ -851,8 +847,6 @@ read_conf(void)
 	yyparse();		/* Load the values from the conf */
 	validate_conf();	/* Check to make sure some values are still okay. */
 	/* Some global values are also loaded here. */
-	check_class();		/* Make sure classes are valid */
-	privilegeset_delete_all_illegal();
 	chmode_init();
 }
 
@@ -1351,7 +1345,7 @@ get_printable_kline(struct Client *source_p, struct ConfItem *aconf,
 	*user = EmptyString(aconf->user) ? null : aconf->user;
 	*reason = get_user_ban_reason(aconf);
 
-	if(!IsOper(source_p))
+	if(!OperCanStat(source_p, 'K'))
 		*oper_reason = NULL;
 	else
 	{
@@ -1539,8 +1533,6 @@ clear_out_old_conf(void)
 	}
 
 	destroy_blacklists();
-
-	privilegeset_mark_all_illegal();
 
 	/* OK, that should be everything... */
 }

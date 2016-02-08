@@ -86,12 +86,6 @@ mo_resv(struct Client *client_p, struct Client *source_p, int parc, const char *
 	int loc = 1;
 	int propagated = ConfigFileEntry.use_propagated_bans;
 
-	if(!IsOperResv(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "resv");
-		return 0;
-	}
-
 	/* RESV [time] <name> [ON <server>] :<reason> */
 
 	if((temp_time = valid_temp_time(parv[loc])) >= 0)
@@ -105,10 +99,10 @@ mo_resv(struct Client *client_p, struct Client *source_p, int parc, const char *
 
 	if((parc >= loc + 2) && (irccmp(parv[loc], "ON") == 0))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "RESV", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "RESV:remote");
 			return 0;
 		}
 
@@ -427,18 +421,12 @@ mo_unresv(struct Client *client_p, struct Client *source_p, int parc, const char
 {
 	int propagated = 1;
 
-	if(!IsOperResv(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "resv");
-		return 0;
-	}
-
 	if((parc == 4) && (irccmp(parv[2], "ON") == 0))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "UNRESV", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "UNRESV.remote");
 			return 0;
 		}
 

@@ -40,7 +40,7 @@
 #include "parse.h"
 #include "modules.h"
 #include "packet.h"
-#include "s_newconf.h"
+#include "role.h"
 
 static int m_mode(struct Client *, struct Client *, int, const char **);
 static int ms_mode(struct Client *, struct Client *, int, const char **);
@@ -67,7 +67,7 @@ struct Message bmask_msgtab = {
 
 mapi_clist_av1 mode_clist[] = { &mode_msgtab, &tmode_msgtab, &mlock_msgtab, &bmask_msgtab, NULL };
 
-DECLARE_MODULE_AV1(mode, NULL, NULL, mode_clist, NULL, NULL, "$Revision: 1006 $");
+DECLARE_MODULE_AV1(mode, NULL, NULL, mode_clist, NULL, NULL, "$Revision: 1007 $");
 
 /*
  * m_mode - MODE command handler
@@ -84,7 +84,7 @@ m_mode(struct Client *client_p, struct Client *source_p, int parc, const char *p
 
 	dest = parv[1];
 
-	if(IsOperSpy(source_p) && *dest == '!')
+	if(*dest == '!' && OperCan(source_p, "MODE", "spy"))
 	{
 		dest++;
 		operspy = 1;

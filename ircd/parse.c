@@ -42,6 +42,7 @@
 #include "s_serv.h"
 #include "packet.h"
 #include "s_assert.h"
+#include "role.h"
 
 static struct Dictionary *cmd_dict = NULL;
 struct Dictionary *alias_dict = NULL;
@@ -347,7 +348,12 @@ handle_command(struct Message *mptr, struct Client *client_p,
 			return (1);
 	}
 
-	ehandler = mptr->handlers[from->handler];
+	/* Fine-grained access control check.
+	 * If an operator lacks access they get the user handlers like everyone else. */
+	unsigned char hidx = rb_likely(from->handler != OPER_HANDLER || OperCan(from, mptr->cmd))? from->handler:
+	                     MyConnect(from)? CLIENT_HANDLER : RCLIENT_HANDLER;
+
+	ehandler = mptr->handlers[hidx];
 	handler = ehandler.handler;
 
 	/* check right amount of params is passed... --is */
@@ -731,7 +737,14 @@ static void do_alias(struct alias_entry *aptr, struct Client *source_p, char *te
 int
 m_not_oper(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	sendto_one_numeric(source_p, ERR_NOPRIVILEGES, form_str(ERR_NOPRIVILEGES));
+	/* With fine-grained access controls, an operator lacking sufficient privilege gets
+	 * directed to a user handler, like this one. Send them the more appropriate err. */
+
+	if(IsOper(source_p))
+		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, para[0]);
+	else
+		sendto_one_numeric(source_p, ERR_NOPRIVILEGES, form_str(ERR_NOPRIVILEGES));
+
 	return 0;
 }
 

@@ -83,7 +83,7 @@ mapi_hfn_list_av1 list_hfnlist[] = {
 	{NULL, NULL}
 };
 
-DECLARE_MODULE_AV1(list, _modinit, _moddeinit, list_clist, NULL, list_hfnlist, "$Revision: 3372 $");
+DECLARE_MODULE_AV1(list, _modinit, _moddeinit, list_clist, NULL, list_hfnlist, "$Revision: 3373 $");
 
 static struct ev_entry *iterate_clients_ev = NULL;
 
@@ -180,7 +180,7 @@ static int mo_list(struct Client *client_p, struct Client *source_p, int parc, c
 		args = LOCAL_COPY(parv[1]);
 	}
 
-	if (args && *args == '!' && IsOperSpy(source_p))
+	if (args && *args == '!' && OperCan(source_p, "LIST", "spy"))
 	{
 		args++;
 		report_operspy(source_p, "LIST", args);

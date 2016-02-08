@@ -65,7 +65,6 @@
 #include "serno.h"
 #include "sslproc.h"
 #include "chmode.h"
-#include "privilege.h"
 #include "bandbi.h"
 #include "authd.h"
 #include "operhash.h"
@@ -642,7 +641,9 @@ charybdis_main(int argc, char *argv[])
 	default_server_capabs = CAP_MASK;
 
 	init_main_logfile();
+	init_hook();
 	newconf_init();
+	role_init();
 	init_s_conf();
 	init_s_newconf();
 	init_hash();
@@ -650,7 +651,6 @@ charybdis_main(int argc, char *argv[])
 	init_host_hash();
 	clear_hash_parse();
 	init_client();
-	init_hook();
 	init_channels();
 	initclass();
 	whowas_init();
@@ -664,7 +664,6 @@ charybdis_main(int argc, char *argv[])
 
 	init_auth();		/* Initialise the auth code */
 	init_authd();		/* Start up authd. */
-	privilegeset_set_new("default", "", 0);
 
 	if (testing_conf)
 		fprintf(stderr, "\nBeginning config test\n");

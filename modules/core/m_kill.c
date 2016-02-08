@@ -60,7 +60,7 @@ mapi_hlist_av1 kill_hlist[] = {
 	{ NULL, NULL},
 };
 
-DECLARE_MODULE_AV1(kill, NULL, NULL, kill_clist, kill_hlist, NULL, "$Revision: 3408 $");
+DECLARE_MODULE_AV1(kill, NULL, NULL, kill_clist, kill_hlist, NULL, "$Revision: 3409 $");
 
 /*
 ** mo_kill
@@ -77,12 +77,6 @@ mo_kill(struct Client *client_p, struct Client *source_p, int parc, const char *
 	hook_data_client_approval moduledata;
 
 	user = parv[1];
-
-	if(!IsOperLocalKill(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "local_kill");
-		return 0;
-	}
 
 	if(!EmptyString(parv[2]))
 	{
@@ -114,11 +108,9 @@ mo_kill(struct Client *client_p, struct Client *source_p, int parc, const char *
 		sendto_one_notice(source_p, ":KILL changed from %s to %s", user, target_p->name);
 	}
 
-	if(!MyConnect(target_p) && (!IsOperGlobalKill(source_p)))
+	if(!MyConnect(target_p) && !OperCan(source_p, "KILL", "remote"))
 	{
-		sendto_one_notice(source_p, ":Nick %s is not on your server "
-				            "and you do not have the global_kill flag",
-				target_p->name);
+		sendto_one_notice(source_p, ":Nick %s is not on your server and you cannot kill remotely.", target_p->name);
 		return 0;
 	}
 

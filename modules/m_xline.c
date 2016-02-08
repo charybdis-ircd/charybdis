@@ -110,12 +110,6 @@ mo_xline(struct Client *client_p, struct Client *source_p, int parc, const char 
 	int loc = 1;
 	int propagated = ConfigFileEntry.use_propagated_bans;
 
-	if(!IsOperXline(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "xline");
-		return 0;
-	}
-
 	if((temp_time = valid_temp_time(parv[loc])) >= 0)
 		loc++;
 	/* we just set temp_time to -1! */
@@ -128,10 +122,10 @@ mo_xline(struct Client *client_p, struct Client *source_p, int parc, const char 
 	/* XLINE <gecos> ON <server> :<reason> */
 	if(parc >= loc + 2 && !irccmp(parv[loc], "ON"))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "XLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "XLINE:remote");
 			return 0;
 		}
 
@@ -392,18 +386,12 @@ mo_unxline(struct Client *client_p, struct Client *source_p, int parc, const cha
 {
 	int propagated = 1;
 
-	if(!IsOperXline(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "xline");
-		return 0;
-	}
-
 	if(parc == 4 && !(irccmp(parv[2], "ON")))
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "UNXLINE", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remoteban");
+				   me.name, source_p->name, "UNXLINE:remote");
 			return 0;
 		}
 

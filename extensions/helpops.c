@@ -13,6 +13,7 @@
 #include "s_user.h"
 #include "s_newconf.h"
 #include "numeric.h"
+#include "role.h"
 
 static rb_dlink_list helper_list = { NULL, NULL, 0 };
 static void h_hdl_stats_request(hook_data_int *hdata);
@@ -46,12 +47,6 @@ mapi_clist_av1 helpops_clist[] = { &dehelper_msgtab, NULL };
 static int mo_dehelper(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
 	struct Client *target_p;
-
-	if (!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "admin");
-		return 0;
-	}
 
 	if(!(target_p = find_named_person(parv[1])))
 	{
@@ -175,10 +170,10 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 
 	if (source_p->umodes & UMODE_HELPOPS)
 	{
-		if (MyClient(source_p) && !HasPrivilege(source_p, "usermode:helpops"))
+		if (MyClient(source_p) && !OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, 'H'))
 		{
 			source_p->umodes &= ~UMODE_HELPOPS;
-			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "usermode:helpops");
+			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "umode+H");
 			return;
 		}
 

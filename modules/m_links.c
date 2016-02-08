@@ -32,6 +32,7 @@
 #include "s_serv.h"
 #include "send.h"
 #include "s_conf.h"
+#include "s_newconf.h"
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
@@ -68,7 +69,7 @@ DECLARE_MODULE_AV1(links, NULL, NULL, links_clist, links_hlist, NULL, "$Revision
 static int
 m_links(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	if(ConfigServerHide.flatten_links && !IsExemptShide(source_p))
+	if(ConfigServerHide.flatten_links && !IsExempt(source_p, EX_SHIDE))
 		scache_send_flattened_links(source_p);
 	else
 		mo_links(client_p, source_p, parc, parv);

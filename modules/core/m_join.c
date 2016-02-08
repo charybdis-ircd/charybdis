@@ -185,13 +185,13 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 		}
 
 		/* see if its resv'd */
-		if(!IsExemptResv(source_p) && (aconf = hash_find_resv(name)))
+		if(!IsExempt(source_p, EX_RESV) && (aconf = hash_find_resv(name)))
 		{
 			sendto_one_numeric(source_p, ERR_BADCHANNAME,
 					   form_str(ERR_BADCHANNAME), name);
 
 			/* dont warn for opers */
-			if(!IsExemptJupe(source_p) && !IsOper(source_p))
+			if(!IsExempt(source_p, EX_JUPE) && !IsOper(source_p))
 				sendto_realops_snomask(SNO_SPY, L_NETWIDE,
 						     "User %s (%s@%s) is attempting to join locally juped channel %s (%s)",
 						     source_p->name, source_p->username,
@@ -199,13 +199,13 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 			/* dont update tracking for jupe exempt users, these
 			 * are likely to be spamtrap leaves
 			 */
-			else if(IsExemptJupe(source_p))
+			else if(IsExempt(source_p, EX_JUPE))
 				aconf->port--;
 
 			continue;
 		}
 
-		if(splitmode && !IsOper(source_p) && (*name != '&') &&
+		if(splitmode && !IsExempt(source_p, EX_JOINSPLIT) && (*name != '&') &&
 		   ConfigChannel.no_join_on_split)
 		{
 			sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
@@ -265,7 +265,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 				continue;
 			}
 
-			if(splitmode && !IsOper(source_p) && (*name != '&') &&
+			if(splitmode && !IsExempt(source_p, EX_JOINSPLIT) && (*name != '&') &&
 			   ConfigChannel.no_create_on_split)
 			{
 				sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
@@ -278,7 +278,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 
 		if((rb_dlink_list_length(&source_p->user->channel) >=
 		    (unsigned long) ConfigChannel.max_chans_per_user) &&
-		   (!IsExtendChans(source_p) ||
+		   (!IsExempt(source_p, EX_EXTENDCHANS) ||
 		    (rb_dlink_list_length(&source_p->user->channel) >=
 		     (unsigned long) ConfigChannel.max_chans_per_user_large)))
 		{
@@ -315,8 +315,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 
 		chptr = chptr2;
 
-		if(flags == 0 &&
-				!IsOper(source_p) && !IsExemptSpambot(source_p))
+		if(flags == 0 && !IsExempt(source_p, EX_SPAM))
 			check_spambot_warning(source_p, name);
 
 		/* add the user to the channel */
@@ -973,8 +972,7 @@ do_join_0(struct Client *client_p, struct Client *source_p)
 
 	while((ptr = source_p->user->channel.head))
 	{
-		if(MyConnect(source_p) &&
-		   !IsOper(source_p) && !IsExemptSpambot(source_p))
+		if(MyConnect(source_p) && !IsExempt(source_p, EX_SPAM))
 			check_spambot_warning(source_p, NULL);
 
 		msptr = ptr->data;
@@ -995,7 +993,7 @@ check_channel_name_loc(struct Client *source_p, const char *name)
 	if(EmptyString(name))
 		return 0;
 
-	if(ConfigFileEntry.disable_fake_channels && !IsOper(source_p))
+	if(ConfigFileEntry.disable_fake_channels && !IsExempt(source_p, EX_JOINSPLIT))
 	{
 		for(p = name; *p; ++p)
 		{

@@ -36,6 +36,7 @@
 #include "s_conf.h"
 #include "s_serv.h"
 #include "packet.h"
+#include "role.h"
 
 static int m_away(struct Client *, struct Client *, int, const char **);
 
@@ -96,8 +97,7 @@ m_away(struct Client *client_p, struct Client *source_p, int parc, const char *p
 	/* Rate limit this because it is sent to common channels. */
 	if (MyClient(source_p))
 	{
-		if(!IsOper(source_p) &&
-				source_p->localClient->next_away > rb_current_time())
+		if(!IsExempt(source_p, EX_FLOOD) && source_p->localClient->next_away > rb_current_time())
 		{
 			sendto_one(source_p, form_str(RPL_LOAD2HI),
 					me.name, source_p->name, "AWAY");

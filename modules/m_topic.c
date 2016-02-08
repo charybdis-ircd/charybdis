@@ -52,7 +52,7 @@ struct Message topic_msgtab = {
 };
 
 mapi_clist_av1 topic_clist[] = { &topic_msgtab, NULL };
-DECLARE_MODULE_AV1(topic, NULL, NULL, topic_clist, NULL, NULL, "$Revision: 254 $");
+DECLARE_MODULE_AV1(topic, NULL, NULL, topic_clist, NULL, NULL, "$Revision: 255 $");
 
 /*
  * m_topic
@@ -73,7 +73,7 @@ m_topic(struct Client *client_p, struct Client *source_p, int parc, const char *
 
 	name = parv[1];
 
-	if(IsOperSpy(source_p) && parv[1][0] == '!')
+	if(OperCan(source_p, "TOPIC", "spy") && parv[1][0] == '!')
 	{
 		name++;
 		operspy = 1;

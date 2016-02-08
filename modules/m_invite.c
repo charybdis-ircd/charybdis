@@ -40,6 +40,7 @@
 #include "modules.h"
 #include "packet.h"
 #include "tgchange.h"
+#include "role.h"
 
 static int m_invite(struct Client *, struct Client *, int, const char **);
 
@@ -102,8 +103,8 @@ m_invite(struct Client *client_p, struct Client *source_p, int parc, const char 
 		return 0;
 	}
 
-	if(((MyConnect(source_p) && !IsExemptResv(source_p)) ||
-			(MyConnect(target_p) && !IsExemptResv(target_p))) &&
+	if(((MyConnect(source_p) && !IsExempt(source_p, EX_RESV)) ||
+			(MyConnect(target_p) && !IsExempt(target_p, EX_RESV))) &&
 		hash_find_resv(parv[2]))
 	{
 		sendto_one_numeric(source_p, ERR_BADCHANNAME,
@@ -180,7 +181,7 @@ m_invite(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	if(MyConnect(target_p))
 	{
-		if(!IsOper(source_p) && (IsSetCallerId(target_p) ||
+		if(!IsExempt(source_p, EX_ACCEPT) && (IsSetCallerId(target_p) ||
 					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])) &&
 				!accept_message(source_p, target_p))
 		{

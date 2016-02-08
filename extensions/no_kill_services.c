@@ -17,7 +17,6 @@
 #include "s_user.h"
 #include "s_serv.h"
 #include "numeric.h"
-#include "privilege.h"
 #include "s_newconf.h"
 
 static void block_services_kill(void *data);

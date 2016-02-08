@@ -47,6 +47,7 @@
 #define RPL_MAP		     15	/* Undernet extension */
 #define RPL_MAPMORE	     16	/* Undernet extension */
 #define RPL_MAPEND	     17	/* Undernet extension */
+#define RPL_EXMASK	     24
 #define RPL_SAVENICK         43 /* From ircnet */
 
 /*
@@ -113,6 +114,7 @@
 #define RPL_LOCALUSERS       265
 #define RPL_GLOBALUSERS      266
 
+#define RPL_ROLE             269
 #define RPL_PRIVS            270 /* from ircu */
 
 #define RPL_WHOISCERTFP      276 /* from oftc-hybrid */

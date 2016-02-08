@@ -200,8 +200,6 @@ struct config_file_entry
 	int hide_error_messages;
 	int client_exit;
 	int oper_only_umodes;
-	int oper_umodes;
-	int oper_snomask;
 	int max_targets;
 	int caller_id_wait;
 	int min_nonwildcard;

@@ -45,10 +45,10 @@ auto_load_mod_LTLIBRARIES = \
   m_ping.la \
   m_pong.la \
   m_post.la \
-  m_privs.la \
   m_rehash.la \
   m_restart.la \
   m_resv.la \
+  m_role.la \
   m_sasl.la \
   m_scan.la \
   m_services.la \

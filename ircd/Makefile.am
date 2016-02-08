@@ -25,6 +25,7 @@ libircd_la_SOURCES =                  \
   class.c                       \
   client.c                      \
   dns.c				\
+  exmask.c                      \
   extban.c                      \
   getopt.c                      \
   hash.c                        \
@@ -46,10 +47,10 @@ libircd_la_SOURCES =                  \
   operhash.c                    \
   packet.c                      \
   parse.c                       \
-  privilege.c                   \
   ratelimit.c			\
   reject.c                      \
   restart.c                     \
+  role.c                        \
   s_auth.c                      \
   s_conf.c                      \
   s_newconf.c                   \

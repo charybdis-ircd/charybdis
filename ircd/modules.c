@@ -328,13 +328,6 @@ load_one_module(const char *path, int coremodule)
 static int
 mo_modload(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
 	if(parc > 2)
 	{
 		sendto_match_servs(source_p, parv[2], CAP_ENCAP, NOCAPS,
@@ -383,13 +376,6 @@ do_modload(struct Client *source_p, const char *module)
 static int
 mo_modunload(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
 	if(parc > 2)
 	{
 		sendto_match_servs(source_p, parv[2], CAP_ENCAP, NOCAPS,
@@ -447,13 +433,6 @@ do_modunload(struct Client *source_p, const char *module)
 static int
 mo_modreload(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
 	if(parc > 2)
 	{
 		sendto_match_servs(source_p, parv[2], CAP_ENCAP, NOCAPS,
@@ -517,13 +496,6 @@ do_modreload(struct Client *source_p, const char *module)
 static int
 mo_modlist(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
 	if(parc > 2)
 	{
 		sendto_match_servs(source_p, parv[2], CAP_ENCAP, NOCAPS,
@@ -583,13 +555,6 @@ do_modlist(struct Client *source_p, const char *pattern)
 static int
 mo_modrestart(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
 {
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
 	if(parc > 1)
 	{
 		sendto_match_servs(source_p, parv[1], CAP_ENCAP, NOCAPS,

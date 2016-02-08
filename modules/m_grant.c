@@ -1,8 +1,26 @@
 /*
+ * charybdis: an advanced ircd
+ * m_grant.c: Command module to set operator access levels.
+ *
  * Copyright (C) 2006 Jilles Tjoelker
  * Copyright (C) 2006 Stephen Bennett <spb@gentoo.org>
+ * Copyright (C) 2016 Jason Volk <jason@zemos.net>
  *
- * $Id$
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice is present in all copies.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "stdinc.h"
@@ -15,154 +33,144 @@
 #include "s_serv.h"
 #include "s_conf.h"
 #include "s_newconf.h"
+#include "role.h"
 
-static int mo_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
-static int me_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
 
-static int do_grant(struct Client *source_p, struct Client *target_p, const char *new_privset);
-
-struct Message grant_msgtab = {
-  "GRANT", 0, 0, 0, MFLG_SLOW,
-  { mg_ignore, mg_not_oper, mg_ignore, mg_ignore, {me_grant, 3}, {mo_grant, 3}}
-};
-
-mapi_clist_av1 grant_clist[] = { &grant_msgtab, NULL };
-
-DECLARE_MODULE_AV1(grant, NULL, NULL, grant_clist, NULL, NULL, "$Revision$");
-
-static int
-mo_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+static
+void set_mode(struct Client *const target,
+              const char *const str)
 {
-	struct Client *target_p;
-
-	if(!HasPrivilege(source_p, "oper:grant"))
+	const char *mode[] =
 	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "grant");
+		target->name,
+		target->name,
+		str,
+		NULL
+	};
+
+	user_mode(target, target, 3,mode);
+}
+
+
+static
+void set_role(struct Client *const source,
+              struct Client *const target,
+              const char *const role_name)
+{
+	struct Role *const role = role_get(role_name);
+	if(!role)
+	{
+		sendto_one_notice(source, ":There is no role named '%s'.", role_name);
+		return;
+	}
+
+	if(IsOper(target) && target->localClient->role == role)
+	{
+		sendto_one_notice(source, ":%s already has role of %s.", role_name);
+		return;
+	}
+
+	if(IsOper(target))
+	{
+		sendto_one_notice(target, ":%s has changed your role to %s.", source->name, role->name);
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has changed %s's role to %s.", get_oper_name(source), target->name, role->name);
+		target->localClient->role = role;
+		return;
+	}
+
+	struct oper_conf oper =
+	{
+		.name = (char *)role->name,
+		.role = role,
+	};
+
+	oper_up(target, &oper);
+	set_mode(target, "+o");
+	sendto_one_notice(target, ":%s has granted you the role of %s.", source->name, role->name);
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has granted %s the role of %s.", get_oper_name(source), target->name, role->name);
+}
+
+
+static
+void deoper(struct Client *const source,
+            struct Client *const target)
+{
+	if(!IsOper(target))
+	{
+		sendto_one_notice(source, ":You can't deoper someone who isn't an oper.");
+		return;
+	}
+
+	set_mode(target, "-o");
+	sendto_one_notice(target, ":%s has deopered you.", source->name);
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has deopered %s.", get_oper_name(source), target->name);
+}
+
+
+static
+int grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+{
+	struct Client *const target_p = find_person(parv[1]);
+
+	if(!target_p)
+	{
+		if(IsPerson(source_p))
+			sendto_one_numeric(source_p, ERR_NOSUCHNICK, form_str(ERR_NOSUCHNICK), parv[1]);
+
 		return 0;
 	}
 
-	target_p = find_named_person(parv[1]);
-	if (target_p == NULL)
+	if(!find_shared_conf(source_p->username, source_p->host, source_p->servptr->name, SHARED_GRANT))
 	{
-		sendto_one_numeric(source_p, ERR_NOSUCHNICK,
-				form_str(ERR_NOSUCHNICK), parv[1]);
+		sendto_one_notice(source_p, ":GRANT failed: You have no shared configuration block on this server.");
 		return 0;
 	}
 
-	if (MyClient(target_p))
+	if(MyClient(target_p))
 	{
-		do_grant(source_p, target_p, parv[2]);
+		if(irccmp(parv[2], "deoper") == 0)
+			deoper(source_p, target_p);
+		else
+			set_role(source_p, target_p, parv[2]);
 	}
-	else
+	else if(MyClient(source_p))
 	{
 		sendto_one(target_p, ":%s ENCAP %s GRANT %s %s",
-				get_id(source_p, target_p), target_p->servptr->name,
-				get_id(target_p, target_p), parv[2]);
+		           get_id(source_p, target_p),
+		           target_p->servptr->name,
+		           get_id(target_p, target_p),
+		           parv[2]);
 	}
 
 	return 0;
 }
 
-static int me_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+struct Message msgtab =
 {
-	struct Client *target_p;
-
-	target_p = find_person(parv[1]);
-	if (target_p == NULL)
+	"GRANT", 0, 0, 0, MFLG_SLOW,
 	{
-		sendto_one_numeric(source_p, ERR_NOSUCHNICK,
-				form_str(ERR_NOSUCHNICK), parv[1]);
-		return 0;
+		mg_ignore,
+		mg_not_oper,
+		mg_ignore,
+		mg_ignore,
+		{ grant, 3 },
+		{ grant, 3 }
 	}
+};
 
-	if(!find_shared_conf(source_p->username, source_p->host,
-				source_p->servptr->name, SHARED_GRANT))
-	{
-		sendto_one(source_p, ":%s NOTICE %s :You don't have an appropriate shared"
-			"block to grant privilege on this server.", me.name, source_p->name);
-		return 0;
-	}
-
-	do_grant(source_p, target_p, parv[2]);
-
-	return 0;
-}
-
-
-static int do_grant(struct Client *source_p, struct Client *target_p, const char *new_privset)
+mapi_clist_av1 clist[] =
 {
-	int dooper = 0, dodeoper = 0;
-	struct PrivilegeSet *privset = 0;
+	&msgtab,
+	NULL
+};
 
-	if (!strcmp(new_privset, "deoper"))
-	{
-		if (!IsOper(target_p))
-		{
-			sendto_one_notice(source_p, ":You can't deoper someone who isn't an oper.");
-			return 0;
-		}
-		new_privset = "default";
-		dodeoper = 1;
-
-		sendto_one_notice(target_p, ":%s is deopering you.", source_p->name);
-		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is deopering %s.", get_oper_name(source_p), target_p->name);
-	}
-	else
-	{
-		if (!(privset = privilegeset_get(new_privset)))
-		{
-			sendto_one_notice(source_p, ":There is no privilege set named '%s'.", new_privset);
-			return 0;
-		}
-
-		if (privset == target_p->localClient->privset)
-		{
-			sendto_one_notice(source_p, ":%s already has privilege set %s.", target_p->name, target_p->localClient->privset->name);
-			return 0;
-		}
-	}
-
-	if (!dodeoper)
-	{
-		if (!IsOper(target_p))
-		{
-			sendto_one_notice(target_p, ":%s is opering you with privilege set %s", source_p->name, privset->name);
-			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is opering %s with privilege set %s", get_oper_name(source_p), target_p->name, privset->name);
-			dooper = 1;
-		}
-		else
-		{
-			sendto_one_notice(target_p, ":%s is changing your privilege set to %s", source_p->name, privset->name);
-			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is changing the privilege set of %s to %s", get_oper_name(source_p), target_p->name, privset->name);
-		}
-	}
-
-	if (dodeoper)
-	{
-		const char *modeparv[4];
-		modeparv[0] = modeparv[1] = target_p->name;
-		modeparv[2] = "-o";
-		modeparv[3] = NULL;
-		user_mode(target_p, target_p, 3, modeparv);
-	}
-
-	if (dooper)
-	{
-		struct oper_conf oper;
-		oper.name = "<grant>";
-		oper.umodes = 0;
-		oper.snomask = 0;
-		oper.privset = privset;
-
-		oper_up(target_p, &oper);
-	}
-
-	target_p->localClient->privset = privset;
-	const char *modeparv[4];
-	modeparv[0] = modeparv[1] = target_p->name;
-	modeparv[2] = "+";
-	modeparv[3] = NULL;
-	user_mode(target_p, target_p, 3, modeparv);
-
-	return 0;
-}
+DECLARE_MODULE_AV1
+(
+	grant,
+	NULL,
+	NULL,
+	clist,
+	NULL,
+	NULL,
+	"$Revision$"
+);

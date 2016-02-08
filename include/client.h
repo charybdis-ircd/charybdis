@@ -38,9 +38,9 @@
 #include "channel.h"
 #include "dns.h"
 #include "snomask.h"
+#include "exmask.h"
 #include "match.h"
 #include "ircd.h"
-#include "privilege.h"
 
 /* other structs */
 struct Blacklist;
@@ -122,8 +122,7 @@ struct Client
 	time_t tsinfo;		/* TS on the nick, SVINFO on server */
 	unsigned int umodes;	/* opers, normal users subset */
 	unsigned int flags;	/* client flags */
-	unsigned int flags2;	/* ugh. overflow */
-
+	unsigned int exmask;	/* exemption mask */
 	unsigned int snomask;	/* server notice mask */
 
 	int hopcount;		/* number of servers to this 0 = local */
@@ -283,8 +282,7 @@ struct LocalUser
 	struct ZipStats *zipstats;		/* zipstats */
 	uint16_t cork_count;			/* used for corking/uncorking connections */
 	struct ev_entry *event;			/* used for associated events */
-
-	struct PrivilegeSet *privset;		/* privset... */
+	struct Role *role;              /* operator's role-based access controls */
 
 	char sasl_agent[IDLEN];
 	unsigned char sasl_out;
@@ -406,6 +404,7 @@ struct ListClient
 #define FLAGS_TGCHANGE     0x400000	/* we're allowed to clear something */
 #define FLAGS_DYNSPOOF     0x800000	/* dynamic spoof, only opers see ip */
 #define FLAGS_TGEXCESSIVE  0x1000000	/* whether the client has attemped to change targets excessively fast */
+#define FLAGS_IP_SPOOFING  0x2000000	/* auth{} spoof */
 
 /* flags for local clients, this needs stuff moved from above to here at some point */
 #define LFLAGS_SSL		0x00000001
@@ -424,26 +423,12 @@ struct ListClient
 #define UMODE_DEAF	   0x0080
 #define UMODE_NOFORWARD    0x0100	/* don't forward */
 #define UMODE_REGONLYMSG   0x0200	/* only allow logged in users to msg */
+#define UMODE_EXEMPT       0x0400	/* exemption masking */
 
 /* user information flags, only settable by remote mode or local oper */
 #define UMODE_OPER         0x1000	/* Operator */
 #define UMODE_ADMIN        0x2000	/* Admin on server */
 #define UMODE_SSLCLIENT    0x4000	/* using SSL */
-
-/* overflow flags */
-/* EARLIER FLAGS ARE IN s_newconf.h */
-#define FLAGS2_EXTENDCHANS	0x00200000
-#define FLAGS2_EXEMPTRESV	0x00400000
-#define FLAGS2_EXEMPTKLINE      0x00800000
-#define FLAGS2_EXEMPTFLOOD      0x01000000
-#define FLAGS2_IP_SPOOFING      0x10000000
-#define FLAGS2_EXEMPTSPAMBOT	0x20000000
-#define FLAGS2_EXEMPTSHIDE	0x40000000
-#define FLAGS2_EXEMPTJUPE	0x80000000
-
-#define DEFAULT_OPER_UMODES (UMODE_SERVNOTICE | UMODE_OPERWALL | \
-                             UMODE_WALLOP | UMODE_LOCOPS)
-#define DEFAULT_OPER_SNOMASK SNO_GENERAL
 
 #define CLICAP_MULTI_PREFIX		0x0001
 #define CLICAP_SASL			0x0002
@@ -485,6 +470,8 @@ struct ListClient
 #define IsTGChange(x)		((x)->flags & FLAGS_TGCHANGE)
 #define SetTGChange(x)		((x)->flags |= FLAGS_TGCHANGE)
 #define ClearTGChange(x)	((x)->flags &= ~FLAGS_TGCHANGE)
+#define IsIPSpoof(x)		((x)->flags & FLAGS_IP_SPOOFING)
+#define SetIPSpoof(x)		((x)->flags |= FLAGS_IP_SPOOFING)
 #define IsDynSpoof(x)		((x)->flags & FLAGS_DYNSPOOF)
 #define SetDynSpoof(x)		((x)->flags |= FLAGS_DYNSPOOF)
 #define ClearDynSpoof(x)	((x)->flags &= ~FLAGS_DYNSPOOF)
@@ -533,24 +520,11 @@ struct ListClient
 #define IsGotId(x)              (((x)->flags & FLAGS_GOTID) != 0)
 
 /*
- * flags2 macros.
+ * Exemption mask macros.
  */
-#define IsExemptKline(x)        ((x)->flags2 & FLAGS2_EXEMPTKLINE)
-#define SetExemptKline(x)       ((x)->flags2 |= FLAGS2_EXEMPTKLINE)
-#define IsExemptFlood(x)        ((x)->flags2 & FLAGS2_EXEMPTFLOOD)
-#define SetExemptFlood(x)       ((x)->flags2 |= FLAGS2_EXEMPTFLOOD)
-#define IsExemptSpambot(x)	((x)->flags2 & FLAGS2_EXEMPTSPAMBOT)
-#define SetExemptSpambot(x)	((x)->flags2 |= FLAGS2_EXEMPTSPAMBOT)
-#define IsExemptShide(x)	((x)->flags2 & FLAGS2_EXEMPTSHIDE)
-#define SetExemptShide(x)	((x)->flags2 |= FLAGS2_EXEMPTSHIDE)
-#define IsExemptJupe(x)		((x)->flags2 & FLAGS2_EXEMPTJUPE)
-#define SetExemptJupe(x)	((x)->flags2 |= FLAGS2_EXEMPTJUPE)
-#define IsExemptResv(x)		((x)->flags2 & FLAGS2_EXEMPTRESV)
-#define SetExemptResv(x)	((x)->flags2 |= FLAGS2_EXEMPTRESV)
-#define IsIPSpoof(x)            ((x)->flags2 & FLAGS2_IP_SPOOFING)
-#define SetIPSpoof(x)           ((x)->flags2 |= FLAGS2_IP_SPOOFING)
-#define IsExtendChans(x)	((x)->flags2 & FLAGS2_EXTENDCHANS)
-#define SetExtendChans(x)	((x)->flags2 |= FLAGS2_EXTENDCHANS)
+#define IsExempt(x, y)        ((x)->exmask & (y))
+#define SetExempt(x, y)       ((x)->exmask |= (y))
+#define UnsetExempt(x, y)     ((x)->exmask &= ~(y))
 
 /* for local users: flood grace period is over
  * for servers: mentioned in networknotice.c notice

@@ -50,7 +50,7 @@ struct Message squit_msgtab = {
 
 mapi_clist_av1 squit_clist[] = { &squit_msgtab, NULL };
 
-DECLARE_MODULE_AV1(squit, NULL, NULL, squit_clist, NULL, NULL, "$Revision: 3161 $");
+DECLARE_MODULE_AV1(squit, NULL, NULL, squit_clist, NULL, NULL, "$Revision: 3162 $");
 
 struct squit_parms
 {
@@ -85,10 +85,10 @@ mo_squit(struct Client *client_p, struct Client *source_p, int parc, const char 
 			     found_squit->target_p->name, log_client_name(source_p, HIDE_IP),
 			     comment);
 		}
-		else if(!IsOperRemote(source_p))
+		else if(!OperCan(source_p, "SQUIT", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "remote");
+				   me.name, source_p->name, "SQUIT:remote");
 			return 0;
 		}
 

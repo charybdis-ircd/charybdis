@@ -54,7 +54,7 @@ struct Message rehash_msgtab = {
 };
 
 mapi_clist_av1 rehash_clist[] = { &rehash_msgtab, NULL };
-DECLARE_MODULE_AV1(rehash, NULL, NULL, rehash_clist, NULL, NULL, "$Revision: 3161 $");
+DECLARE_MODULE_AV1(rehash, NULL, NULL, rehash_clist, NULL, NULL, "$Revision: 3162 $");
 
 struct hash_commands
 {
@@ -349,13 +349,6 @@ mo_rehash(struct Client *client_p, struct Client *source_p, int parc, const char
 {
 	const char *type = NULL, *target_server = NULL;
 
-	if(!IsOperRehash(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "rehash");
-		return 0;
-	}
-
 	if (parc > 2)
 		type = parv[1], target_server = parv[2];
 	else if (parc > 1 && (strchr(parv[1], '.') || strchr(parv[1], '?') || strchr(parv[1], '*')))
@@ -367,10 +360,10 @@ mo_rehash(struct Client *client_p, struct Client *source_p, int parc, const char
 
 	if (target_server != NULL)
 	{
-		if(!IsOperRemoteBan(source_p))
+		if(!OperCan(source_p, "REHASH", "remote"))
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				me.name, source_p->name, "remoteban");
+				me.name, source_p->name, "REHASH:remote");
 			return 0;
 		}
 		sendto_match_servs(source_p, target_server,

@@ -250,8 +250,6 @@ free_local_client(struct Client *client_p)
 	rb_free(client_p->localClient->fullcaps);
 	rb_free(client_p->localClient->opername);
 	rb_free(client_p->localClient->mangledhost);
-	if (client_p->localClient->privset)
-		privilegeset_unref(client_p->localClient->privset);
 
 	if(IsSSL(client_p))
 	    ssld_decrement_clicount(client_p->localClient->ssl_ctl);
@@ -504,10 +502,10 @@ check_klines(void)
 
 		if((aconf = find_kline(client_p)) != NULL)
 		{
-			if(IsExemptKline(client_p))
+			if(IsExempt(client_p, EX_KLINE))
 			{
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
-						     "KLINE over-ruled for %s, client is kline_exempt [%s@%s]",
+						     "KLINE over-ruled for %s, client is exempt [%s@%s]",
 						     get_client_name(client_p, HIDE_IP),
 						     aconf->user, aconf->host);
 				continue;
@@ -596,7 +594,7 @@ check_xlines(void)
 
 		if((aconf = find_xline(client_p->info, 1)) != NULL)
 		{
-			if(IsExemptKline(client_p))
+			if(IsExempt(client_p, EX_KLINE))
 			{
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
 						     "XLINE over-ruled for %s, client is kline_exempt [%s]",
@@ -636,7 +634,7 @@ resv_nick_fnc(const char *mask, const char *reason, int temp_time)
 	{
 		client_p = ptr->data;
 
-		if(IsMe(client_p) || !IsPerson(client_p) || IsExemptResv(client_p))
+		if(IsMe(client_p) || !IsPerson(client_p) || IsExempt(client_p, EX_RESV))
 			continue;
 
 		/* Skip users that already have UID nicks. */
@@ -1019,9 +1017,9 @@ free_exited_clients(void *unused)
 				{
 					s_assert(0);
 					sendto_realops_snomask(SNO_GENERAL, L_ALL,
-						"On abort_list: %s stat: %u flags: %u/%u handler: %c",
+						"On abort_list: %s stat: %u flags: %02x sno: %02x ex: %02x handler: %c",
 						target_p->name, (unsigned int) target_p->status,
-						target_p->flags, target_p->flags2, target_p->handler);
+						target_p->flags, target_p->snomask, target_p->exmask, target_p->handler);
 					sendto_realops_snomask(SNO_GENERAL, L_ALL,
 						"Please report this to the charybdis developers!");
 					found++;
@@ -1163,9 +1161,9 @@ exit_aborted_clients(void *unused)
 			{
 				s_assert(0);
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
-					"On dead_list: %s stat: %u flags: %u/%u handler: %c",
+					"On dead_list: %s stat: %u flags: %02x sno: %02x ex: %02x handler: %c",
 					abt->client->name, (unsigned int) abt->client->status,
-					abt->client->flags, abt->client->flags2, abt->client->handler);
+					abt->client->flags, abt->client->snomask, abt->client->exmask, abt->client->handler);
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
 					"Please report this to the charybdis developers!");
 				continue;
@@ -1705,7 +1703,7 @@ show_ip(struct Client *source_p, struct Client *target_p)
 			return 1;
 		return 0;
 	}
-	else if(IsDynSpoof(target_p) && (source_p != NULL && !IsOper(source_p)))
+	else if(IsDynSpoof(target_p) && (source_p != NULL && !IsExempt(source_p, EX_DYNSPOOF)))
 		return 0;
 	else
 		return 1;
@@ -1732,7 +1730,7 @@ show_ip_whowas(struct Whowas *whowas, struct Client *source_p)
 		if(ConfigFileEntry.hide_spoof_ips || !MyOper(source_p))
 			return 0;
 	if(whowas->flags & WHOWAS_DYNSPOOF)
-		if(!IsOper(source_p))
+		if(!IsExempt(source_p, EX_DYNSPOOF))
 			return 0;
 	return 1;
 }

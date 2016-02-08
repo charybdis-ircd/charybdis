@@ -44,6 +44,7 @@
 #include "chmode.h"
 #include "s_assert.h"
 #include "parse.h"
+#include "role.h"
 
 /* bitmasks for error returns, so we send once per call */
 #define SM_ERR_NOTS             0x00000001	/* No TS on channel */
@@ -738,11 +739,12 @@ chm_hidden(struct Client *source_p, struct Channel *chptr,
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
-	if(MyClient(source_p) && !IsOperAdmin(source_p))
+
+	if(MyClient(source_p) && !OperCanChmode(source_p, c))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name,
-					source_p->name, "admin");
+					source_p->name, "chmode");
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
@@ -785,11 +787,12 @@ chm_staff(struct Client *source_p, struct Channel *chptr,
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
-	if(MyClient(source_p) && !IsOperResv(source_p))
+
+	if(MyClient(source_p) && !OperCanChmode(source_p, c))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name,
-					source_p->name, "resv");
+			           source_p->name, "chmode");
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
@@ -1341,7 +1344,7 @@ chm_forward(struct Client *source_p, struct Channel *chptr,
 	if(!allow_mode_change(source_p, chptr, alevel, errors, c))
 		return;
 #else
-	if(!IsOper(source_p) && !IsServer(source_p))
+	if(!IsServer(source_p) && !OperCanChmode(source_p, c))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one_numeric(source_p, ERR_NOPRIVILEGES, form_str(ERR_NOPRIVILEGES));
