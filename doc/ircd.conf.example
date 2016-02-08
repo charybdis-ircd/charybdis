@@ -222,27 +222,82 @@ auth {
 	class = "users";
 };
 
-/* privset {} blocks MUST be specified before anything that uses them.  That
- * means they must be defined before operator {}.
+/* role {} blocks MUST be specified before anything that uses them.  That
+ * means they must be defined before operator {}. The role must have a name.
+ * Roles can form an inheritance tree. Note that the placement of the
+ * extends= should be before anything that might later negate it. You'll see.
+ *
+ * Commands:
+ * The names of all commands this operator can use should be listed. If
+ * something is not listed the non-operator version of the command is used
+ * instead.
+ *
+ * Modes:
+ * This is a triple of strings:
+ *
+ *     umodes = "aos", "ao", "a";
+ *
+ * The first part lists modes available to this role. The second lists modes
+ * given when op'ing up. The third lists modes that are locked and can't be
+ * turned off. If a '~' appears before a character that will delete the mode
+ * if previously inherited from another role.
+ *
+ * umodes=, snotes=, and exempts= are all similar triples of mode strings.
+ * stats= and chmodes= are just a single string of modes available to the role.
  */
-privset "local_op" {
-	privs = oper:local_kill, oper:operwall;
+
+role "helper" {
+	umodes = "How", "How", "H";
+	stats = "kKoOqQ";
 };
 
-privset "server_bot" {
-	extends = "local_op";
-	privs = oper:kline, oper:remoteban, snomask:nick_changes;
+role "local_op" {
+	cmds = KILL, DLINE, DLINE:local, UNDLINE, KLINE, UNKLINE, RESV, UNRESV, XLINE, UNXLINE;
+	cmds = CHANTRACE, ETRACE, FINDFORWARDS, MASKTRACE, OJOIN, OMODE, OPME, SCAN, SENDBANS, WHOIS::;
+	umodes = "Heloswz", "loswz", "l";
+	snotes = "bfksu", "fks";
+	exempts = "CYadfiklprw", "Cdikw", "k";
+	stats = "kKoOqQxX";
+	chmodes = "P";
 };
 
-privset "global_op" {
-	extends = "local_op";
-	privs = oper:global_kill, oper:routing, oper:kline, oper:unkline, oper:xline,
-		oper:resv, oper:mass_notice, oper:remoteban;
+role "local_admin" {
+	extends = local_op;
+	cmds = DIE, RESTART, REHASH;
+	cmds = MODLOAD, MODUNLOAD, MODRELOAD, MODLIST, MODRESTART;
+	cmds = SQUIT, CONNECT;
+	umodes = "a", "a", "a";
+	snotes = "CZbcdfknrsuxy", "Ccdfksux";
+	exempts = "CJYadfijklprw", "CJdijkw", "k";
+	stats = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 };
 
-privset "admin" {
-	extends = "global_op";
-	privs = oper:admin, oper:die, oper:rehash, oper:spy, oper:grant;
+role "global_op" {
+	extends = local_op;
+	cmds = KILL:remote, DLINE:remote, ~DLINE:local, UNDLINE:remote, KLINE:remote, UNKLINE:remote, RESV:remote, UNRESV:remote, XLINE:remote, UNXLINE:remote;
+	cmds = MSG:special, MSG:special:mass_notice;
+	umodes = "~l", "~l", "~l";
+	snotes = "bfksuy", "fksu";
+	exempts = "CJYadfijklprw", "CJdijkw";
+	chmodes = "L";
+};
+
+role "global_admin" {
+	extends = local_admin, global_op;
+	cmds = REHASH:remote;
+	cmds = SQUIT:remote, CONNECT:remote;
+	cmds = GRANT, ROLE, CHGHOST;
+	umodes = "a~l", "a~l", "a~l";
+	snotes = "CZbcdfknruxy", "CZcdfksuxy";
+	exempts = "CJYadfijklprw", "CJdijkw";
+};
+
+role "spy" {
+	cmds = MODE:spy, CHANTRACE:spy, MASKTRACE:spy, LIST:spy, UMODES:spy, TOPIC:spy, WHO:spy;
+};
+
+role "god" {
+	extends = global_admin, spy;
 };
 
 operator "god" {
@@ -266,22 +321,11 @@ operator "god" {
 	 */
 	#rsa_public_key_file = "/usr/local/ircd/etc/oper.pub";
 
-	/* umodes: the specific umodes this oper gets when they oper.
-	 * If this is specified an oper will not be given oper_umodes
-	 * These are described above oper_only_umodes in general {};
-	 */
-	#umodes = locops, servnotice, operwall, wallop;
-
 	/* fingerprint: if specified, the oper's client certificate
 	 * fingerprint will be checked against the specified fingerprint
 	 * below.
 	 */
 	#fingerprint = "c77106576abf7f9f90cca0f63874a60f2e40a64b";
-
-	/* snomask: specific server notice mask on oper up.
-	 * If this is specified an oper will not be given oper_snomask.
-	 */
-	snomask = "+Zbfkrsuy";
 
 	/* flags: misc options for the operator.  You may prefix an option
 	 * with ~ to disable it, e.g. ~encrypted.
@@ -295,8 +339,8 @@ operator "god" {
 	 */
 	flags = encrypted;
 
-	/* privset: privileges set to grant */
-	privset = "admin";
+	/* role: name of the role defined for this operator above. */
+	role = "god";
 };
 
 connect "irc.uplink.com" {
@@ -534,8 +578,6 @@ general {
 	client_flood_max_lines = 20;
 	use_whois_actually = no;
 	oper_only_umodes = operwall, locops, servnotice;
-	oper_umodes = locops, servnotice, operwall, wallop;
-	oper_snomask = "+s";
 	burst_away = yes;
 	nick_delay = 0 seconds; # 15 minutes if you want to enable this
 	reject_ban_time = 1 minute;

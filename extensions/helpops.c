@@ -170,7 +170,7 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 
 	if (source_p->umodes & UMODE_HELPOPS)
 	{
-		if (MyClient(source_p) && !OperCanUmode(source_p, 'H'))
+		if (MyClient(source_p) && !OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, 'H'))
 		{
 			source_p->umodes &= ~UMODE_HELPOPS;
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "umode+H");

@@ -58,48 +58,58 @@ struct irc_radixtree;
     role_has_cmd((c)->localClient->role, (const char*[]){__VA_ARGS__, NULL})  \
 )
 
-#define OperCanUmode(c, l)                                                    \
+#define OperMode(c, set, attr, ch)                                            \
 (                                                                             \
     HasRole((c)) &&                                                           \
-    role_has_umode((c)->localClient->role, (l))                               \
+    role_can_mode((c)->localClient->role, (set), (attr), (ch))                \
 )
 
 #define OperCanChmode(c, l)                                                   \
 (                                                                             \
-    HasRole((c)) &&                                                           \
-    role_has_chmode((c)->localClient->role, (l))                              \
+    OperMode((c), ROLE_CHMODE, ROLE_AVAIL, (l))                               \
 )
 
 #define OperCanStat(c, l)                                                     \
 (                                                                             \
-    HasRole((c)) &&                                                           \
-    role_has_stat((c)->localClient->role, (l))                                \
+    OperMode((c), ROLE_STAT, ROLE_AVAIL, (l))                                 \
 )
 
-#define OperCanSnote(c, l)                                                    \
-(                                                                             \
-    HasRole((c)) &&                                                           \
-    role_has_snote((c)->localClient->role, (l))                               \
-)
 
-#define OperCanExempt(c, l)                                                   \
-(                                                                             \
-    HasRole((c)) &&                                                           \
-    role_has_exempt((c)->localClient->role, (l))                              \
-)
+typedef enum
+{
+	ROLE_UMODE,         // User modes.
+	ROLE_CHMODE,        // Channel modes role can manipulate.
+	ROLE_STAT,          // Stats characters.
+	ROLE_SNO,           // Snomask modes.
+	ROLE_EXEMPT,        // Exemption mode mask.
 
+	_ROLE_MSETS_
+}
+RoleModeSet;
+
+typedef enum
+{
+	ROLE_AVAIL,         // Mode is available, or can be toggled.
+	ROLE_DEFAULT,       // Mode is set on oper-up.
+	ROLE_LOCKED,        // Mode is always forced on.
+
+	_ROLE_MATTRS_
+}
+RoleModeAttr;
 
 struct Role
 {
-	const char *name;                 // Name of the role.
-	const char *extends;              // Comma delimited reference of what role inherits.
-	struct irc_radixtree *cmds;       // All command paths available to role (stored in key).
-	const char *umodes;               // String of all user modes available to self.
-	const char *chmodes;              // String of all channel modes role can manipulate.
-	const char *stats;                // String of all stats characters available.
-	const char *snotes;               // String of all snomask letters permitted.
-	const char *exempts;              // String of all exemption letters.
+	const char *name;                                // Name of the this role.
+	const char *extends;                             // Comma delimited names extends.
+	struct irc_radixtree *cmds;                      // All command paths (includes extends).
+	const char *mode[_ROLE_MSETS_][_ROLE_MATTRS_];   // All mode tables (including extends).
 };
+
+
+/* Provides some string reflection of the above enums
+ */
+extern const char *const role_mode_set[_ROLE_MSETS_];
+extern const char *const role_mode_attr[_ROLE_MATTRS_];
 
 
 /* The active roles are accessible for iteration.
@@ -121,45 +131,28 @@ struct Role *role_get(const char *name);
  *
  * Use the macro, ex: OperCanCmd(client_p, "SPAMEXPR", "ADD")
  */
+
 int role_has_cmd(const struct Role *, const char *const *path);
 
-static inline
-int role_has_stat(const struct Role *const r, const char letter)
-{
-	return !EmptyString(r->stats) && strchr(r->stats, letter);
-}
 
 static inline
-int role_has_umode(const struct Role *const r, const char letter)
+int role_can_mode(const struct Role *const r,
+                  const RoleModeSet set,
+                  const RoleModeAttr attr,
+                  const char letter)
 {
-	return !EmptyString(r->umodes) && strchr(r->umodes, letter);
+	return !EmptyString(r->mode[set][attr]) && strchr(r->mode[set][attr], letter);
 }
 
-static inline
-int role_has_chmode(const struct Role *const r, const char letter)
-{
-	return !EmptyString(r->chmodes) && strchr(r->chmodes, letter);
-}
-
-static inline
-int role_has_snote(const struct Role *const r, const char letter)
-{
-	return !EmptyString(r->snotes) && strchr(r->snotes, letter);
-}
-
-static inline
-int role_has_exempt(const struct Role *const r, const char letter)
-{
-	return !EmptyString(r->exempts) && strchr(r->exempts, letter);
-}
 
 static inline
 int role_valid_modes(const struct Role *const r,
-                     const char *const str,
-                     int (*const validator)(const struct Role *, const char))
+                     const RoleModeSet set,
+                     const RoleModeAttr attr,
+                     const char *const str)
 {
 	for(size_t i = 0; i < strlen(str); i++)
-		if(!validator(r, str[i]))
+		if(!role_can_mode(r, set, attr, str[i]))
 			return 0;
 
 	return 1;

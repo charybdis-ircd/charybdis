@@ -117,9 +117,9 @@ check_umode_change(void *vdata)
 
 	if (source_p->umodes & user_modes['p'])
 	{
-		if (!OperCanUmode(source_p, 'p'))
+		if (!OperMode(source_p, ROLE_UMODE, ROLE_AVAIL, 'p'))
 		{
-			sendto_one_notice(source_p, ":*** You lack privilege for +p");
+			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "+p");
 			source_p->umodes &= ~user_modes['p'];
 			return;
 		}

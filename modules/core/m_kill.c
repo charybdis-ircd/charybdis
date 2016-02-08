@@ -108,11 +108,9 @@ mo_kill(struct Client *client_p, struct Client *source_p, int parc, const char *
 		sendto_one_notice(source_p, ":KILL changed from %s to %s", user, target_p->name);
 	}
 
-	if(!MyConnect(target_p) && (!OperCan(source_p, "KILL", "global")))
+	if(!MyConnect(target_p) && !OperCan(source_p, "KILL", "remote"))
 	{
-		sendto_one_notice(source_p, ":Nick %s is not on your server "
-				            "and you do not have a global kill privilege",
-				target_p->name);
+		sendto_one_notice(source_p, ":Nick %s is not on your server and you cannot kill remotely.", target_p->name);
 		return 0;
 	}
 

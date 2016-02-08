@@ -47,52 +47,40 @@ int role(struct Client *client_p, struct Client *source_p, int parc, const char 
 {
 	const char *const role_name = parc >= 2? parv[1] : NULL;
 	const char *const targ_name = parc <= 1? source_p->name : "*";
-
-	struct Role *const role = role_name?              role_get(role_name):
-	                          source_p->localClient?  source_p->localClient->role:
-	                                                  NULL;
-
+	struct Role *const role = !EmptyString(role_name)? role_get(role_name):
+	                          source_p->localClient?   source_p->localClient->role:
+	                                                   NULL;
 	if(!role)
 	{
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, "-",
-		                   "-",
+		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE),
+		                   targ_name,
+		                   "*",
+		                   "*",
+		                   "*",
 		                   "Role not found.");
 		return 0;
 	}
 
-	if(role->extends)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
+	if(!EmptyString(role->extends))
+		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE),
+		                   targ_name,
+		                   role->name,
 		                   "EXTENDS",
+		                   "ROLE",
 		                   role->extends);
 
-	if(role->umodes)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   "UMODES",
-		                   role->umodes);
-
-	if(role->chmodes)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   "CHMODES",
-		                   role->chmodes);
-
-	if(role->stats)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   "STATS",
-		                   role->stats);
-
-	if(role->snotes)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   "SNOTES",
-		                   role->snotes);
-
-	if(role->exempts)
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   "EXEMPTS",
-		                   role->exempts);
+	for(size_t i = 0; i < _ROLE_MSETS_; i++)
+		for(size_t j = 0; j < _ROLE_MATTRS_; j++)
+			if(!EmptyString(role->mode[i][j]))
+				sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE),
+				                   targ_name,
+				                   role->name,
+				                   role_mode_set[i],
+				                   role_mode_attr[j],
+				                   role->mode[i][j]);
 
 	if(role->cmds)
 	{
-		static const char *const prefix = "COMMANDS";
 		static char buf[BUFSIZE-NICKLEN-1-ROLE_NAME_MAXLEN-1-8-1-1];
 		buf[0] = '\0';
 
@@ -103,8 +91,11 @@ int role(struct Client *client_p, struct Client *source_p, int parc, const char 
 			const char *const key = irc_radixtree_elem_get_key(state.pspare[0]);
 			if(strlen(buf) + strlen(key) + 2 >= sizeof(buf))
 			{
-				sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-				                   prefix,
+				sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE),
+				                   targ_name,
+				                   role->name,
+				                   "COMMANDS",
+				                   "AVAIL",
 				                   buf);
 				buf[0] = '\0';
 			}
@@ -113,8 +104,11 @@ int role(struct Client *client_p, struct Client *source_p, int parc, const char 
 			rb_strlcat(buf, " ", sizeof(buf));
 		}
 
-		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE), targ_name, role->name,
-		                   prefix,
+		sendto_one_numeric(source_p, RPL_ROLE, form_str(RPL_ROLE),
+		                   targ_name,
+		                   role->name,
+		                   "COMMANDS",
+		                   "AVAIL",
 		                   buf);
 	}
 

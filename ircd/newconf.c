@@ -318,6 +318,8 @@ static struct mode_table umode_table[] = {
 	{"servnotice",	UMODE_SERVNOTICE},
 	{"wallop",	UMODE_WALLOP	},
 	{"operwall",	UMODE_OPERWALL	},
+	{"exempt",	UMODE_EXEMPT	},
+	{"admin",	UMODE_ADMIN	},
 	{NULL, 0}
 };
 
@@ -525,9 +527,12 @@ conf_end_oper(struct TopConf *tc)
 			yy_tmpoper->passwd = rb_strdup(yy_oper->passwd);
 
 		yy_tmpoper->flags = yy_oper->flags;
-		yy_tmpoper->umodes = yy_oper->umodes;
-		yy_tmpoper->snomask = yy_oper->snomask;
 		yy_tmpoper->role = yy_oper->role;
+		if(!yy_tmpoper->role)
+		{
+			conf_report_error("Ignoring operator block for %s -- role not found.", yy_tmpoper->name);
+			return 0;
+		}
 
 #ifdef HAVE_LIBCRYPTO
 		if(yy_oper->rsa_pubkey_file)
@@ -647,24 +652,6 @@ conf_set_oper_rsa_public_key_file(void *data)
 #else
 	conf_report_error("Warning -- ignoring rsa_public_key_file (OpenSSL support not available");
 #endif
-}
-
-static void
-conf_set_oper_umodes(void *data)
-{
-	set_modes_from_table(&yy_oper->umodes, "umode", umode_table, data);
-}
-
-static void
-conf_set_oper_snomask(void *data)
-{
-	yy_oper->snomask = parse_snobuf_to_mask(0, (const char *) data);
-}
-
-static void
-conf_set_oper_exmask(void *data)
-{
-	yy_oper->exmask = exmask_to_mask(0, (const char *) data);
 }
 
 static int
@@ -1593,12 +1580,6 @@ conf_set_general_default_umodes(void *data)
 }
 
 static void
-conf_set_general_oper_umodes(void *data)
-{
-	set_modes_from_table(&ConfigFileEntry.oper_umodes, "umode", umode_table, data);
-}
-
-static void
 conf_set_general_certfp_method(void *data)
 {
 	char *method = data;
@@ -1620,37 +1601,6 @@ static void
 conf_set_general_oper_only_umodes(void *data)
 {
 	set_modes_from_table(&ConfigFileEntry.oper_only_umodes, "umode", umode_table, data);
-}
-
-static void
-conf_set_general_oper_snomask(void *data)
-{
-	char *pm;
-	int what = MODE_ADD, flag;
-
-	ConfigFileEntry.oper_snomask = 0;
-	for (pm = (char *) data; *pm; pm++)
-	{
-		switch (*pm)
-		{
-		case '+':
-			what = MODE_ADD;
-			break;
-		case '-':
-			what = MODE_DEL;
-			break;
-
-		default:
-			if ((flag = snomask_modes[(unsigned char) *pm]))
-			{
-				if (what == MODE_ADD)
-					ConfigFileEntry.oper_snomask |= flag;
-				else
-					ConfigFileEntry.oper_snomask &= ~flag;
-			}
-			break;
-		}
-	}
 }
 
 static void
@@ -2241,10 +2191,8 @@ static struct ConfEntry conf_operator_table[] =
 {
 	{ "rsa_public_key_file",  CF_QSTRING, conf_set_oper_rsa_public_key_file, 0, NULL },
 	{ "flags",	CF_STRING | CF_FLIST, conf_set_oper_flags,	0, NULL },
-	{ "umodes",	CF_STRING | CF_FLIST, conf_set_oper_umodes,	0, NULL },
 	{ "role",	CF_QSTRING, conf_set_oper_role,	0, NULL },
-	{ "snomask",    CF_QSTRING, conf_set_oper_snomask,      0, NULL },
-	{ "exempt",     CF_QSTRING, conf_set_oper_exmask,      0, NULL },
+	{ "privset",	CF_QSTRING, conf_set_oper_role,	0, NULL },
 	{ "user",	CF_QSTRING, conf_set_oper_user,		0, NULL },
 	{ "password",	CF_QSTRING, conf_set_oper_password,	0, NULL },
 	{ "fingerprint",	CF_QSTRING, conf_set_oper_fingerprint,	0, NULL },
@@ -2300,8 +2248,6 @@ static struct ConfEntry conf_connect_table[] =
 static struct ConfEntry conf_general_table[] =
 {
 	{ "oper_only_umodes", 	CF_STRING | CF_FLIST, conf_set_general_oper_only_umodes, 0, NULL },
-	{ "oper_umodes", 	CF_STRING | CF_FLIST, conf_set_general_oper_umodes,	 0, NULL },
-	{ "oper_snomask",	CF_QSTRING, conf_set_general_oper_snomask, 0, NULL },
 	{ "compression_level", 	CF_INT,    conf_set_general_compression_level,	0, NULL },
 	{ "havent_read_conf", 	CF_YESNO,  conf_set_general_havent_read_conf,	0, NULL },
 	{ "hide_error_messages",CF_STRING, conf_set_general_hide_error_messages,0, NULL },

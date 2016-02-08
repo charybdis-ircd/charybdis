@@ -118,11 +118,6 @@ struct oper_conf
 	char *certfp;
 
 	int flags;
-	uint umodes;
-	uint exmask;
-	uint snomask;
-
-	struct PrivilegeSet *privset;
 	struct Role *role;
 
 #ifdef HAVE_LIBCRYPTO

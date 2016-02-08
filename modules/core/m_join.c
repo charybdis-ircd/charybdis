@@ -315,8 +315,7 @@ m_join(struct Client *client_p, struct Client *source_p, int parc, const char *p
 
 		chptr = chptr2;
 
-		if(flags == 0 &&
-				!IsOper(source_p) && !IsExempt(source_p, EX_SPAM))
+		if(flags == 0 && !IsExempt(source_p, EX_SPAM))
 			check_spambot_warning(source_p, name);
 
 		/* add the user to the channel */
@@ -973,8 +972,7 @@ do_join_0(struct Client *client_p, struct Client *source_p)
 
 	while((ptr = source_p->user->channel.head))
 	{
-		if(MyConnect(source_p) &&
-		   !IsOper(source_p) && !IsExempt(source_p, EX_SPAM))
+		if(MyConnect(source_p) && !IsExempt(source_p, EX_SPAM))
 			check_spambot_warning(source_p, NULL);
 
 		msptr = ptr->data;
@@ -995,7 +993,7 @@ check_channel_name_loc(struct Client *source_p, const char *name)
 	if(EmptyString(name))
 		return 0;
 
-	if(ConfigFileEntry.disable_fake_channels && !IsOper(source_p))
+	if(ConfigFileEntry.disable_fake_channels && !IsExempt(source_p, EX_JOINSPLIT))
 	{
 		for(p = name; *p; ++p)
 		{
