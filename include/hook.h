@@ -125,6 +125,7 @@ typedef struct
 	struct Channel *chptr;
 	const char *text;
 	int approved;
+	const char *reason;
 } hook_data_privmsg_channel;
 
 typedef struct

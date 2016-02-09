@@ -11,7 +11,7 @@ localstatedir	= @localstatedir@
 mandir          = @mandir@/man8
 MANPAGES        = ircd.8
 
-CONFS		= ircd.conf.example reference.conf
+CONFS		= ircd.conf.example reference.conf spamfilter.conf.example
 
 install-mkdirs:
 	-@if test ! -d $(DESTDIR)$(sysconfdir); then \

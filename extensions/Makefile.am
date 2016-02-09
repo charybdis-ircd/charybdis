@@ -68,4 +68,9 @@ extension_LTLIBRARIES =		\
   spy_stats_notice.la            \
   spy_stats_p_notice.la		\
   spy_trace_notice.la		\
+  spamfilter.la			\
+  spamfilter_expr.la			\
+  spamfilter_nicks.la			\
   example_module.la
+
+spamfilter_expr_la_LIBADD = -lpcre2-8

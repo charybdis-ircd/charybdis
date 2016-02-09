@@ -305,6 +305,15 @@ sno_globaloper_la_OBJECTS = sno_globaloper.lo
 sno_whois_la_LIBADD =
 sno_whois_la_SOURCES = sno_whois.c
 sno_whois_la_OBJECTS = sno_whois.lo
+spamfilter_la_LIBADD =
+spamfilter_la_SOURCES = spamfilter.c
+spamfilter_la_OBJECTS = spamfilter.lo
+spamfilter_expr_la_DEPENDENCIES =
+spamfilter_expr_la_SOURCES = spamfilter_expr.c
+spamfilter_expr_la_OBJECTS = spamfilter_expr.lo
+spamfilter_nicks_la_LIBADD =
+spamfilter_nicks_la_SOURCES = spamfilter_nicks.c
+spamfilter_nicks_la_OBJECTS = spamfilter_nicks.lo
 spy_admin_notice_la_LIBADD =
 spy_admin_notice_la_SOURCES = spy_admin_notice.c
 spy_admin_notice_la_OBJECTS = spy_admin_notice.lo
@@ -375,9 +384,10 @@ SOURCES = chm_adminonly.c chm_insecure.c chm_nonotice.c chm_operonly.c \
 	no_locops.c no_oper_invis.c override.c \
 	restrict-unauthenticated.c sno_channelcreate.c \
 	sno_farconnect.c sno_globalkline.c sno_globalnickchange.c \
-	sno_globaloper.c sno_whois.c spy_admin_notice.c \
-	spy_info_notice.c spy_links_notice.c spy_motd_notice.c \
-	spy_stats_notice.c spy_stats_p_notice.c spy_trace_notice.c
+	sno_globaloper.c sno_whois.c spamfilter.c spamfilter_expr.c \
+	spamfilter_nicks.c spy_admin_notice.c spy_info_notice.c \
+	spy_links_notice.c spy_motd_notice.c spy_stats_notice.c \
+	spy_stats_p_notice.c spy_trace_notice.c
 DIST_SOURCES = chm_adminonly.c chm_insecure.c chm_nonotice.c \
 	chm_operonly.c chm_operonly_compat.c chm_operpeace.c \
 	chm_quietunreg_compat.c chm_sslonly.c chm_sslonly_compat.c \
@@ -393,9 +403,10 @@ DIST_SOURCES = chm_adminonly.c chm_insecure.c chm_nonotice.c \
 	no_locops.c no_oper_invis.c override.c \
 	restrict-unauthenticated.c sno_channelcreate.c \
 	sno_farconnect.c sno_globalkline.c sno_globalnickchange.c \
-	sno_globaloper.c sno_whois.c spy_admin_notice.c \
-	spy_info_notice.c spy_links_notice.c spy_motd_notice.c \
-	spy_stats_notice.c spy_stats_p_notice.c spy_trace_notice.c
+	sno_globaloper.c sno_whois.c spamfilter.c spamfilter_expr.c \
+	spamfilter_nicks.c spy_admin_notice.c spy_info_notice.c \
+	spy_links_notice.c spy_motd_notice.c spy_stats_notice.c \
+	spy_stats_p_notice.c spy_trace_notice.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -668,8 +679,12 @@ extension_LTLIBRARIES = \
   spy_stats_notice.la            \
   spy_stats_p_notice.la		\
   spy_trace_notice.la		\
+  spamfilter.la			\
+  spamfilter_expr.la			\
+  spamfilter_nicks.la			\
   example_module.la
 
+spamfilter_expr_la_LIBADD = -lpcre2-8
 all: all-am
 
 .SUFFIXES:
@@ -907,6 +922,15 @@ sno_globaloper.la: $(sno_globaloper_la_OBJECTS) $(sno_globaloper_la_DEPENDENCIES
 sno_whois.la: $(sno_whois_la_OBJECTS) $(sno_whois_la_DEPENDENCIES) $(EXTRA_sno_whois_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(extensiondir) $(sno_whois_la_OBJECTS) $(sno_whois_la_LIBADD) $(LIBS)
 
+spamfilter.la: $(spamfilter_la_OBJECTS) $(spamfilter_la_DEPENDENCIES) $(EXTRA_spamfilter_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK) -rpath $(extensiondir) $(spamfilter_la_OBJECTS) $(spamfilter_la_LIBADD) $(LIBS)
+
+spamfilter_expr.la: $(spamfilter_expr_la_OBJECTS) $(spamfilter_expr_la_DEPENDENCIES) $(EXTRA_spamfilter_expr_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK) -rpath $(extensiondir) $(spamfilter_expr_la_OBJECTS) $(spamfilter_expr_la_LIBADD) $(LIBS)
+
+spamfilter_nicks.la: $(spamfilter_nicks_la_OBJECTS) $(spamfilter_nicks_la_DEPENDENCIES) $(EXTRA_spamfilter_nicks_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK) -rpath $(extensiondir) $(spamfilter_nicks_la_OBJECTS) $(spamfilter_nicks_la_LIBADD) $(LIBS)
+
 spy_admin_notice.la: $(spy_admin_notice_la_OBJECTS) $(spy_admin_notice_la_DEPENDENCIES) $(EXTRA_spy_admin_notice_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(extensiondir) $(spy_admin_notice_la_OBJECTS) $(spy_admin_notice_la_LIBADD) $(LIBS)
 
@@ -990,6 +1014,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sno_globalnickchange.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sno_globaloper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sno_whois.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spamfilter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spamfilter_expr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spamfilter_nicks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spy_admin_notice.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spy_info_notice.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spy_links_notice.Plo@am__quote@

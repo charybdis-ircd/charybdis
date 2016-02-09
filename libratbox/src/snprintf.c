@@ -448,9 +448,7 @@ rb_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		case 's':
 			s = va_arg(args, char *);
 			if(s == NULL)
-			{
-				abort();	/* prefer blowing up vs corrupt data */
-			}
+				s = "(null)";
 			len = rb_strnlen(s, precision);
 
 			if(!(flags & LEFT))
