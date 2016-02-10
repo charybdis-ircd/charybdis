@@ -44,6 +44,7 @@
 #include "reject.h"
 #include "hash.h"
 #include "cache.h"
+#include "sslproc.h"
 
 static int mo_rehash(struct Client *, struct Client *, int, const char **);
 static int me_rehash(struct Client *, struct Client *, int, const char **);
@@ -83,6 +84,15 @@ rehash_dns(struct Client *source_p)
 
 	/* reread /etc/resolv.conf and reopen res socket */
 	restart_resolver();
+}
+
+static void
+rehash_ssld(struct Client *source_p)
+{
+	sendto_realops_snomask(SNO_GENERAL, L_ALL, "%s is restarting ssld",
+				get_oper_name(source_p));
+
+	restart_ssld();
 }
 
 static void
@@ -278,6 +288,7 @@ static struct hash_commands rehash_commands[] =
 {
 	{"BANS",	rehash_bans_loc		},
 	{"DNS", 	rehash_dns		},
+	{"SSLD", 	rehash_ssld		},
 	{"MOTD", 	rehash_motd		},
 	{"OMOTD", 	rehash_omotd		},
 	{"TKLINES", 	rehash_tklines		},
