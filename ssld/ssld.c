@@ -156,9 +156,9 @@ static const char *remote_closed = "Remote host closed the connection";
 static int ssld_ssl_ok;
 static int certfp_method = RB_SSL_CERTFP_METH_SHA1;
 #ifdef HAVE_LIBZ
-static int zlib_ok = 1;
+static int ssld_zlib_ok = 1;
 #else
-static int zlib_ok = 0;
+static int ssld_zlib_ok = 0;
 #endif
 
 
@@ -1242,7 +1242,7 @@ main(int argc, char **argv)
 	rb_event_add("check_handshake_flood", check_handshake_flood, NULL, 10);
 	read_pipe_ctl(mod_ctl->F_pipe, NULL);
 	mod_read_ctl(mod_ctl->F, mod_ctl);
-	if(!zlib_ok && !ssld_ssl_ok)
+	if(!ssld_zlib_ok && !ssld_ssl_ok)
 	{
 		/* this is really useless... */
 		send_i_am_useless(mod_ctl);
@@ -1251,7 +1251,7 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	if(!zlib_ok)
+	if(!ssld_zlib_ok)
 		send_nozlib_support(mod_ctl, NULL);
 	if(!ssld_ssl_ok)
 		send_nossl_support(mod_ctl, NULL);

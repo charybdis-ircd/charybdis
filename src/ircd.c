@@ -106,8 +106,8 @@ int doremotd = 0;
 int kline_queued = 0;
 int server_state_foreground = 0;
 int opers_see_all_users = 0;
-int ssl_ok = 0;
-int zlib_ok = 1;
+int ircd_ssl_ok = 0;
+int ircd_zlib_ok = 1;
 
 int testing_conf = 0;
 time_t startup_time;
@@ -712,10 +712,10 @@ main(int argc, char *argv[])
 		if(!rb_setup_ssl_server(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list))
 		{
 			ilog(L_MAIN, "WARNING: Unable to setup SSL.");
-			ssl_ok = 0;
+			ircd_ssl_ok = 0;
 		}
 		else
-			ssl_ok = 1;
+			ircd_ssl_ok = 1;
 	}
 
 	if (testing_conf)
