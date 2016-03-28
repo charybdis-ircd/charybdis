@@ -24,6 +24,7 @@
 #loadmodule "extensions/extb_realname.so";
 #loadmodule "extensions/extb_server.so";
 #loadmodule "extensions/extb_ssl.so";
+#loadmodule "extensions/extb_usermode.so";
 #loadmodule "extensions/hurt.so";
 #loadmodule "extensions/m_findforwards.so";
 #loadmodule "extensions/m_identify.so";
