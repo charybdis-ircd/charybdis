@@ -785,7 +785,7 @@ start_zlib_session(void *data)
 	buf = rb_malloc(len);
 	level = ConfigFileEntry.compression_level;
 
-	uint32_to_buf(&buf[1], rb_get_fd(server->localClient->F));
+	uint32_to_buf(&buf[1], server->localClient->zconnid);
 	buf[5] = (char) level;
 
 	recvq_start = &buf[6];
@@ -814,11 +814,7 @@ start_zlib_session(void *data)
 
 	F[0] = server->localClient->F;
 	F[1] = xF1;
-	del_from_cli_connid_hash(server);
 	server->localClient->F = xF2;
-	/* need to redo as what we did before isn't valid now */
-	uint32_to_buf(&buf[1], rb_get_fd(server->localClient->F));
-	add_to_cli_connid_hash(server);
 
 	server->localClient->z_ctl = which_ssld();
 	server->localClient->z_ctl->cli_count++;
