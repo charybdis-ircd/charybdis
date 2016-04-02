@@ -812,16 +812,6 @@ start_zlib_session(void *data)
 		return;
 	}
 
-	if(IsSSL(server))
-	{
-		/* tell ssld the new connid for the ssl part*/
-		buf2[0] = 'Y';
-		uint32_to_buf(&buf2[1], rb_get_fd(server->localClient->F));
-		uint32_to_buf(&buf2[5], rb_get_fd(xF2));
-		ssl_cmd_write_queue(server->localClient->ssl_ctl, NULL, 0, buf2, sizeof(buf2));
-	}
-
-
 	F[0] = server->localClient->F;
 	F[1] = xF1;
 	del_from_cli_connid_hash(server);
