@@ -188,6 +188,15 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Access denied, requires SSL/TLS but is plaintext");
 		return 0;
+	case -6:
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		     "Connection from servername %s has invalid certificate fingerprint %s",
+		     name, client_p->certfp);
+		ilog(L_SERVER, "Access denied, invalid certificate fingerprint %s from %s",
+		     client_p->certfp, log_client_name(client_p, SHOW_IP));
+
+		exit_client(client_p, client_p, client_p, "Invalid fingerprint.");
+		return 0;
 	default:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 		     "Connection from servername %s rejected, unknown error %d",

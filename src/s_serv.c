@@ -330,6 +330,9 @@ check_server(const char *name, struct Client *client_p)
 	rb_dlink_node *ptr;
 	int error = -1;
 	const char *encr;
+	int name_matched = 0;
+	int host_matched = 0;
+	int certfp_failed = 0;
 
 	s_assert(NULL != client_p);
 	if(client_p == NULL)
@@ -351,14 +354,14 @@ check_server(const char *name, struct Client *client_p)
 		if(!match(tmp_p->name, name))
 			continue;
 
-		error = -3;
+		name_matched = 1;
 
 		/* XXX: Fix me for IPv6 */
 		/* XXX sockhost is the IPv4 ip as a string */
 		if(match(tmp_p->host, client_p->host) ||
 		   match(tmp_p->host, client_p->sockhost))
 		{
-			error = -2;
+			host_matched = 1;
 
 			if(tmp_p->passwd)
 			{
@@ -380,8 +383,10 @@ check_server(const char *name, struct Client *client_p)
 
 			if(tmp_p->certfp)
 			{
-				if(!client_p->certfp || strcasecmp(tmp_p->certfp, client_p->certfp) != 0)
+				if(!client_p->certfp || strcasecmp(tmp_p->certfp, client_p->certfp) != 0) {
+					certfp_failed = 1;
 					continue;
+				}
 			}
 
 			server_p = tmp_p;
@@ -390,7 +395,17 @@ check_server(const char *name, struct Client *client_p)
 	}
 
 	if(server_p == NULL)
+	{
+		/* return the most specific error */
+		if(certfp_failed)
+			error = -6;
+		else if(host_matched)
+			error = -2;
+		else if(name_matched)
+			error = -3;
+
 		return error;
+	}
 
 	if(ServerConfSSL(server_p) && client_p->localClient->ssl_ctl == NULL)
 	{
