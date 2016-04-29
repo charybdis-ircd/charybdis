@@ -746,6 +746,10 @@ send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char
 	RB_DLINK_FOREACH(ptr, ssl_daemons.head)
 	{
 		ssl_ctl_t *ctl = ptr->data;
+
+		if (ctl->dead || ctl->shutdown)
+			continue;
+
 		send_certfp_method(ctl, method);
 		send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
 	}
