@@ -422,7 +422,7 @@ ssl_process_certfp(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
 	char *certfp_string;
 	int i;
 
-	if(ctl_buf->buflen > 5 + RB_SSL_CERTFP_LEN)
+	if(ctl_buf->buflen > 9 + RB_SSL_CERTFP_LEN)
 		return;		/* bogus message..drop it.. XXX should warn here */
 
 	fd = buf_to_uint32(&ctl_buf->buf[1]);
@@ -759,7 +759,6 @@ start_zlib_session(void *data)
 	rb_fde_t *F[2];
 	rb_fde_t *xF1, *xF2;
 	char *buf;
-	char buf2[9];
 	void *recvq_start;
 
 	size_t hdr = (sizeof(uint8_t) * 2) + sizeof(uint32_t);
