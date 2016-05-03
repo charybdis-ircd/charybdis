@@ -24,7 +24,6 @@
 #include <ratbox_lib.h>
 #include "stdinc.h"
 
-
 #include "s_conf.h"
 #include "logger.h"
 #include "listener.h"
@@ -37,6 +36,8 @@
 #include "packet.h"
 
 #define ZIPSTATS_TIME           60
+#define MAXPASSFD               4
+#define READSIZE                1024
 
 static void collect_zipstats(void *unused);
 static void ssl_read_ctl(rb_fde_t * F, void *data);
@@ -45,8 +46,6 @@ static int ssld_count;
 static char tmpbuf[READBUF_SIZE];
 static char nul = '\0';
 
-#define MAXPASSFD 4
-#define READSIZE 1024
 typedef struct _ssl_ctl_buf
 {
 	rb_dlink_node node;
@@ -55,7 +54,6 @@ typedef struct _ssl_ctl_buf
 	rb_fde_t *F[MAXPASSFD];
 	int nfds;
 } ssl_ctl_buf_t;
-
 
 struct _ssl_ctl
 {
@@ -74,7 +72,6 @@ static void send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert,
 				   const char *ssl_cipher_list);
 static void send_init_prng(ssl_ctl_t * ctl, prng_seed_t seedtype, const char *path);
 static void send_certfp_method(ssl_ctl_t *ctl, int method);
-
 
 static rb_dlink_list ssl_daemons;
 
@@ -148,7 +145,6 @@ static char *ssld_path;
 static int ssld_spin_count = 0;
 static time_t last_spin;
 static int ssld_wait = 0;
-
 
 static void
 ssl_killall(void)
@@ -312,10 +308,8 @@ start_ssldaemon(int count, const char *ssl_cert, const char *ssl_private_key, co
 			send_init_prng(ctl, RB_PRNG_DEFAULT, NULL);
 			send_certfp_method(ctl, ConfigFileEntry.certfp_method);
 
-			if(ssl_cert != NULL && ssl_private_key != NULL)
-				send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key,
-						       ssl_dh_params != NULL ? ssl_dh_params : "",
-						       ssl_cipher_list != NULL ? ssl_cipher_list : "");
+			if(ssl_cert != NULL)
+				send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
 		}
 		ssl_read_ctl(ctl->F, ctl);
 		ssl_do_pipe(P2, ctl);
@@ -386,7 +380,6 @@ ssl_process_dead_fd(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
 	exit_client(client_p, client_p, &me, reason);
 }
 
-
 static void
 ssl_process_cipher_string(ssl_ctl_t *ctl, ssl_ctl_buf_t *ctl_buf)
 {
@@ -410,7 +403,6 @@ ssl_process_cipher_string(ssl_ctl_t *ctl, ssl_ctl_buf_t *ctl_buf)
 		client_p->localClient->cipher_string = rb_strdup(cstring);
 	}
 }
-
 
 static void
 ssl_process_certfp(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
@@ -494,7 +486,6 @@ ssl_process_cmd_recv(ssl_ctl_t * ctl)
 	}
 
 }
-
 
 static void
 ssl_read_ctl(rb_fde_t * F, void *data)
@@ -613,13 +604,22 @@ ssl_cmd_write_queue(ssl_ctl_t * ctl, rb_fde_t ** F, int count, const void *buf, 
 	ssl_write_ctl(ctl->F, ctl);
 }
 
-
 static void
-send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list)
+send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_private_key,
+                       const char *ssl_dh_params, const char *ssl_cipher_list)
 {
 	size_t len;
 
-	len = strlen(ssl_cert) + strlen(ssl_private_key) + strlen(ssl_dh_params) + 5;
+	if (ssl_private_key == NULL)
+		ssl_private_key = ssl_cert;
+
+	if (ssl_dh_params == NULL)
+		ssl_dh_params = "";
+
+	if (ssl_cipher_list == NULL)
+		ssl_cipher_list = "";
+
+	len = strlen(ssl_cert) + strlen(ssl_private_key) + strlen(ssl_dh_params) + strlen(ssl_cipher_list) + 6;
 	if(len > sizeof(tmpbuf))
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
@@ -630,9 +630,8 @@ send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_pr
 		     len, sizeof(tmpbuf));
 		return;
 	}
-	len = rb_snprintf(tmpbuf, sizeof(tmpbuf), "K%c%s%c%s%c%s%c%s%c", nul, ssl_cert, nul,
-			  ssl_private_key, nul, ssl_dh_params, nul,
-			  ssl_cipher_list != NULL ? ssl_cipher_list : "", nul);
+	len = rb_snprintf(tmpbuf, sizeof(tmpbuf), "K%c%s%c%s%c%s%c%s%c", nul, ssl_cert,
+	                  nul, ssl_private_key, nul, ssl_dh_params, nul, ssl_cipher_list, nul);
 	ssl_cmd_write_queue(ctl, NULL, 0, tmpbuf, len);
 }
 
@@ -678,7 +677,7 @@ void
 send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list)
 {
 	rb_dlink_node *ptr;
-	if(ssl_cert == NULL || ssl_private_key == NULL || ssl_dh_params == NULL)
+	if(ssl_cert == NULL)
 	{
 		ssl_ok = 0;
 		return;
@@ -689,7 +688,6 @@ send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char
 		send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
 	}
 }
-
 
 ssl_ctl_t *
 start_ssld_accept(rb_fde_t * sslF, rb_fde_t * plainF, uint32_t id)
