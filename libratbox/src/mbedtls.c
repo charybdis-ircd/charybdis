@@ -596,7 +596,7 @@ rb_get_ssl_info(char *buf, size_t len)
 	char version_str[512];
 	mbedtls_version_get_string(version_str);
 
-	rb_snprintf(buf, len, "MBEDTLS: compiled (%s), library(%s)",
+	rb_snprintf(buf, len, "ARM mbedTLS: compiled (v%s), library (v%s)",
 		    MBEDTLS_VERSION_STRING, version_str);
 }
 
