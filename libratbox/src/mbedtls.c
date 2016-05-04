@@ -43,6 +43,8 @@
 #include "mbedtls/dhm.h"
 #include "mbedtls/version.h"
 
+#include "mbedtls_embedded_data.h"
+
 typedef struct
 {
 	mbedtls_x509_crt	 crt;
@@ -62,11 +64,10 @@ typedef struct
 #define SSL_C(x)  ((rb_mbedtls_ssl_context *) (x)->ssl)->cfg
 #define SSL_P(x) &((rb_mbedtls_ssl_context *) (x)->ssl)->ssl
 
-static const char librb_personal_str[] = "charybdis/librb personalization string";
-
 static mbedtls_ctr_drbg_context ctr_drbg_ctx;
 static mbedtls_entropy_context entropy_ctx;
 
+static mbedtls_x509_crt dummy_ca_ctx;
 static rb_mbedtls_cfg_context *rb_mbedtls_cfg = NULL;
 
 static const char *
@@ -156,6 +157,10 @@ static rb_mbedtls_cfg_context *rb_mbedtls_cfg_new(void)
 	mbedtls_ssl_conf_rng(&cfg->server_cfg, mbedtls_ctr_drbg_random, &ctr_drbg_ctx);
 	mbedtls_ssl_conf_rng(&cfg->client_cfg, mbedtls_ctr_drbg_random, &ctr_drbg_ctx);
 
+	mbedtls_ssl_conf_ca_chain(&cfg->server_cfg, &dummy_ca_ctx, NULL);
+	mbedtls_ssl_conf_ca_chain(&cfg->client_cfg, &dummy_ca_ctx, NULL);
+
+	mbedtls_ssl_conf_authmode(&cfg->server_cfg, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_authmode(&cfg->client_cfg, MBEDTLS_SSL_VERIFY_NONE);
 
 	return cfg;
@@ -410,9 +415,17 @@ rb_init_ssl(void)
 	mbedtls_entropy_init(&entropy_ctx);
 
 	if((ret = mbedtls_ctr_drbg_seed(&ctr_drbg_ctx, mbedtls_entropy_func, &entropy_ctx,
-	            (const unsigned char *)librb_personal_str, sizeof(librb_personal_str))) != 0)
+	            (const unsigned char *)rb_mbedtls_personal_str, sizeof(rb_mbedtls_personal_str))) != 0)
 	{
 		rb_lib_log("rb_init_ssl: ctr_drbg_seed: %s",
+		           rb_get_ssl_strerror_internal(ret));
+		return 0;
+	}
+
+	if((ret = mbedtls_x509_crt_parse_der(&dummy_ca_ctx, rb_mbedtls_dummy_ca_certificate,
+	                                     sizeof(rb_mbedtls_dummy_ca_certificate))) != 0)
+	{
+		rb_lib_log("rb_init_ssl: x509_crt_parse_der (Dummy CA): %s",
 		           rb_get_ssl_strerror_internal(ret));
 		return 0;
 	}
@@ -490,11 +503,6 @@ rb_setup_ssl_server(const char *certfile, const char *keyfile, const char *dhfil
 		           rb_get_ssl_strerror_internal(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
-	}
-	if(newcfg->crt.next)
-	{
-		mbedtls_ssl_conf_ca_chain(&newcfg->server_cfg, newcfg->crt.next, NULL);
-		mbedtls_ssl_conf_ca_chain(&newcfg->client_cfg, newcfg->crt.next, NULL);
 	}
 
 	/* XXX support cipher lists when added to mbedtls */
