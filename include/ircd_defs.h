@@ -104,24 +104,11 @@
 #define CLIENT_PARSE_ERROR -1
 #define CLIENT_OK	1
 
-#ifdef RB_IPV6
 #ifndef AF_INET6
 #error "AF_INET6 not defined"
 #endif
 
-
-#else /* #ifdef RB_IPV6 */
-
-#ifndef AF_INET6
-#define AF_INET6 AF_MAX		/* Dummy AF_INET6 declaration */
-#endif
-#endif /* #ifdef RB_IPV6 */
-
-#ifdef RB_IPV6
 #define PATRICIA_BITS	128
-#else
-#define PATRICIA_BITS	32
-#endif
 
 /* Read buffer size */
 #define READBUF_SIZE 16384

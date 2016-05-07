@@ -123,11 +123,9 @@ mo_testline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 	/* parses as an IP, check for a dline */
 	if((type = parse_netmask(host, &ip, &host_mask)) != HM_HOST)
 	{
-#ifdef RB_IPV6
 		if(type == HM_IPV6)
 			aconf = find_dline((struct sockaddr *)&ip, AF_INET6);
 		else
-#endif
 			aconf = find_dline((struct sockaddr *)&ip, AF_INET);
 
 		if(aconf && aconf->status & CONF_DLINE)
@@ -174,11 +172,7 @@ mo_testline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 	/* now look for a matching I/K/G */
 	if((aconf = find_address_conf(host, NULL, user_trunc, notildeuser_trunc,
 				(type != HM_HOST) ? (struct sockaddr *)&ip : NULL,
-				(type != HM_HOST) ? (
-#ifdef RB_IPV6
-				 (type == HM_IPV6) ? AF_INET6 :
-#endif
-				  AF_INET) : 0, NULL)))
+				(type != HM_HOST) ? ((type == HM_IPV6) ? AF_INET6 : AF_INET) : 0, NULL)))
 	{
 		static char buf[HOSTLEN+USERLEN+2];
 

@@ -58,9 +58,7 @@ static PF res_readreply;
 #define RDLENGTH_SIZE     (size_t)2
 #define ANSWER_FIXED_SIZE (TYPE_SIZE + CLASS_SIZE + TTL_SIZE + RDLENGTH_SIZE)
 
-#ifdef RB_IPV6
 struct in6_addr ipv6_addr;
-#endif
 struct in_addr ipv4_addr;
 
 struct reslist
@@ -120,10 +118,8 @@ static uint16_t generate_random_id(void);
 static int
 res_ourserver(const struct rb_sockaddr_storage *inp)
 {
-#ifdef RB_IPV6
 	const struct sockaddr_in6 *v6;
 	const struct sockaddr_in6 *v6in = (const struct sockaddr_in6 *)inp;
-#endif
 	const struct sockaddr_in *v4;
 	const struct sockaddr_in *v4in = (const struct sockaddr_in *)inp;
 	int ns;
@@ -131,9 +127,7 @@ res_ourserver(const struct rb_sockaddr_storage *inp)
 	for(ns = 0; ns < irc_nscount; ns++)
 	{
 		const struct rb_sockaddr_storage *srv = &irc_nsaddr_list[ns];
-#ifdef RB_IPV6
 		v6 = (const struct sockaddr_in6 *)srv;
-#endif
 		v4 = (const struct sockaddr_in *)srv;
 
 		/* could probably just memcmp(srv, inp, srv.ss_len) here
@@ -141,7 +135,6 @@ res_ourserver(const struct rb_sockaddr_storage *inp)
 		 */
 		switch (GET_SS_FAMILY(srv))
 		{
-#ifdef RB_IPV6
 		case AF_INET6:
 			if(GET_SS_FAMILY(srv) == GET_SS_FAMILY(inp))
 				if(v6->sin6_port == v6in->sin6_port)
@@ -151,7 +144,6 @@ res_ourserver(const struct rb_sockaddr_storage *inp)
 						   sizeof(struct in6_addr)) == 0))
 						return 1;
 			break;
-#endif
 		case AF_INET:
 			if(GET_SS_FAMILY(srv) == GET_SS_FAMILY(inp))
 				if(v4->sin_port == v4in->sin_port)
@@ -484,7 +476,6 @@ void build_rdns(char *buf, size_t size, const struct rb_sockaddr_storage *addr, 
 			(unsigned int)(cp[0]),
 			suffix == NULL ? "in-addr.arpa" : suffix);
 	}
-#ifdef RB_IPV6
 	else if (GET_SS_FAMILY(addr) == AF_INET6)
 	{
 		const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)addr;
@@ -510,7 +501,6 @@ void build_rdns(char *buf, size_t size, const struct rb_sockaddr_storage *addr, 
 			(unsigned int)(cp[0] & 0xf), (unsigned int)(cp[0] >> 4),
 			suffix == NULL ? "ip6.arpa" : suffix);
 	}
-#endif
 }
 
 /*
@@ -571,9 +561,7 @@ static void resend_query(struct reslist *request)
 		do_query_number(NULL, &request->addr, request);
 		break;
 	case T_A:
-#ifdef RB_IPV6
 	case T_AAAA:
-#endif
 		do_query_name(NULL, request->name, request, request->type);
 		break;
 	default:
@@ -615,9 +603,7 @@ static int proc_answer(struct reslist *request, HEADER * header, char *buf, char
 	int n;			/* temp count */
 	int rd_length;
 	struct sockaddr_in *v4;	/* conversion */
-#ifdef RB_IPV6
 	struct sockaddr_in6 *v6;
-#endif
 	current = (unsigned char *)buf + sizeof(HEADER);
 
 	for (; header->qdcount > 0; --header->qdcount)
@@ -696,7 +682,6 @@ static int proc_answer(struct reslist *request, HEADER * header, char *buf, char
 			memcpy(&v4->sin_addr, current, sizeof(struct in_addr));
 			return (1);
 			break;
-#ifdef RB_IPV6
 		case T_AAAA:
 			if (request->type != T_AAAA)
 				return (0);
@@ -708,7 +693,6 @@ static int proc_answer(struct reslist *request, HEADER * header, char *buf, char
 			memcpy(&v6->sin6_addr, current, sizeof(struct in6_addr));
 			return (1);
 			break;
-#endif
 		case T_PTR:
 			if (request->type != T_PTR)
 				return (0);
@@ -860,11 +844,9 @@ static int res_read_single_reply(rb_fde_t *F, void *data)
 			 * Lookup the 'authoritative' name that we were given for the
 			 * ip#.
 			 */
-#ifdef RB_IPV6
 			if (GET_SS_FAMILY(&request->addr) == AF_INET6)
 				gethost_byname_type_fqdn(request->name, request->query, T_AAAA);
 			else
-#endif
 				gethost_byname_type_fqdn(request->name, request->query, T_A);
 			rem_request(request);
 		}

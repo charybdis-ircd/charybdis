@@ -258,8 +258,6 @@ conf_set_serverinfo_vhost(void *data)
 static void
 conf_set_serverinfo_vhost6(void *data)
 {
-
-#ifdef RB_IPV6
 	struct rb_sockaddr_storage addr;
 
 	if(rb_inet_pton_sock(data, (struct sockaddr *)&addr) <= 0 || GET_SS_FAMILY(&addr) != AF_INET6)
@@ -269,9 +267,6 @@ conf_set_serverinfo_vhost6(void *data)
 	}
 
 	ServerInfo.bind6 = addr;
-#else
-	conf_report_error("Warning -- ignoring serverinfo::vhost6 -- IPv6 support not available.");
-#endif
 }
 
 static void
@@ -777,7 +772,6 @@ conf_set_class_cidr_ipv4_bitlen(void *data)
 
 }
 
-#ifdef RB_IPV6
 static void
 conf_set_class_cidr_ipv6_bitlen(void *data)
 {
@@ -790,7 +784,6 @@ conf_set_class_cidr_ipv6_bitlen(void *data)
 		yy_class->cidr_ipv6_bitlen = *(unsigned int *) data;
 
 }
-#endif
 
 static void
 conf_set_class_number_per_cidr(void *data)
@@ -885,18 +878,14 @@ conf_set_listen_port_both(void *data, int ssl)
                                                     "It is suggested that users be migrated to SSL/TLS connections.", args->v.number);
 			}
 			add_listener(args->v.number, listener_address, AF_INET, ssl, ssl || yy_defer_accept, yy_wsock);
-#ifdef RB_IPV6
 			add_listener(args->v.number, listener_address, AF_INET6, ssl, ssl || yy_defer_accept, yy_wsock);
-#endif
                 }
 		else
                 {
 			int family;
-#ifdef RB_IPV6
 			if(strchr(listener_address, ':') != NULL)
 				family = AF_INET6;
 			else
-#endif
 				family = AF_INET;
 
 			if (!ssl)
@@ -1313,12 +1302,9 @@ conf_end_connect(struct TopConf *tc)
 		return 0;
 	}
 
-	if(EmptyString(yy_server->connect_host)
-			&& GET_SS_FAMILY(&yy_server->connect4) != AF_INET
-#ifdef RB_IPV6
-			&& GET_SS_FAMILY(&yy_server->connect6) != AF_INET6
-#endif
-		)
+	if(EmptyString(yy_server->connect_host) &&
+	   GET_SS_FAMILY(&yy_server->connect4) != AF_INET &&
+	   GET_SS_FAMILY(&yy_server->connect6) != AF_INET6)
 	{
 		conf_report_error("Ignoring connect block for %s -- missing host.",
 					yy_server->name);
@@ -1354,12 +1340,10 @@ conf_set_connect_host(void *data)
 	{
 		yy_server->connect4 = addr;
 	}
-#ifdef RB_IPV6
 	else if(GET_SS_FAMILY(&addr) == AF_INET6)
 	{
 		yy_server->connect6 = addr;
 	}
-#endif
 	else
 	{
 		conf_report_error("Unsupported IP address for server connect host (%s)",
@@ -1382,12 +1366,10 @@ conf_set_connect_vhost(void *data)
 	{
 		yy_server->bind4 = addr;
 	}
-#ifdef RB_IPV6
 	else if(GET_SS_FAMILY(&addr) == AF_INET6)
 	{
 		yy_server->bind6 = addr;
 	}
-#endif
 	else
 	{
 		conf_report_error("Unsupported IP address for server connect vhost (%s)",
@@ -1448,10 +1430,8 @@ conf_set_connect_aftype(void *data)
 
 	if(rb_strcasecmp(aft, "ipv4") == 0)
 		yy_server->aftype = AF_INET;
-#ifdef RB_IPV6
 	else if(rb_strcasecmp(aft, "ipv6") == 0)
 		yy_server->aftype = AF_INET6;
-#endif
 	else
 		conf_report_error("connect::aftype '%s' is unknown.", aft);
 }
@@ -2202,7 +2182,6 @@ conf_set_opm_listen_address_both(void *data, bool ipv6)
 
 	if(ipv6)
 	{
-#ifdef RB_IPV6
 		if(GET_SS_FAMILY(&addr) != AF_INET6)
 		{
 			conf_report_error("%s is of the wrong address type: %s", confstr, ip);
@@ -2216,10 +2195,6 @@ conf_set_opm_listen_address_both(void *data, bool ipv6)
 		}
 
 		yy_opm_address_ipv6 = rb_strdup(ip);
-#else
-		conf_report_error("%s requires IPv6 support in your ircd", confstr, ip);
-		return;
-#endif
 	}
 	else
 	{
@@ -2256,14 +2231,6 @@ conf_set_opm_listen_port_both(void *data, bool ipv6)
 {
 	int port = *((int *)data);
 	const char *confstr = (ipv6 ? "opm::port_ipv6" : "opm::port_ipv4");
-
-#ifndef RB_IPV6
-	if(ipv6)
-	{
-		conf_report_error("%s requires IPv6 support in your ircd", confstr);
-		return;
-	}
-#endif
 
 	if(port > 65535 || port <= 0)
 	{
@@ -2691,9 +2658,7 @@ static struct ConfEntry conf_class_table[] =
 {
 	{ "ping_time", 		CF_TIME, conf_set_class_ping_time,		0, NULL },
 	{ "cidr_ipv4_bitlen",	CF_INT,  conf_set_class_cidr_ipv4_bitlen,		0, NULL },
-#ifdef RB_IPV6
 	{ "cidr_ipv6_bitlen",	CF_INT,  conf_set_class_cidr_ipv6_bitlen,		0, NULL },
-#endif
 	{ "number_per_cidr",	CF_INT,  conf_set_class_number_per_cidr,	0, NULL },
 	{ "number_per_ip",	CF_INT,  conf_set_class_number_per_ip,		0, NULL },
 	{ "number_per_ip_global", CF_INT,conf_set_class_number_per_ip_global,	0, NULL },

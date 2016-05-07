@@ -31,9 +31,7 @@
 #include "send.h"
 #include "match.h"
 
-#ifdef RB_IPV6
 static unsigned long hash_ipv6(struct sockaddr *, int);
-#endif
 static unsigned long hash_ipv4(struct sockaddr *, int);
 
 
@@ -65,7 +63,6 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 	{
 		return HM_HOST;
 	}
-#ifdef RB_IPV6
 	if(strchr(ip, ':'))
 	{
 		if((ptr = strchr(ip, '/')))
@@ -83,9 +80,8 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 			return HM_IPV6;
 		else
 			return HM_HOST;
-	} else
-#endif
-	if(strchr(text, '.'))
+	}
+	else if(strchr(text, '.'))
 	{
 		if((ptr = strchr(ip, '/')))
 		{
@@ -139,7 +135,6 @@ hash_ipv4(struct sockaddr *saddr, int bits)
  * Output: A hash value of the IP address.
  * Side effects: None
  */
-#ifdef RB_IPV6
 static unsigned long
 hash_ipv6(struct sockaddr *saddr, int bits)
 {
@@ -162,7 +157,6 @@ hash_ipv6(struct sockaddr *saddr, int bits)
 	}
 	return v & (ATABLE_SIZE - 1);
 }
-#endif
 
 /* int hash_text(const char *start)
  * Input: The start of the text to hash.
@@ -227,7 +221,6 @@ find_conf_by_address(const char *name, const char *sockhost,
 	if(addr)
 	{
 		/* Check for IPV6 matches... */
-#ifdef RB_IPV6
 		if(fam == AF_INET6)
 		{
 
@@ -248,9 +241,7 @@ find_conf_by_address(const char *name, const char *sockhost,
 					}
 			}
 		}
-		else
-#endif
-		if(fam == AF_INET)
+		else if(fam == AF_INET)
 		{
 			for (b = 32; b >= 0; b -= 8)
 			{
@@ -369,9 +360,7 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 {
 	struct ConfItem *iconf, *kconf;
 	const char *vuser;
-#ifdef RB_IPV6
 	struct sockaddr_in ip4;
-#endif
 
 	/* Find the best I-line... If none, return NULL -A1kmm */
 	if(!(iconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_CLIENT, aftype, user, auth_user)))
@@ -422,7 +411,6 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 			return kconf;
 	}
 
-#ifdef RB_IPV6
 	if(ip != NULL && ip->sa_family == AF_INET6 &&
 			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)(const void *)ip, &ip4))
 	{
@@ -430,7 +418,6 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 		if(kconf)
 			return kconf;
 	}
-#endif /* RB_IPV6 */
 
 	return iconf;
 }
@@ -444,9 +431,7 @@ struct ConfItem *
 find_dline(struct sockaddr *addr, int aftype)
 {
 	struct ConfItem *aconf;
-#ifdef RB_IPV6
 	struct sockaddr_in addr2;
-#endif
 
 	aconf = find_conf_by_address(NULL, NULL, NULL, addr, CONF_EXEMPTDLINE | 1, aftype, NULL, NULL);
 	if(aconf)
@@ -454,7 +439,6 @@ find_dline(struct sockaddr *addr, int aftype)
 	aconf = find_conf_by_address(NULL, NULL, NULL, addr, CONF_DLINE | 1, aftype, NULL, NULL);
 	if(aconf)
 		return aconf;
-#ifdef RB_IPV6
 	if(addr->sa_family == AF_INET6 &&
 			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)(const void *)addr, &addr2))
 	{
@@ -462,7 +446,6 @@ find_dline(struct sockaddr *addr, int aftype)
 		if(aconf)
 			return aconf;
 	}
-#endif
 	return NULL;
 }
 
@@ -482,15 +465,12 @@ find_exact_conf_by_address(const char *address, int type, const char *username)
 	if(address == NULL)
 		address = "/NOMATCH!/";
 	masktype = parse_netmask(address, &addr, &bits);
-#ifdef RB_IPV6
 	if(masktype == HM_IPV6)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		hv = hash_ipv6((struct sockaddr *)&addr, bits - bits % 16);
 	}
-	else
-#endif
-	if(masktype == HM_IPV4)
+	else if(masktype == HM_IPV4)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		hv = hash_ipv4((struct sockaddr *)&addr, bits - bits % 8);
@@ -541,7 +521,6 @@ add_conf_by_address(const char *address, int type, const char *username, const c
 	masktype = parse_netmask(address, &arec->Mask.ipa.addr, &bits);
 	arec->Mask.ipa.bits = bits;
 	arec->masktype = masktype;
-#ifdef RB_IPV6
 	if(masktype == HM_IPV6)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
@@ -549,9 +528,7 @@ add_conf_by_address(const char *address, int type, const char *username, const c
 		arec->next = atable[(hv = hash_ipv6((struct sockaddr *)&arec->Mask.ipa.addr, bits))];
 		atable[hv] = arec;
 	}
-	else
-#endif
-	if(masktype == HM_IPV4)
+	else if(masktype == HM_IPV4)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		bits -= bits % 8;
@@ -585,16 +562,13 @@ delete_one_address_conf(const char *address, struct ConfItem *aconf)
 	struct AddressRec *arec, *arecl = NULL;
 	struct rb_sockaddr_storage addr;
 	masktype = parse_netmask(address, &addr, &bits);
-#ifdef RB_IPV6
 	if(masktype == HM_IPV6)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		bits -= bits % 16;
 		hv = hash_ipv6((struct sockaddr *)&addr, bits);
 	}
-	else
-#endif
-	if(masktype == HM_IPV4)
+	else if(masktype == HM_IPV4)
 	{
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		bits -= bits % 8;

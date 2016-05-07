@@ -138,11 +138,9 @@ lookup_hostname(const char *hostname, int aftype, DNSCB callback, void *data)
 	req->callback = callback;
 	req->data = data;
 
-#ifdef RB_IPV6
 	if(aftype == AF_INET6)
 		aft = 6;
 	else
-#endif
 		aft = 4;
 
 	submit_dns(rid, aft == 4 ? DNS_HOST_IPV4 : DNS_HOST_IPV6, hostname);
@@ -163,11 +161,9 @@ lookup_ip(const char *addr, int aftype, DNSCB callback, void *data)
 	req->callback = callback;
 	req->data = data;
 
-#ifdef RB_IPV6
 	if(aftype == AF_INET6)
 		aft = 6;
 	else
-#endif
 		aft = 4;
 
 	submit_dns(rid, aft == 4 ? DNS_REVERSE_IPV4 : DNS_REVERSE_IPV6, addr);
@@ -217,11 +213,9 @@ dns_results_callback(const char *callid, const char *status, const char *type, c
 		req->data = NULL;
 		return;
 	}
-#ifdef RB_IPV6
 	if(aft == 6)
 		aft = AF_INET6;
 	else
-#endif
 		aft = AF_INET;
 
 	req->callback(results, st, aft, req->data);

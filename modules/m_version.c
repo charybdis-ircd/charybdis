@@ -140,9 +140,7 @@ confopts(void)
 	*p++ = 'Z';
 #endif
 
-#ifdef RB_IPV6
 	*p++ = '6';
-#endif
 
 	*p = '\0';
 

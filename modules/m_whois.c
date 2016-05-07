@@ -233,9 +233,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	int tlen;
 	hook_data_client hdata;
 	int extra_space = 0;
-#ifdef RB_IPV6
 	struct sockaddr_in ip4;
-#endif
 
 	if(target_p->user == NULL)
 	{
@@ -364,7 +362,6 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 					   form_str(RPL_WHOISACTUALLY),
 					   target_p->name, target_p->sockhost);
 
-#ifdef RB_IPV6
 		if (GET_SS_FAMILY(&target_p->localClient->ip) == AF_INET6 &&
 				(show_ip(source_p, target_p) ||
 				 (source_p == target_p && !IsIPSpoof(target_p))) &&
@@ -376,7 +373,6 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 					"%s :Underlying IPv4 is %s",
 					target_p->name, buf);
 		}
-#endif /* RB_IPV6 */
 
 		sendto_one_numeric(source_p, RPL_WHOISIDLE, form_str(RPL_WHOISIDLE),
 				   target_p->name,

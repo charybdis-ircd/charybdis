@@ -168,9 +168,6 @@ if test x"$SUN" = xyes; then
 	AC_SEARCH_LIBS(inet_ntoa, nsl,, [AC_MSG_ERROR([libnsl not found! Aborting.])])
 fi
 
-AC_ARG_ENABLE(ipv6,
-AC_HELP_STRING([--enable-ipv6],[Enable IPv6 support]),[ipv6=$enableval],[ipv6=no])
-
 AC_SEARCH_LIBS(crypt, [crypt descrypt],,)
 
 CRYPT_LIB=$ac_cv_search_crypt

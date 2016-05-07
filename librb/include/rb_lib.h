@@ -166,14 +166,9 @@ char *rb_strerror(int error);
 #define GET_SS_LEN(x) (((struct sockaddr *)(x))->sa_len)
 #else /* !RB_SOCKADDR_HAS_SA_LEN */
 #define SET_SS_LEN(x, y) (((struct sockaddr *)(x))->sa_family = ((struct sockaddr *)(x))->sa_family)
-#ifdef RB_IPV6
 #define GET_SS_LEN(x) (((struct sockaddr *)(x))->sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6))
-#else
-#define GET_SS_LEN(x) (((struct sockaddr *)(x))->sa_family == AF_INET ? sizeof(struct sockaddr_in) : 0)
-#endif
 #endif
 
-#ifdef RB_IPV6
 #define GET_SS_PORT(x) (((struct sockaddr *)(x))->sa_family == AF_INET ? ((struct sockaddr_in *)(x))->sin_port : ((struct sockaddr_in6 *)(x))->sin6_port)
 #define SET_SS_PORT(x, y)	do { \
 					if(((struct sockaddr *)(x))->sa_family == AF_INET) { \
@@ -182,10 +177,6 @@ char *rb_strerror(int error);
 						((struct sockaddr_in6 *)(x))->sin6_port = (y); \
 					} \
 				} while (0)
-#else
-#define GET_SS_PORT(x) (((struct sockaddr_in *)(x))->sin_port)
-#define SET_SS_PORT(x, y) (((struct sockaddr_in *)(x))->sin_port = y)
-#endif
 
 #ifndef INADDRSZ
 #define INADDRSZ 4

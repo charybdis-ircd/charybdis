@@ -70,12 +70,6 @@ Info MyInformation[] = {
 	 "Maximum Queue Length of Pending Connections"},
 #endif /* SOMAXCONN */
 
-#ifdef RB_IPV6
-	{"IPV6", "ON", 0, "IPv6 Support"},
-#else
-	{"IPV6", "OFF", 0, "IPv6 Support"},
-#endif
-
 	{"JOIN_LEAVE_COUNT_EXPIRE_TIME", "", JOIN_LEAVE_COUNT_EXPIRE_TIME,
 	 "Anti SpamBot Parameter"},
 

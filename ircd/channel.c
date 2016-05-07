@@ -578,7 +578,6 @@ is_banned_list(struct Channel *chptr, rb_dlink_list *list,
 			s3 = src_althost;
 		}
 	}
-#ifdef RB_IPV6
 	if(GET_SS_FAMILY(&who->localClient->ip) == AF_INET6 &&
 			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)&who->localClient->ip, &ip4))
 	{
@@ -588,7 +587,6 @@ is_banned_list(struct Channel *chptr, rb_dlink_list *list,
 				s4, src_ip4host + sizeof src_ip4host - s4);
 		s4 = src_ip4host;
 	}
-#endif
 
 	RB_DLINK_FOREACH(ptr, list->head)
 	{
@@ -597,11 +595,8 @@ is_banned_list(struct Channel *chptr, rb_dlink_list *list,
 		   match(actualBan->banstr, s2) ||
 		   match_cidr(actualBan->banstr, s2) ||
 		   match_extban(actualBan->banstr, who, chptr, CHFL_BAN) ||
-		   (s3 != NULL && match(actualBan->banstr, s3))
-#ifdef RB_IPV6
-		   ||
+		   (s3 != NULL && match(actualBan->banstr, s3)) ||
 		   (s4 != NULL && (match(actualBan->banstr, s4) || match_cidr(actualBan->banstr, s4)))
-#endif
 		   )
 			break;
 		else

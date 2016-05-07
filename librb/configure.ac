@@ -172,27 +172,6 @@ rb_socklen_t=$rb_cv_socklen_t
 
 
 
-AC_ARG_ENABLE(ipv6,AC_HELP_STRING([--disable-ipv6],[Disable IPv6 support]),[ipv6=$enableval],[ipv6=yes])
-
-if test x$ipv6 != xyes; then
-	have_v6="no"
-else
-
-have_v6=yes
-RB_PROTO_INET6([], [
-		AC_MSG_NOTICE([Disabling IPv6 support: PF_INET6 not found])
-		have_v6=no
-		])
-
-	if test "X$have_v6" = "Xyes"; then
-	RB_TYPE_STRUCT_SOCKADDR_IN6([], [
-		AC_MSG_NOTICE([Disabling IPv6 support: struct sockaddr_in6 not found])
-		have_v6=no
-		])
-	fi
-
-fi
-
 AC_CHECK_TYPES([struct sockaddr_storage],[
 	rb_have_sockaddr_storage=yes
         ],[], [
@@ -490,10 +469,6 @@ AC_CONFIG_COMMANDS([include/librb-config.h],
 
 _______EOF
 
-if test "x$rb_have_ipv6" = "xyes"; then
-	echo "#define RB_IPV6 1" >> $outfile
-fi
-
 if test "x$rb_windows_h" = "xyes"; then
 	echo '#define WIN32_LEAN_AND_MEAN 1' >> $outfile
 	echo '#include <windows.h>' >> $outfile
@@ -664,8 +639,6 @@ fi
 		rb_sockaddr_storage="no"
 	fi
 
-	rb_have_ipv6="$have_v6"
-
 	rb_mv="$MV"
 	rb_rm="$RM"
 
@@ -691,7 +664,6 @@ echo
 
 echo "Installing into: $prefix"
 
-echo "IPv6 support ................... $have_v6"
 echo "Assert debugging ............... $assert"
 echo "SSL Type........................ $SSL_TYPE"
 echo

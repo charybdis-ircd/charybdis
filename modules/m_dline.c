@@ -222,11 +222,9 @@ apply_dline(struct Client *source_p, const char *dlhost, int tdline_time, char *
 		sendto_one(source_p, ":%s NOTICE %s :Invalid D-Line", me.name, source_p->name);
 		return;
 	}
-#ifdef RB_IPV6
 	if(ty == HM_IPV6)
 		t = AF_INET6;
 	else
-#endif
 		t = AF_INET;
 
 	/* This means dlines wider than /16 cannot be set remotely */

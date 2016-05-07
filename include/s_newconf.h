@@ -181,10 +181,8 @@ struct server_conf
 	char *connect_host;
 	struct rb_sockaddr_storage connect4;
 	uint16_t dns_query_connect4;
-#ifdef RB_IPV6
 	struct rb_sockaddr_storage connect6;
 	uint16_t dns_query_connect6;
-#endif
 	char *passwd;
 	char *spasswd;
 	char *certfp;
@@ -197,10 +195,8 @@ struct server_conf
 	char *bind_host;
 	struct rb_sockaddr_storage bind4;
 	uint16_t dns_query_bind4;
-#ifdef RB_IPV6
 	struct rb_sockaddr_storage bind6;
 	uint16_t dns_query_bind6;
-#endif
 
 	char *class_name;
 	struct Class *class;
