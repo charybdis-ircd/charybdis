@@ -52,10 +52,8 @@ static const struct afd {
   rb_socklen_t a_socklen;
   int a_off;
 } afdl [] = {
-#ifdef IPV6
     {PF_INET6, sizeof(struct in6_addr), sizeof(struct sockaddr_in6),
 	     offsetof(struct sockaddr_in6, sin6_addr)},
-#endif
     {PF_INET, sizeof(struct in_addr), sizeof(struct sockaddr_in),
 	    offsetof(struct sockaddr_in, sin_addr)},
     {0, 0, 0, 0},
@@ -68,10 +66,8 @@ struct sockinet
   unsigned short si_port;
 };
 
-#ifdef IPV6
 static int ip6_parsenumeric(const struct sockaddr *, const char *, char *,
     size_t, int);
-#endif
 
 int
 rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
@@ -144,7 +140,6 @@ rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
 		if (v4a == 0)
 			flags |= NI_NUMERICHOST;
 		break;
-#ifdef IPV6
 	case AF_INET6:
 	    {
 		const struct sockaddr_in6 *sin6;
@@ -168,7 +163,6 @@ rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
 		}
 	    }
 		break;
-#endif
 	}
 	if (host == NULL || hostlen == 0) {
 		/*
@@ -185,7 +179,6 @@ rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
 			return EAI_NONAME;
 
 		switch(afd->a_af) {
-#ifdef IPV6
 		case AF_INET6:
 		{
 			int error;
@@ -195,7 +188,6 @@ rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
 				return(error);
 			break;
 		}
-#endif
 		default:
 			if (rb_inet_ntop(afd->a_af, addr, numaddr, sizeof(numaddr))
 			    == NULL)
@@ -210,7 +202,6 @@ rb_getnameinfo(const struct sockaddr *sa, rb_socklen_t salen, char *host,
 	return(0);
 }
 
-#ifdef IPV6
 static int
 ip6_parsenumeric(const struct sockaddr *sa, const char *addr,
 		 char *host, size_t hostlen, int flags)
@@ -236,5 +227,4 @@ ip6_parsenumeric(const struct sockaddr *sa, const char *addr,
 
   return(0);
 }
-#endif
 #endif

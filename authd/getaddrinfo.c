@@ -51,12 +51,10 @@ static const struct afd {
 	int a_scoped;
 } afdl [] = {
 #define	N_INET6 0
-#ifdef IPV6
 	{PF_INET6, sizeof(struct in6_addr),
 	 sizeof(struct sockaddr_in6),
 	 offsetof(struct sockaddr_in6, sin6_addr),
 	 in6_addrany, in6_loopback, 1},
-#endif
 #define	N_INET 1
 	{PF_INET, sizeof(struct in_addr),
 	 sizeof(struct sockaddr_in),
@@ -77,11 +75,9 @@ struct explore {
 };
 
 static const struct explore explore[] = {
-#ifdef IPV6
 	{ PF_INET6, SOCK_DGRAM, IPPROTO_UDP, "udp", 0x07 },
 	{ PF_INET6, SOCK_STREAM, IPPROTO_TCP, "tcp", 0x07 },
 	{ PF_INET6, SOCK_RAW, ANY, NULL, 0x05 },
-#endif
 	{ PF_INET, SOCK_DGRAM, IPPROTO_UDP, "udp", 0x07 },
 	{ PF_INET, SOCK_STREAM, IPPROTO_TCP, "tcp", 0x07 },
 	{ PF_INET, SOCK_RAW, ANY, NULL, 0x05 },
@@ -235,9 +231,7 @@ rb_getaddrinfo(const char *hostname, const char *servname,
 		switch (hints->ai_family) {
 		case PF_UNSPEC:
 		case PF_INET:
-#ifdef IPV6
 		case PF_INET6:
-#endif
 			break;
 		default:
 			ERR(EAI_FAMILY);
@@ -270,18 +264,12 @@ rb_getaddrinfo(const char *hostname, const char *servname,
 	 * for raw and other inet{,6} sockets.
 	 */
 	if (MATCH_FAMILY(pai->ai_family, PF_INET, 1)
-#ifdef IPV6
 	    || MATCH_FAMILY(pai->ai_family, PF_INET6, 1)
-#endif
 	    ) {
 		ai0 = *pai;	/* backup *pai */
 
 		if (pai->ai_family == PF_UNSPEC) {
-#ifdef IPV6
 			pai->ai_family = PF_INET6;
-#else
-			pai->ai_family = PF_INET;
-#endif
 		}
 		error = get_portmatch(pai, servname);
 		if (error)
@@ -586,12 +574,10 @@ get_port(struct rb_addrinfo *ai, const char *servname, int matchonly)
 			((struct sockaddr_in *)(void *)
 			    ai->ai_addr)->sin_port = port;
 			break;
-#ifdef IPV6
 		case AF_INET6:
 			((struct sockaddr_in6 *)(void *)
 			    ai->ai_addr)->sin6_port = port;
 			break;
-#endif
 		}
 	}
 
