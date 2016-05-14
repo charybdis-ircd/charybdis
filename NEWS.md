@@ -1,7 +1,25 @@
 # News
 
-This is charybdis 3.5.1, Copyright (c) 2005-2016 Charybdis team.
+This is charybdis 3.5.2, Copyright (c) 2005-2016 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-3.5.2
+
+### user
+- Allow IRCv3.1 STARTTLS to work with other SSL backends besides OpenSSL.
+- Fix an edge case regression involving channel ban cache that was introduced in 3.5.0.
+
+### misc
+- Ensure ssld does not crash when DH parameters are not provided.
+- mbedtls TLS backend improvements from charybdis 4:
+  - add support for CertFP
+  - provide personalization data for the PRNG
+  - fix library linking order
+- openssl TLS backend improvements from charybdis 4:
+  - do not manually initialise openssl when running with OpenSSL 1.1.0 or later
+  - support ECDHE on more than one curve on OpenSSL 1.0.2 and above
+  - fix DH parameters memory leak
+  - free the old TLS context before constructing a new one (#186)
 
 ## charybdis-3.5.1
 
