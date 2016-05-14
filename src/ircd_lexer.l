@@ -62,7 +62,7 @@ char *current_file = conffilebuf;
 
 FILE *inc_fbfile_in[MAX_INCLUDE_DEPTH];
 
-char linebuf[512];
+char yy_linebuf[16384];
 
 #undef YY_INPUT
 
@@ -83,7 +83,7 @@ include   \.include{ws}(\<.*\>|\".*\")
 %%
 {include}       { cinclude(); }
 "/*"            { ccomment(); }
-\n.*            { strcpy(linebuf, yytext+1); lineno++; yyless(1); }
+\n.*            { rb_strlcpy(yy_linebuf, yytext+1, sizeof(yy_linebuf)); lineno++; yyless(1); }
 
 {ws}            ;
 {comment}       { hashcomment(); }
