@@ -46,7 +46,6 @@ DECLARE_MODULE_AV1(starttls, NULL, NULL, starttls_clist, NULL, NULL, "$Revision$
 static int
 mr_starttls(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-#ifdef HAVE_LIBCRYPTO
 	ssl_ctl_t *ctl;
 	rb_fde_t *F[2];
 
@@ -90,8 +89,5 @@ mr_starttls(struct Client *client_p, struct Client *source_p, int parc, const ch
 	else
 		return 1;
 
-#else
-	sendto_one_numeric(client_p, ERR_STARTTLS, form_str(ERR_STARTTLS), "TLS is not configured");
-#endif
 	return 0;
 }
