@@ -387,7 +387,7 @@ rb_ssl_read_or_write(int r_or_w, rb_fde_t *F, void *rbuf, const void *wbuf, size
 		default:
 			F->ssl_errno = ret;
 			errno = EIO;
-			return RB_RW_IO_ERROR;
+			return RB_RW_SSL_ERROR;
 		}
 	}
 
