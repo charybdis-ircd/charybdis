@@ -48,6 +48,7 @@ libircd_la_SOURCES =                  \
   packet.c                      \
   parse.c                       \
   privilege.c                   \
+  proc.c                        \
   ratelimit.c			\
   reject.c                      \
   restart.c                     \
