@@ -667,6 +667,7 @@ AC_CONFIG_FILES(			\
 	extensions/Makefile		\
 	ircd/Makefile			\
 	modules/Makefile		\
+	proc/Makefile			\
 	tools/Makefile			\
 	tools/genssl			\
 	doc/Makefile			\

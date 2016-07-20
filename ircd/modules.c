@@ -36,6 +36,7 @@
 #include "match.h"
 #include "s_serv.h"
 #include "capability.h"
+#include "proc.h"
 
 #include <ltdl.h>
 
@@ -595,6 +596,14 @@ bool init_v3_module_attr(struct module *const mod,
 		return true;
 	}
 
+	if(strncmp(attr->key, "proc", MAPI_V3_KEY_MAXLEN) == 0)
+	{
+		if(!require_value(mod, attr))
+			return false;
+
+		return proc_create(mod, attr->value);
+	}
+
 	if(strncmp(attr->key, "init", MAPI_V3_KEY_MAXLEN) == 0)
 		return attr->init();
 
@@ -647,6 +656,14 @@ void fini_v3_module_attr(struct module *const mod,
 	{
 		if(attr->value)
 			fini_module__cap(mod, attr->value);
+
+		return;
+	}
+
+	if(strncmp(attr->key, "proc", MAPI_V3_KEY_MAXLEN) == 0)
+	{
+		if(attr->value)
+			proc_delete(mod, attr->value);
 
 		return;
 	}
@@ -793,7 +810,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	lt_dlhandle handle RB_UNIQUE_PTR(close_handle) = lt_dlopenext(path);
 	if(handle == NULL)
 	{
-		slog(L_MAIN, SNO_GENERAL, "Error loading module %s: %s", name, lt_dlerror());
+		slog(L_MAIN, SNO_GENERAL, "Error loading module %s [%s]: %s", name, path, lt_dlerror());
 		return false;
 	}
 

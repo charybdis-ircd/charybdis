@@ -14,6 +14,7 @@ SUBDIRS += ircd \
            bandb \
            tools \
            modules \
+           proc \
            extensions \
            help \
            doc
