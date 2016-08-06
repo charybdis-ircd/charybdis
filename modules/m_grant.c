@@ -167,19 +167,24 @@ struct Message msgtab =
 	}
 };
 
-mapi_clist_av1 clist[] =
+mapi_clist_av1 grant_clist[] =
 {
 	&msgtab,
 	NULL
 };
 
-DECLARE_MODULE_AV1
+static const char grant_desc[] =
+	"Provides the grant facility for giving other users specific privilege sets";
+
+DECLARE_MODULE_AV2
 (
 	grant,
 	NULL,
 	NULL,
-	clist,
+	grant_clist,
 	NULL,
 	NULL,
-	"$Revision$"
+	NULL,
+	NULL,
+	grant_desc
 );
