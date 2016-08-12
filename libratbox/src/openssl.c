@@ -376,6 +376,9 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 {
 	const char libratbox_ciphers[] = "kEECDH+HIGH:kEDH+HIGH:HIGH:!aNULL";
 
+	SSL_CTX *ssl_server_ctx_new;
+	SSL_CTX *ssl_client_ctx_new;
+
 	#ifdef LRB_HAVE_TLS_SET_CURVES
 	const char libratbox_curves[] = "P-521:P-384:P-256";
 	#endif
@@ -395,67 +398,62 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	if(cipher_list == NULL)
 		cipher_list = libratbox_ciphers;
 
-	if(ssl_server_ctx)
-		SSL_CTX_free(ssl_server_ctx);
-
-	if(ssl_client_ctx)
-		SSL_CTX_free(ssl_client_ctx);
-
 	#ifdef LRB_HAVE_TLS_METHOD_API
-	ssl_server_ctx = SSL_CTX_new(TLS_server_method());
-	ssl_client_ctx = SSL_CTX_new(TLS_client_method());
+	ssl_server_ctx_new = SSL_CTX_new(TLS_server_method());
+	ssl_client_ctx_new = SSL_CTX_new(TLS_client_method());
 	#else
-	ssl_server_ctx = SSL_CTX_new(SSLv23_server_method());
-	ssl_client_ctx = SSL_CTX_new(SSLv23_client_method());
+	ssl_server_ctx_new = SSL_CTX_new(SSLv23_server_method());
+	ssl_client_ctx_new = SSL_CTX_new(SSLv23_client_method());
 	#endif
 
-	if(ssl_server_ctx == NULL)
+	if(ssl_server_ctx_new == NULL)
 	{
 		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL server context: %s",
 			   get_ssl_error(ERR_get_error()));
 		return 0;
 	}
 
-	if(ssl_client_ctx == NULL)
+	if(ssl_client_ctx_new == NULL)
 	{
 		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL client context: %s",
 			   get_ssl_error(ERR_get_error()));
+		SSL_CTX_free(ssl_server_ctx_new);
 		return 0;
 	}
 
 	#ifndef LRB_HAVE_TLS_METHOD_API
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-	SSL_CTX_set_options(ssl_client_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+	SSL_CTX_set_options(ssl_server_ctx_new, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+	SSL_CTX_set_options(ssl_client_ctx_new, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 	#endif
 
 	#ifdef SSL_OP_SINGLE_DH_USE
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_SINGLE_DH_USE);
+	SSL_CTX_set_options(ssl_server_ctx_new, SSL_OP_SINGLE_DH_USE);
 	#endif
 
 	#ifdef SSL_OP_SINGLE_ECDH_USE
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_SINGLE_ECDH_USE);
+	SSL_CTX_set_options(ssl_server_ctx_new, SSL_OP_SINGLE_ECDH_USE);
 	#endif
 
 	#ifdef SSL_OP_NO_TICKET
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_NO_TICKET);
-	SSL_CTX_set_options(ssl_client_ctx, SSL_OP_NO_TICKET);
+	SSL_CTX_set_options(ssl_server_ctx_new, SSL_OP_NO_TICKET);
+	SSL_CTX_set_options(ssl_client_ctx_new, SSL_OP_NO_TICKET);
 	#endif
 
 	#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-	SSL_CTX_set_options(ssl_server_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
+	SSL_CTX_set_options(ssl_server_ctx_new, SSL_OP_CIPHER_SERVER_PREFERENCE);
 	#endif
 
 	#ifdef LRB_HAVE_TLS_ECDH_AUTO
-	SSL_CTX_set_ecdh_auto(ssl_server_ctx, 1);
+	SSL_CTX_set_ecdh_auto(ssl_server_ctx_new, 1);
 	#endif
 
 	#ifdef LRB_HAVE_TLS_SET_CURVES
-	SSL_CTX_set1_curves_list(ssl_server_ctx, libratbox_curves);
-	SSL_CTX_set1_curves_list(ssl_client_ctx, libratbox_curves);
+	SSL_CTX_set1_curves_list(ssl_server_ctx_new, libratbox_curves);
+	SSL_CTX_set1_curves_list(ssl_client_ctx_new, libratbox_curves);
 	#endif
 
-	SSL_CTX_set_verify(ssl_server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
-	SSL_CTX_set_session_cache_mode(ssl_server_ctx, SSL_SESS_CACHE_OFF);
+	SSL_CTX_set_verify(ssl_server_ctx_new, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
+	SSL_CTX_set_session_cache_mode(ssl_server_ctx_new, SSL_SESS_CACHE_OFF);
 
 	/*
 	 * Set manual ECDHE curve on OpenSSL 1.0.0 & 1.0.1, but make sure it's actually available
@@ -463,25 +461,31 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	#if (OPENSSL_VERSION_NUMBER >= 0x10000000L) && (OPENSSL_VERSION_NUMBER < 0x10002000L) && !defined(OPENSSL_NO_ECDH)
 	EC_KEY *key = EC_KEY_new_by_curve_name(NID_secp384r1);
 	if(key) {
-		SSL_CTX_set_tmp_ecdh(ssl_server_ctx, key);
+		SSL_CTX_set_tmp_ecdh(ssl_server_ctx_new, key);
 		EC_KEY_free(key);
 	}
 	#endif
 
-	SSL_CTX_set_cipher_list(ssl_server_ctx, cipher_list);
-	SSL_CTX_set_cipher_list(ssl_client_ctx, cipher_list);
+	SSL_CTX_set_cipher_list(ssl_server_ctx_new, cipher_list);
+	SSL_CTX_set_cipher_list(ssl_client_ctx_new, cipher_list);
 
-	if(!SSL_CTX_use_certificate_chain_file(ssl_server_ctx, cert) || !SSL_CTX_use_certificate_chain_file(ssl_client_ctx, cert))
+	if(!SSL_CTX_use_certificate_chain_file(ssl_server_ctx_new, cert) || !SSL_CTX_use_certificate_chain_file(ssl_client_ctx_new, cert))
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading certificate file [%s]: %s", cert,
 			   get_ssl_error(ERR_get_error()));
+
+		SSL_CTX_free(ssl_server_ctx_new);
+		SSL_CTX_free(ssl_client_ctx_new);
 		return 0;
 	}
 
-	if(!SSL_CTX_use_PrivateKey_file(ssl_server_ctx, keyfile, SSL_FILETYPE_PEM) || !SSL_CTX_use_PrivateKey_file(ssl_client_ctx, keyfile, SSL_FILETYPE_PEM))
+	if(!SSL_CTX_use_PrivateKey_file(ssl_server_ctx_new, keyfile, SSL_FILETYPE_PEM) || !SSL_CTX_use_PrivateKey_file(ssl_client_ctx_new, keyfile, SSL_FILETYPE_PEM))
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading keyfile [%s]: %s", keyfile,
 			   get_ssl_error(ERR_get_error()));
+
+		SSL_CTX_free(ssl_server_ctx_new);
+		SSL_CTX_free(ssl_client_ctx_new);
 		return 0;
 	}
 
@@ -504,11 +508,20 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 		}
 		else
 		{
-			SSL_CTX_set_tmp_dh(ssl_server_ctx, dh);
+			SSL_CTX_set_tmp_dh(ssl_server_ctx_new, dh);
 			DH_free(dh);
 			fclose(fp);
 		}
 	}
+
+	if(ssl_server_ctx)
+		SSL_CTX_free(ssl_server_ctx);
+
+	if(ssl_client_ctx)
+		SSL_CTX_free(ssl_client_ctx);
+
+	ssl_server_ctx = ssl_server_ctx_new;
+	ssl_client_ctx = ssl_client_ctx_new;
 
 	return 1;
 }
