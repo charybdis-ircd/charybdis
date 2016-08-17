@@ -692,8 +692,7 @@ rb_ssl_get_cipher(rb_fde_t *F)
 	                   kex_alg_name ? "-" : "",
 	                   cipher_alg_name ? cipher_alg_name : "",
 	                   cipher_alg_name ? "-" : "",
-	                   mac_alg_name ? mac_alg_name : "",
-	                   mac_alg_name ? "-" : "");
+	                   mac_alg_name ? mac_alg_name : "");
 
 	return buf;
 }
