@@ -683,7 +683,7 @@ rb_ssl_get_cipher(rb_fde_t *F)
 	    gnutls_cipher_get_name(gnutls_cipher_get(SSL_P(F)));
 
 	const char* mac_alg_name =
-	    gnutls_mac_get_name(gnutls_mac_get(SSL_P(F))));
+	    gnutls_mac_get_name(gnutls_mac_get(SSL_P(F)));
 
 	(void) rb_snprintf(buf, sizeof buf, "%s%s%s%s%s%s%s",
 	                   proto_name ? proto_name : "",
