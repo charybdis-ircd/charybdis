@@ -608,18 +608,17 @@ rb_get_ssl_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
 	if (gnutls_certificate_type_get(SSL_P(F)) != GNUTLS_CRT_X509)
 		return 0;
 
-	if (gnutls_x509_crt_init(&cert) < 0)
-		return 0;
-
 	cert_list_size = 0;
 	cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
-	if (cert_list == NULL)
+	if (cert_list_size <= 0)
 	{
-		gnutls_x509_crt_deinit(cert);
 		return 0;
 	}
 
-	if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) < 0)
+	if (gnutls_x509_crt_init(&cert) != GNUTLS_E_SUCCESS)
+		return 0;
+
+	if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS)
 	{
 		gnutls_x509_crt_deinit(cert);
 		return 0;
@@ -643,7 +642,7 @@ rb_get_ssl_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
 		return 0;
 	}
 
-	if (gnutls_x509_crt_get_fingerprint(cert, algo, digest, &digest_size) < 0)
+	if (gnutls_x509_crt_get_fingerprint(cert, algo, digest, &digest_size) != 0)
 	{
 		gnutls_x509_crt_deinit(cert);
 		return 0;
