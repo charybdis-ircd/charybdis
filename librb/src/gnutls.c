@@ -610,7 +610,6 @@ static int
 make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
 {
 	gnutls_digest_algorithm_t algo;
-	uint8_t digest[RB_SSL_CERTFP_LEN * 2];
 	size_t digest_size;
 	bool spki = false;
 	int len;
@@ -639,7 +638,7 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[RB_SSL_CERTFP_LEN], int metho
 
 	if (!spki)
 	{
-		if (gnutls_x509_crt_get_fingerprint(cert, algo, digest, &digest_size) < 0)
+		if (gnutls_x509_crt_get_fingerprint(cert, algo, certfp, &digest_size) != 0)
 			len = 0;
 	}
 	else
@@ -669,7 +668,7 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[RB_SSL_CERTFP_LEN], int metho
 
 		if (der_pubkey)
 		{
-			if (gnutls_hash_fast(algo, der_pubkey, der_pubkey_len, digest) != 0)
+			if (gnutls_hash_fast(algo, der_pubkey, der_pubkey_len, certfp) != 0)
 				len = 0;
 
 			rb_free(der_pubkey);
@@ -680,8 +679,6 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[RB_SSL_CERTFP_LEN], int metho
 		}
 	}
 
-	if (len)
-		memcpy(certfp, digest, len);
 	return len;
 }
 
