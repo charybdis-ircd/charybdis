@@ -66,10 +66,6 @@
 #include "authproc.h"
 #include "operhash.h"
 
-#ifndef _WIN32
-static int pip[2];
-#endif
-
 static void
 ircd_die_cb(const char *str) __attribute__((noreturn));
 
@@ -197,23 +193,25 @@ ircd_shutdown(const char *reason)
 static void
 print_startup(int pid)
 {
-	inotice("now running in %s mode from %s as pid %d ...",
-	        !server_state_foreground ? "background" : "foreground",
-	        ConfigFileEntry.dpath, pid);
+	int fd;
 
 #ifndef _WIN32
-	int fd = open("/dev/null", O_RDWR);
-
+	close(1);
+	fd = open("/dev/null", O_RDWR);
 	if (fd == -1) {
 		perror("open /dev/null");
 		exit(EXIT_FAILURE);
 	}
+	if (fd == 0)
+		fd = dup(fd);
+	if (fd != 1)
+		abort();
+#endif
+	inotice("now running in %s mode from %s as pid %d ...",
+	       !server_state_foreground ? "background" : "foreground",
+        	ConfigFileEntry.dpath, pid);
 
-	(void) dup2(fd, 0);
-	(void) dup2(fd, 1);
-	(void) dup2(fd, 2);
-	(void) close(fd);
-
+#ifndef _WIN32
 	/* let the parent process know the initialization was successful
 	 * -- jilles */
 	if (!server_state_foreground)
@@ -223,11 +221,13 @@ print_startup(int pid)
 		 * No, casting to void is of no use to shut the warning up. You HAVE to use the value.
 		 * --Elizfaox
 		 */
-		if(write(pip[0], ".", 1) < 1)
+		if(write(0, ".", 1) < 1)
 			abort();
-
-		(void) close(pip[0]);
 	}
+	if (dup2(1, 0) == -1)
+		abort();
+	if (dup2(1, 2) == -1)
+		abort();
 #endif
 }
 
@@ -264,6 +264,7 @@ make_daemon(void)
 {
 #ifndef _WIN32
 	int pid;
+	int pip[2];
 	char c;
 
 	if (pipe(pip) < 0)
@@ -271,7 +272,8 @@ make_daemon(void)
 		perror("pipe");
 		exit(EXIT_FAILURE);
 	}
-
+	dup2(pip[1], 0);
+	close(pip[1]);
 	if((pid = fork()) < 0)
 	{
 		perror("fork");
@@ -279,7 +281,7 @@ make_daemon(void)
 	}
 	else if(pid > 0)
 	{
-		(void) close(pip[1]);
+		close(0);
 		/* Wait for initialization to finish, successfully or
 		 * unsuccessfully. Until this point the child may still
 		 * write to stdout/stderr.
@@ -290,8 +292,11 @@ make_daemon(void)
 			exit(EXIT_FAILURE);
 	}
 
-	(void) close(pip[0]);
-	(void) setsid();
+	close(pip[0]);
+	setsid();
+/*	fclose(stdin);
+	fclose(stdout);
+	fclose(stderr); */
 #endif
 	return 0;
 }
@@ -746,6 +751,18 @@ charybdis_main(int argc, char * const argv[])
 
 	if (testing_conf)
 		server_state_foreground = true;
+
+#ifndef _WIN32
+	/* Make sure fd 0, 1 and 2 are in use -- jilles */
+	do
+	{
+		fd = open("/dev/null", O_RDWR);
+	} while (fd < 2 && fd != -1);
+	if (fd > 2)
+		close(fd);
+	else if (fd == -1)
+		exit(1);
+#endif
 
 	/* Check if there is pidfile and daemon already running */
 	if(!testing_conf)
