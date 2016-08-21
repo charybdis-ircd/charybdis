@@ -225,6 +225,12 @@ make_daemon(void)
 	   we need control over the parent after forking to print
 	   the startup message -- Aaron */
 
+	if((nullfd = open("/dev/null", O_RDWR)) < 0)
+	{
+		perror("open /dev/null");
+		exit(EXIT_FAILURE);
+	}
+
 	if((pid = fork()) < 0)
 	{
 		perror("fork");
@@ -236,12 +242,6 @@ make_daemon(void)
 		        ConfigFileEntry.dpath, pid);
 
 		exit(EXIT_SUCCESS);
-	}
-
-	if((nullfd = open("/dev/null", O_RDWR)) < 0)
-	{
-		perror("open /dev/null");
-		exit(EXIT_FAILURE);
 	}
 
 	for(fdx = 0; fdx <= 2; fdx++)
