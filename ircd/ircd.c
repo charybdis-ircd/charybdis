@@ -724,6 +724,12 @@ charybdis_main(int argc, char * const argv[])
 	if(!testing_conf)
 	{
 		check_pidfile(pidFileName);
+
+#ifndef _WIN32
+		if(!server_state_foreground)
+			make_daemon();
+#endif
+
 		inotice("starting %s ...", ircd_version);
 		inotice("%s", rb_lib_version());
 	}
@@ -838,6 +844,7 @@ charybdis_main(int argc, char * const argv[])
 	construct_umodebuf();
 
 	check_class();
+	write_pidfile(pidFileName);
 	load_help();
 	open_logfiles();
 
@@ -861,12 +868,6 @@ charybdis_main(int argc, char * const argv[])
 	if(server_state_foreground)
 		inotice("now running in foreground mode from %s as pid %d ...",
 		        ConfigFileEntry.dpath, getpid());
-#ifndef _WIN32
-	else
-		make_daemon();
-#endif
-
-	write_pidfile(pidFileName);
 
 	rb_lib_loop(0);
 
