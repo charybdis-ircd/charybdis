@@ -150,39 +150,6 @@ ircd_shutdown(const char *reason)
 }
 
 /*
- * print_startup - print startup information
- */
-static void
-print_startup(int pid)
-{
-	int fd;
-
-	close(1);
-	fd = open("/dev/null", O_RDWR);
-	if (fd == -1) {
-		perror("open /dev/null");
-		exit(EXIT_FAILURE);
-	}
-	if (fd == 0)
-		fd = dup(fd);
-	if (fd != 1)
-		abort();
-
-	inotice("now running in %s mode from %s as pid %d ...",
-	       !server_state_foreground ? "background" : "foreground",
-        	ConfigFileEntry.dpath, pid);
-
-	/* let the parent process know the initialization was successful
-	 * -- jilles */
-	if (!server_state_foreground)
-		write(0, ".", 1);
-	if (dup2(1, 0) == -1)
-		abort();
-	if (dup2(1, 2) == -1)
-		abort();
-}
-
-/*
  * init_sys
  *
  * inputs	- boot_daemon flag
@@ -213,17 +180,18 @@ init_sys(void)
 static int
 make_daemon(void)
 {
-	int pid;
-	int pip[2];
-	char c;
+	int pid, nullfd, fdx;
 
-	if (pipe(pip) < 0)
+	/* The below is approximately what daemon(1, 0) does, but
+	   we need control over the parent after forking to print
+	   the startup message -- Aaron */
+
+	if((nullfd = open("/dev/null", O_RDWR)) < 0)
 	{
-		perror("pipe");
+		perror("open /dev/null");
 		exit(EXIT_FAILURE);
 	}
-	dup2(pip[1], 0);
-	close(pip[1]);
+
 	if((pid = fork()) < 0)
 	{
 		perror("fork");
@@ -231,22 +199,20 @@ make_daemon(void)
 	}
 	else if(pid > 0)
 	{
-		close(0);
-		/* Wait for initialization to finish, successfully or
-		 * unsuccessfully. Until this point the child may still
-		 * write to stdout/stderr.
-		 * -- jilles */
-		if (read(pip[0], &c, 1) > 0)
-			exit(EXIT_SUCCESS);
-		else
-			exit(EXIT_FAILURE);
+		inotice("now running in background mode from %s as pid %d ...",
+		        ConfigFileEntry.dpath, pid);
+
+		exit(EXIT_SUCCESS);
 	}
 
-	close(pip[0]);
-	setsid();
-/*	fclose(stdin);
-	fclose(stdout);
-	fclose(stderr); */
+	for(fdx = 0; fdx <= 2; fdx++)
+		if (fdx != nullfd)
+			(void) dup2(nullfd, fdx);
+
+	if(nullfd > 2)
+		(void) close(nullfd);
+
+	(void) setsid();
 
 	return 0;
 }
@@ -619,9 +585,6 @@ main(int argc, char *argv[])
 	if(!testing_conf)
 	{
 		check_pidfile(pidFileName);
-
-		if(!server_state_foreground)
-			make_daemon();
 		inotice("starting %s ...", ircd_version);
 		inotice("%s", rb_lib_version());
 	}
@@ -739,7 +702,6 @@ main(int argc, char *argv[])
 	construct_umodebuf();
 
 	check_class();
-	write_pidfile(pidFileName);
 	load_help();
 	open_logfiles();
 
@@ -758,7 +720,13 @@ main(int argc, char *argv[])
 	if(splitmode)
 		check_splitmode_ev = rb_event_add("check_splitmode", check_splitmode, NULL, 5);
 
-	print_startup(getpid());
+	if(server_state_foreground)
+		inotice("now running in foreground mode from %s as pid %d ...",
+		        ConfigFileEntry.dpath, getpid());
+	else
+		make_daemon();
+
+	write_pidfile(pidFileName);
 
 	rb_lib_loop(0);
 
