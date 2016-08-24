@@ -586,11 +586,11 @@ main(int argc, char *argv[])
 	{
 		check_pidfile(pidFileName);
 
-		if(!server_state_foreground)
-			make_daemon();
-
 		inotice("starting %s ...", ircd_version);
 		inotice("%s", rb_lib_version());
+
+		if(!server_state_foreground)
+			make_daemon();
 	}
 
 	/* Init the event subsystem */
