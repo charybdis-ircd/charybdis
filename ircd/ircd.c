@@ -725,13 +725,13 @@ charybdis_main(int argc, char * const argv[])
 	{
 		check_pidfile(pidFileName);
 
+		inotice("starting %s ...", ircd_version);
+		inotice("%s", rb_lib_version());
+
 #ifndef _WIN32
 		if(!server_state_foreground)
 			make_daemon();
 #endif
-
-		inotice("starting %s ...", ircd_version);
-		inotice("%s", rb_lib_version());
 	}
 
 	/* Init the event subsystem */
