@@ -140,7 +140,7 @@ rb_mbedtls_cfg_new(void)
 	rb_mbedtls_cfg_context *cfg;
 	int ret;
 
-	if((cfg = rb_malloc(sizeof(rb_mbedtls_cfg_context))) == NULL)
+	if((cfg = rb_malloc(sizeof *cfg)) == NULL)
 		return NULL;
 
 	mbedtls_x509_crt_init(&cfg->crt);
@@ -731,7 +731,7 @@ rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockad
 	if(F == NULL)
 		return;
 
-	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
@@ -749,7 +749,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	F->connect->data = data;
 	F->type |= RB_FD_SSL;
 
-	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
