@@ -18,7 +18,7 @@ used with an IRCv3-capable services implementation such as [Atheme][atheme] or [
 
    * OpenSSL 1.0.0 or newer (--enable-openssl)
    * LibreSSL (--enable-openssl)
-   * mbedTLS (--enable-mbedtls)
+   * MbedTLS (--enable-mbedtls)
    * GnuTLS (--enable-gnutls)
 
  * For certificate-based oper CHALLENGE, OpenSSL 1.0.0 or newer.
