@@ -395,21 +395,21 @@ rb_setup_ssl_server(const char *certfile, const char *keyfile, const char *dhfil
 		cipher_list = librb_ciphers;
 
 	#ifdef LRB_HAVE_TLS_METHOD_API
-	ssl_server_ctx_new = SSL_CTX_new(TLS_server_method());
-	ssl_client_ctx_new = SSL_CTX_new(TLS_client_method());
+	if((ssl_server_ctx_new = SSL_CTX_new(TLS_server_method())) == NULL)
 	#else
-	ssl_server_ctx_new = SSL_CTX_new(SSLv23_server_method());
-	ssl_client_ctx_new = SSL_CTX_new(SSLv23_client_method());
+	if((ssl_server_ctx_new = SSL_CTX_new(SSLv23_server_method())) == NULL)
 	#endif
-
-	if(ssl_server_ctx_new == NULL)
 	{
 		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL server context: %s",
 			   get_ssl_error(ERR_get_error()));
 		return 0;
 	}
 
-	if(ssl_client_ctx_new == NULL)
+	#ifdef LRB_HAVE_TLS_METHOD_API
+	if((ssl_client_ctx_new = SSL_CTX_new(TLS_client_method())) == NULL)
+	#else
+	if((ssl_client_ctx_new = SSL_CTX_new(SSLv23_client_method())) == NULL)
+	#endif
 	{
 		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL client context: %s",
 			   get_ssl_error(ERR_get_error()));
