@@ -1,6 +1,6 @@
 /*
  *  libratbox: a library used by ircd-ratbox and other things
- *  mbedtls.c: ARM mbedTLS backend
+ *  mbedtls.c: ARM MbedTLS backend
  *
  *  Copyright (C) 2007-2008 ircd-ratbox development team
  *  Copyright (C) 2007-2008 Aaron Sethman <androsyn@ratbox.org>
