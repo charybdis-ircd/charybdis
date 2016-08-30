@@ -72,6 +72,13 @@ static rb_mbedtls_cfg_context *rb_mbedtls_cfg = NULL;
 
 
 
+struct ssl_connect
+{
+	CNCB *callback;
+	void *data;
+	int timeout;
+};
+
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
 static int rb_sock_net_recv(void *, unsigned char *, size_t);
@@ -577,13 +584,6 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, size_t count)
  * Internal library-agnostic code
  * Mostly copied from the OpenSSL backend, with some optimisations and complete const-correctness
  */
-
-struct ssl_connect
-{
-	CNCB *callback;
-	void *data;
-	int timeout;
-};
 
 static void
 rb_ssl_connect_realcb(rb_fde_t *const F, int status, struct ssl_connect *const sconn)
