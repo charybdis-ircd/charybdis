@@ -72,6 +72,8 @@ static rb_mbedtls_cfg_context *rb_mbedtls_cfg = NULL;
 
 
 
+static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
+
 static int rb_sock_net_recv(void *, unsigned char *, size_t);
 static int rb_sock_net_xmit(void *, const unsigned char *, size_t);
 
@@ -202,6 +204,81 @@ rb_ssl_setup_mbed_context(rb_fde_t *F, mbedtls_ssl_config *const mbed_config)
 	rb_mbedtls_cfg_incref(rb_mbedtls_cfg);
 	mbed_ssl_ctx->cfg = rb_mbedtls_cfg;
 	F->ssl = mbed_ssl_ctx;
+}
+
+static void
+rb_ssl_accept_common(rb_fde_t *const F, void *const data)
+{
+	lrb_assert(F != NULL);
+	lrb_assert(F->accept != NULL);
+	lrb_assert(F->accept->callback != NULL);
+	lrb_assert(F->ssl != NULL);
+
+	mbedtls_ssl_context *const ssl_ctx = (mbedtls_ssl_context *) SSL_P(F);
+
+	if(ssl_ctx->state != MBEDTLS_SSL_HANDSHAKE_OVER)
+	{
+		int ret = mbedtls_ssl_handshake(ssl_ctx);
+
+		switch(ret)
+		{
+		case 0:
+			F->handshake_count++;
+			break;
+		case MBEDTLS_ERR_SSL_WANT_READ:
+			rb_setselect(F, RB_SELECT_READ, rb_ssl_accept_common, NULL);
+			return;
+		case MBEDTLS_ERR_SSL_WANT_WRITE:
+			rb_setselect(F, RB_SELECT_WRITE, rb_ssl_accept_common, NULL);
+			return;
+		default:
+			F->ssl_errno = ret;
+			F->accept->callback(F, RB_ERROR_SSL, NULL, 0, F->accept->data);
+			return;
+		}
+	}
+
+	rb_settimeout(F, 0, NULL, NULL);
+	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
+
+	struct acceptdata *const ad = F->accept;
+	F->accept = NULL;
+	ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
+	rb_free(ad);
+}
+
+static void
+rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
+{
+	lrb_assert(F != NULL);
+	lrb_assert(F->ssl != NULL);
+
+	mbedtls_ssl_context *const ssl_ctx = SSL_P(F);
+
+	if(ssl_ctx->state != MBEDTLS_SSL_HANDSHAKE_OVER)
+	{
+		int ret = mbedtls_ssl_handshake(ssl_ctx);
+
+		switch(ret)
+		{
+		case 0:
+			F->handshake_count++;
+			break;
+		case MBEDTLS_ERR_SSL_WANT_READ:
+			rb_setselect(F, RB_SELECT_READ, rb_ssl_tryconn_cb, data);
+			return;
+		case MBEDTLS_ERR_SSL_WANT_WRITE:
+			rb_setselect(F, RB_SELECT_WRITE, rb_ssl_tryconn_cb, data);
+			return;
+		default:
+			errno = EIO;
+			F->ssl_errno = ret;
+			rb_ssl_connect_realcb(F, RB_ERROR_SSL, data);
+			return;
+		}
+	}
+
+	rb_ssl_connect_realcb(F, RB_OK, data);
 }
 
 
@@ -526,81 +603,6 @@ rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
 	lrb_assert(F->accept->callback != NULL);
 
 	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
-}
-
-static void
-rb_ssl_accept_common(rb_fde_t *const F, void *const data)
-{
-	lrb_assert(F != NULL);
-	lrb_assert(F->accept != NULL);
-	lrb_assert(F->accept->callback != NULL);
-	lrb_assert(F->ssl != NULL);
-
-	mbedtls_ssl_context *const ssl_ctx = (mbedtls_ssl_context *) SSL_P(F);
-
-	if(ssl_ctx->state != MBEDTLS_SSL_HANDSHAKE_OVER)
-	{
-		int ret = mbedtls_ssl_handshake(ssl_ctx);
-
-		switch(ret)
-		{
-		case 0:
-			F->handshake_count++;
-			break;
-		case MBEDTLS_ERR_SSL_WANT_READ:
-			rb_setselect(F, RB_SELECT_READ, rb_ssl_accept_common, NULL);
-			return;
-		case MBEDTLS_ERR_SSL_WANT_WRITE:
-			rb_setselect(F, RB_SELECT_WRITE, rb_ssl_accept_common, NULL);
-			return;
-		default:
-			F->ssl_errno = ret;
-			F->accept->callback(F, RB_ERROR_SSL, NULL, 0, F->accept->data);
-			return;
-		}
-	}
-
-	rb_settimeout(F, 0, NULL, NULL);
-	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
-
-	struct acceptdata *const ad = F->accept;
-	F->accept = NULL;
-	ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
-	rb_free(ad);
-}
-
-static void
-rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
-{
-	lrb_assert(F != NULL);
-	lrb_assert(F->ssl != NULL);
-
-	mbedtls_ssl_context *const ssl_ctx = SSL_P(F);
-
-	if(ssl_ctx->state != MBEDTLS_SSL_HANDSHAKE_OVER)
-	{
-		int ret = mbedtls_ssl_handshake(ssl_ctx);
-
-		switch(ret)
-		{
-		case 0:
-			F->handshake_count++;
-			break;
-		case MBEDTLS_ERR_SSL_WANT_READ:
-			rb_setselect(F, RB_SELECT_READ, rb_ssl_tryconn_cb, data);
-			return;
-		case MBEDTLS_ERR_SSL_WANT_WRITE:
-			rb_setselect(F, RB_SELECT_WRITE, rb_ssl_tryconn_cb, data);
-			return;
-		default:
-			errno = EIO;
-			F->ssl_errno = ret;
-			rb_ssl_connect_realcb(F, RB_ERROR_SSL, data);
-			return;
-		}
-	}
-
-	rb_ssl_connect_realcb(F, RB_OK, data);
 }
 
 static void
