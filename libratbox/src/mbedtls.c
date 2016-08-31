@@ -238,7 +238,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 	lrb_assert(F->accept->callback != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	mbedtls_ssl_context *const ssl_ctx = (mbedtls_ssl_context *) SSL_P(F);
+	mbedtls_ssl_context *const ssl_ctx = SSL_P(F);
 
 	if(ssl_ctx->state != MBEDTLS_SSL_HANDSHAKE_OVER)
 	{
