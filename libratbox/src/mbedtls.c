@@ -158,6 +158,7 @@ rb_mbedtls_cfg_new(void)
 	{
 		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (server): %s",
 		           rb_get_ssl_strerror_internal(ret));
+
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -168,6 +169,7 @@ rb_mbedtls_cfg_new(void)
 	{
 		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (client): %s",
 		           rb_get_ssl_strerror_internal(ret));
+
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -180,6 +182,14 @@ rb_mbedtls_cfg_new(void)
 
 	mbedtls_ssl_conf_authmode(&cfg->server_cfg, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_authmode(&cfg->client_cfg, MBEDTLS_SSL_VERIFY_NONE);
+
+	#ifdef MBEDTLS_SSL_LEGACY_BREAK_HANDSHAKE
+	mbedtls_ssl_conf_legacy_renegotiation(&cfg->client_cfg, MBEDTLS_SSL_LEGACY_BREAK_HANDSHAKE);
+	#endif
+
+	#ifdef MBEDTLS_SSL_SESSION_TICKETS_DISABLED
+	mbedtls_ssl_conf_session_tickets(&cfg->client_cfg, MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
+	#endif
 
 	return cfg;
 }
