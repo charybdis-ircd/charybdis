@@ -490,7 +490,10 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 			{
 				mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, newcfg->suites);
 				mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, newcfg->suites);
+				rb_lib_log("rb_setup_ssl_server: Configured %zu ciphersuites", suites_count);
 			}
+			else
+				rb_lib_log("rb_setup_ssl_server: Passed a list of ciphersuites, but could not configure any");
 
 			free(cipherlist_dup);
 		}
