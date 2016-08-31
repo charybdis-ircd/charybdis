@@ -442,12 +442,12 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		return 0;
 	}
 
-	if(cipher_list != NULL)
+	if(cipherlist != NULL)
 	{
-		// The cipher_list is (const char *) -- we should not modify it
-		char *const cipher_list_dup = strdup(cipher_list);
+		// The cipherlist is (const char *) -- we should not modify it
+		char *const cipherlist_dup = strdup(cipherlist);
 
-		if(cipher_list_dup == NULL)
+		if(cipherlist_dup == NULL)
 		{
 			rb_lib_log("rb_setup_ssl_server: strdup: %s", strerror(errno));
 			rb_lib_log("rb_setup_ssl_server: will not configure ciphersuites!");
@@ -455,7 +455,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		else
 		{
 			size_t suites_count = 0;
-			char *cipher_str = cipher_list_dup;
+			char *cipher_str = cipherlist_dup;
 
 			while(*cipher_str != '\0' && suites_count < RB_MAX_CIPHERSUITES)
 			{
@@ -492,7 +492,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 				mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, newcfg->suites);
 			}
 
-			free(cipher_list_dup);
+			free(cipherlist_dup);
 		}
 	}
 
