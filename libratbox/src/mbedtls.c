@@ -45,6 +45,8 @@
 
 #include "mbedtls_embedded_data.h"
 
+#define RB_MAX_CIPHERSUITES 512
+
 typedef struct
 {
 	mbedtls_x509_crt	 crt;
@@ -52,6 +54,7 @@ typedef struct
 	mbedtls_dhm_context	 dhp;
 	mbedtls_ssl_config	 server_cfg;
 	mbedtls_ssl_config	 client_cfg;
+	int			 suites[RB_MAX_CIPHERSUITES + 1];
 	size_t			 refcount;
 } rb_mbedtls_cfg_context;
 
@@ -147,6 +150,8 @@ rb_mbedtls_cfg_new(void)
 	mbedtls_dhm_init(&cfg->dhp);
 	mbedtls_ssl_config_init(&cfg->server_cfg);
 	mbedtls_ssl_config_init(&cfg->client_cfg);
+
+	(void) memset(cfg->suites, 0x00, sizeof cfg->suites);
 
 	cfg->refcount = 1;
 
@@ -340,7 +345,7 @@ rb_init_ssl(void)
 	int ret;
 
 	if((ret = mbedtls_ctr_drbg_seed(&ctr_drbg_ctx, mbedtls_entropy_func, &entropy_ctx,
-	            (const unsigned char *)rb_mbedtls_personal_str, sizeof(rb_mbedtls_personal_str))) != 0)
+	    (const unsigned char *)rb_mbedtls_personal_str, sizeof(rb_mbedtls_personal_str))) != 0)
 	{
 		rb_lib_log("rb_init_ssl: ctr_drbg_seed: %s",
 		           rb_get_ssl_strerror_internal(ret));
@@ -437,7 +442,59 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		return 0;
 	}
 
-	/* XXX support cipher lists when added to mbedtls */
+	if(cipher_list != NULL)
+	{
+		// The cipher_list is (const char *) -- we should not modify it
+		char *const cipher_list_dup = strdup(cipher_list);
+
+		if(cipher_list_dup == NULL)
+		{
+			rb_lib_log("rb_setup_ssl_server: strdup: %s", strerror(errno));
+			rb_lib_log("rb_setup_ssl_server: will not configure ciphersuites!");
+		}
+		else
+		{
+			size_t suites_count = 0;
+			char *cipher_str = cipher_list_dup;
+
+			while(*cipher_str != '\0' && suites_count < RB_MAX_CIPHERSUITES)
+			{
+				// Arbitrary, but the same separator as OpenSSL uses
+				char *const cipher_idx = strchr(cipher_str, ':');
+
+				// This could legitimately be NULL (last ciphersuite in the list)
+				if(cipher_idx != NULL)
+					*cipher_idx = '\0';
+
+				size_t cipher_len = strlen(cipher_str);
+				int cipher_idn = 0;
+
+				// All MbedTLS ciphersuite names begin with these 4 characters
+				if(cipher_len > 4 && strncmp(cipher_str, "TLS-", 4) == 0)
+					cipher_idn = mbedtls_ssl_get_ciphersuite_id(cipher_str);
+
+				// Prevent the same ciphersuite being added multiple times
+				for(size_t x = 0; cipher_idn != 0 && newcfg->suites[x] != 0; x++)
+					if(newcfg->suites[x] == cipher_idn)
+						cipher_idn = 0;
+
+				// Add the suite to the list
+				if(cipher_idn != 0)
+					newcfg->suites[suites_count++] = cipher_idn;
+
+				// Advance the string to the next entry -- this could end the loop
+				cipher_str += (cipher_len + 1);
+			}
+
+			if(suites_count > 0)
+			{
+				mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, newcfg->suites);
+				mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, newcfg->suites);
+			}
+
+			free(cipher_list_dup);
+		}
+	}
 
 	rb_mbedtls_cfg_decref(rb_mbedtls_cfg);
 	rb_mbedtls_cfg = newcfg;
