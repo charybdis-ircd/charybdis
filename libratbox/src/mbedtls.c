@@ -98,9 +98,9 @@ rb_get_ssl_strerror_internal(int err)
 #ifdef MBEDTLS_ERROR_C
 	char mbed_errbuf[512];
 	mbedtls_strerror(err, mbed_errbuf, sizeof mbed_errbuf);
-	rb_snprintf(errbuf, sizeof errbuf, "(-0x%x) %s", -err, mbed_errbuf);
+	(void) rb_snprintf(errbuf, sizeof errbuf, "(-0x%x) %s", -err, mbed_errbuf);
 #else
-	rb_snprintf(errbuf, sizeof errbuf, "-0x%x", -err);
+	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%x", -err);
 #endif
 
 	return errbuf;
