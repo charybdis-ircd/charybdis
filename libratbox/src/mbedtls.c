@@ -442,19 +442,18 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		return 0;
 	}
 
+
+
+	const int *rb_ciphersuites = newcfg->suites;
+	size_t suites_count = 0;
+
 	if(cipherlist != NULL)
 	{
 		// The cipherlist is (const char *) -- we should not modify it
 		char *const cipherlist_dup = strdup(cipherlist);
 
-		if(cipherlist_dup == NULL)
+		if(cipherlist_dup != NULL)
 		{
-			rb_lib_log("rb_setup_ssl_server: strdup: %s", strerror(errno));
-			rb_lib_log("rb_setup_ssl_server: will not configure ciphersuites!");
-		}
-		else
-		{
-			size_t suites_count = 0;
 			char *cipher_str = cipherlist_dup;
 			char *cipher_idx;
 
@@ -489,18 +488,34 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 			} while(cipher_idx && suites_count < RB_MAX_CIPHERSUITES);
 
-			if(suites_count > 0)
-			{
-				mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, newcfg->suites);
-				mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, newcfg->suites);
-				rb_lib_log("rb_setup_ssl_server: Configured %zu ciphersuites", suites_count);
-			}
-			else
-				rb_lib_log("rb_setup_ssl_server: Passed a list of ciphersuites, but could not configure any");
+			if(suites_count == 0)
+				rb_lib_log("rb_setup_ssl_server: Ciphersuites provided, but could not parse any");
 
 			free(cipherlist_dup);
 		}
+		else
+		{
+			rb_lib_log("rb_setup_ssl_server: strdup: %s", strerror(errno));
+		}
 	}
+	else
+	{
+		rb_lib_log("rb_setup_ssl_server: No ciphersuite list provided");
+	}
+
+	if(suites_count == 0)
+	{
+		rb_lib_log("rb_setup_ssl_server: Using default ciphersuites");
+
+		rb_ciphersuites = rb_mbedtls_ciphersuites;
+		suites_count = sizeof(rb_mbedtls_ciphersuites) / sizeof(rb_mbedtls_ciphersuites[0]);
+	}
+
+	mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, rb_ciphersuites);
+	mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, rb_ciphersuites);
+	rb_lib_log("rb_setup_ssl_server: Configured %zu ciphersuites", suites_count);
+
+
 
 	rb_mbedtls_cfg_decref(rb_mbedtls_cfg);
 	rb_mbedtls_cfg = newcfg;
