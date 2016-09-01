@@ -508,7 +508,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		rb_lib_log("rb_setup_ssl_server: Using default ciphersuites");
 
 		rb_ciphersuites = rb_mbedtls_ciphersuites;
-		suites_count = sizeof(rb_mbedtls_ciphersuites) / sizeof(rb_mbedtls_ciphersuites[0]);
+		suites_count = (sizeof(rb_mbedtls_ciphersuites) / sizeof(rb_mbedtls_ciphersuites[0])) - 1;
 	}
 
 	mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, rb_ciphersuites);
