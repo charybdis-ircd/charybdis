@@ -358,13 +358,13 @@ rb_init_ssl(void)
 {
 	char libratbox_data[] = "libratbox data";
 
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	/*
 	 * OpenSSL 1.1.0 and above automatically initialises itself with sane defaults
 	 */
+	#if defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	SSL_library_init();
 	SSL_load_error_strings();
-#endif
+	#endif
 
 	libratbox_index = SSL_get_ex_new_index(0, libratbox_data, NULL, NULL, NULL);
 
