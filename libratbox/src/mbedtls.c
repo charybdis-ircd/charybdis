@@ -456,11 +456,12 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		{
 			size_t suites_count = 0;
 			char *cipher_str = cipherlist_dup;
+			char *cipher_idx;
 
-			while(*cipher_str != '\0' && suites_count < RB_MAX_CIPHERSUITES)
+			do
 			{
 				// Arbitrary, but the same separator as OpenSSL uses
-				char *const cipher_idx = strchr(cipher_str, ':');
+				cipher_idx = strchr(cipher_str, ':');
 
 				// This could legitimately be NULL (last ciphersuite in the list)
 				if(cipher_idx != NULL)
@@ -482,9 +483,11 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 				if(cipher_idn != 0)
 					newcfg->suites[suites_count++] = cipher_idn;
 
-				// Advance the string to the next entry -- this could end the loop
-				cipher_str += (cipher_len + 1);
-			}
+				// Advance the string to the next entry
+				if (cipher_idx)
+					cipher_str = cipher_idx + 1;
+
+			} while(cipher_idx && suites_count < RB_MAX_CIPHERSUITES);
 
 			if(suites_count > 0)
 			{
