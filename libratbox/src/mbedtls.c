@@ -752,7 +752,7 @@ rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, size_t
 	int ret = (int) write(F->fd, buf, count);
 
 	if(ret < 0 && rb_ignore_errno(errno))
-		return MBEDTLS_ERR_SSL_WANT_READ;
+		return MBEDTLS_ERR_SSL_WANT_WRITE;
 
 	return ret;
 }
