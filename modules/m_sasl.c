@@ -143,6 +143,12 @@ m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 		return;
 	}
 
+	if (*parv[1] == ':' || strchr(parv[1], ' '))
+	{
+		exit_client(client_p, client_p, client_p, "Malformed AUTHENTICATE");
+		return;
+	}
+
 	saslserv_p = find_named_client(ConfigFileEntry.sasl_service);
 	if(saslserv_p == NULL || !IsService(saslserv_p))
 	{
