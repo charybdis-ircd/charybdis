@@ -1,7 +1,29 @@
 # News
 
-This is charybdis 3.5.2, Copyright (c) 2005-2016 Charybdis team.
+This is charybdis 3.5.3, Copyright (c) 2005-2016 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-3.5.3
+
+### security
+- incorporate all relevant security patches for charybdis through 6th September 2016:
+  - fix issue allowing EXTERNAL authentications to be spoofed using a certificate not actually
+    held by the authenticating user
+
+### misc
+- mbedtls TLS backend improvements from charybdis 4 and 5:
+  - add support for configurable ciphersuites
+  - disable legacy (SSLv2) renegotiation support if possible
+  - disable session tickets if possible
+  - general robustness improvements
+- gnutls TLS backend improvements from charybdis 4:
+  - make certfp support more reliable on newer gnutls versions
+  - avoid possible null dereference when constructing ciphersuites
+- openssl TLS backend improvements from charybdis 4:
+  - avoid a possible use-after-free issue when newer openssl versions cannot load keypairs in a rehash
+  - improve compatibility with libressl
+  - more robustly load DH parameters files
+- daemonization improvements from charybdis 4
 
 ## charybdis-3.5.2
 
