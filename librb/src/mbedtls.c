@@ -680,7 +680,7 @@ rb_ssl_read(rb_fde_t *const F, void *const buf, size_t count)
 
 	ssize_t ret = (ssize_t) mbedtls_ssl_read(SSL_P(F), buf, count);
 
-	if(ret > 0)
+	if(ret >= 0)
 		return ret;
 
 	switch(ret)
@@ -706,7 +706,7 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, size_t count)
 
 	ssize_t ret = (ssize_t) mbedtls_ssl_write(SSL_P(F), buf, count);
 
-	if(ret > 0)
+	if(ret >= 0)
 		return ret;
 
 	switch(ret)
