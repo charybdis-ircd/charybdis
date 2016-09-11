@@ -78,6 +78,8 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 
 			*ch++ = '\0';
 		}
+		else
+			ch = t;
 	}
 
 	/* skip any whitespace between tags and origin */
