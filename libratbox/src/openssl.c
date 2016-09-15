@@ -35,7 +35,6 @@
 
 static SSL_CTX *ssl_server_ctx = NULL;
 static SSL_CTX *ssl_client_ctx = NULL;
-static int libratbox_index = -1;
 
 static unsigned long
 get_last_err(void)
@@ -89,25 +88,6 @@ rb_ssl_timeout(rb_fde_t *F, void *notused)
 
 
 static void
-rb_ssl_info_callback(SSL * ssl, int where, int ret)
-{
-	if(where & SSL_CB_HANDSHAKE_START)
-	{
-		rb_fde_t *F = SSL_get_ex_data(ssl, libratbox_index);
-		if(F == NULL)
-			return;
-		F->handshake_count++;
-	}
-}
-
-static void
-rb_setup_ssl_cb(rb_fde_t *F)
-{
-	SSL_set_ex_data(F->ssl, libratbox_index, (char *)F);
-	SSL_set_info_callback((SSL *) F->ssl, (void (*)(const SSL *,int,int))rb_ssl_info_callback);
-}
-
-static void
 rb_ssl_tryaccept(rb_fde_t *F, void *data)
 {
 	int ssl_err;
@@ -140,6 +120,8 @@ rb_ssl_tryaccept(rb_fde_t *F, void *data)
 			}
 			return;
 		}
+		else
+			F->handshake_count++;
 	}
 	rb_settimeout(F, 0, NULL, NULL);
 	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
@@ -178,6 +160,7 @@ rb_ssl_accept_common(rb_fde_t *new_F)
 	}
 	else
 	{
+		new_F->handshake_count++;
 		rb_ssl_tryaccept(new_F, NULL);
 	}
 }
@@ -195,7 +178,6 @@ rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
 
 	new_F->accept->addrlen = 0;
 	SSL_set_fd((SSL *) new_F->ssl, rb_get_fd(new_F));
-	rb_setup_ssl_cb(new_F);
 	rb_ssl_accept_common(new_F);
 }
 
@@ -216,7 +198,6 @@ rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrl
 	new_F->accept->addrlen = addrlen;
 
 	SSL_set_fd((SSL *) new_F->ssl, rb_get_fd(new_F));
-	rb_setup_ssl_cb(new_F);
 	rb_ssl_accept_common(new_F);
 }
 
@@ -306,8 +287,6 @@ rb_init_ssl(void)
 	SSL_library_init();
 	SSL_load_error_strings();
 	#endif
-
-	libratbox_index = SSL_get_ex_new_index(0, libratbox_data, NULL, NULL, NULL);
 
 	return 1;
 }
@@ -524,6 +503,7 @@ rb_ssl_tryconn_cb(rb_fde_t *F, void *data)
 		}
 		else
 		{
+			F->handshake_count++;
 			rb_ssl_connect_realcb(F, RB_OK, sconn);
 		}
 	}
@@ -543,7 +523,6 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 	F->type |= RB_FD_SSL;
 	F->ssl = SSL_new(ssl_client_ctx);
 	SSL_set_fd((SSL *) F->ssl, F->fd);
-	rb_setup_ssl_cb(F);
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	if((ssl_err = SSL_connect((SSL *) F->ssl)) <= 0)
 	{
@@ -567,6 +546,7 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 	}
 	else
 	{
+		F->handshake_count++;
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	}
 }
@@ -606,7 +586,6 @@ rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
 	F->ssl = SSL_new(ssl_client_ctx);
 
 	SSL_set_fd((SSL *) F->ssl, F->fd);
-	rb_setup_ssl_cb(F);
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	if((ssl_err = SSL_connect((SSL *) F->ssl)) <= 0)
 	{
