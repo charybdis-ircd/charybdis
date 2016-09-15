@@ -534,6 +534,9 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], int method)
 {
+	if(F == NULL || F->ssl == NULL)
+		return 0;
+
 	mbedtls_md_type_t md_type;
 	int hashlen;
 
@@ -590,7 +593,7 @@ rb_get_ssl_info(char *const buf, size_t len)
 const char *
 rb_ssl_get_cipher(rb_fde_t *const F)
 {
-	if(F == NULL || F->ssl == NULL || SSL_P(F) == NULL)
+	if(F == NULL || F->ssl == NULL)
 		return NULL;
 
 	static char buf[512];
