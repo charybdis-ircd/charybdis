@@ -582,10 +582,13 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 static void
 rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *const sconn)
 {
+	lrb_assert(F->connect != NULL);
+
 	F->connect->callback = sconn->callback;
 	F->connect->data = sconn->data;
-	rb_free(sconn);
+
 	rb_connect_callback(F, status);
+	rb_free(sconn);
 }
 
 static void
