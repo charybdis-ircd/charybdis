@@ -143,7 +143,6 @@ rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 	}
 
 	mbedtls_ssl_init(&mbed_ssl_ctx->ssl);
-	mbedtls_ssl_set_bio(&mbed_ssl_ctx->ssl, F, rb_sock_net_xmit, rb_sock_net_recv, NULL);
 
 	int ret;
 
@@ -155,6 +154,8 @@ rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 		rb_close(F);
 		return;
 	}
+
+	mbedtls_ssl_set_bio(&mbed_ssl_ctx->ssl, F, rb_sock_net_xmit, rb_sock_net_recv, NULL);
 
 	rb_mbedtls_cfg_incref(rb_mbedtls_cfg);
 	mbed_ssl_ctx->cfg = rb_mbedtls_cfg;
