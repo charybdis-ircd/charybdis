@@ -1,9 +1,10 @@
 /*
  *  libratbox: a library used by ircd-ratbox and other things
- *  openssl.c: openssl related code
+ *  openssl.c: OpenSSL backend
  *
  *  Copyright (C) 2007-2008 ircd-ratbox development team
  *  Copyright (C) 2007-2008 Aaron Sethman <androsyn@ratbox.org>
+ *  Copyright (C) 2015-2016 Aaron Jones <aaronmdjones@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,7 +21,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
  *  USA
  *
- *  $Id: commio.c 24808 2008-01-02 08:17:05Z androsyn $
  */
 
 #include <libratbox_config.h>
@@ -30,67 +30,8 @@
 
 #include <commio-int.h>
 #include <commio-ssl.h>
-#include <openssl/ssl.h>
-#include <openssl/dh.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/opensslv.h>
 
-/*
- * This is a mess but what can you do when the library authors
- * refuse to play ball with established conventions?
- */
-#if defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER >= 0x20020002L)
-#  define LRB_HAVE_TLS_METHOD_API 1
-#else
-#  if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-#    define LRB_HAVE_TLS_METHOD_API 1
-#  endif
-#endif
-
-/*
- * Use SSL_CTX_set_ecdh_auto() in OpenSSL 1.0.2 only
- * Use SSL_CTX_set1_curves_list() in OpenSSL 1.0.2 and above
- * TODO: Merge this into the block above if LibreSSL implements them
- */
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10002000L)
-#  define LRB_HAVE_TLS_SET_CURVES 1
-#  if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-#    define LRB_HAVE_TLS_ECDH_AUTO 1
-#  endif
-#endif
-
-/*
- * More LibreSSL compatibility mess
- * Used in rb_get_ssl_info() below.
- */
-#if !defined(LIBRESSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-   /* OpenSSL 1.1.0+ */
-#  define LRB_SSL_VTEXT_COMPILETIME     OPENSSL_VERSION_TEXT
-#  define LRB_SSL_VTEXT_RUNTIME         OpenSSL_version(OPENSSL_VERSION)
-#  define LRB_SSL_VNUM_COMPILETIME      OPENSSL_VERSION_NUMBER
-#  define LRB_SSL_VNUM_RUNTIME          OpenSSL_version_num()
-#  define LRB_SSL_FULL_VERSION_INFO     1
-#else
-/*
- * "Full version info" above means we have access to all 4 pieces of information.
- *
- * For the below, this is not the case; LibreSSL version number at runtime returns
- * the wrong version number, and OpenSSL version text at compile time does not exist.
- * Thus, we only reliably have version text at runtime, and version number at compile
- * time.
- */
-#  if defined(LIBRESSL_VERSION_NUMBER) && (LIBRESSL_VERSION_NUMBER >= 0x20200000L)
-     /* LibreSSL 2.2.0+ */
-#    define LRB_SSL_VTEXT_RUNTIME       SSLeay_version(SSLEAY_VERSION)
-#    define LRB_SSL_VNUM_COMPILETIME    LIBRESSL_VERSION_NUMBER
-#  else
-     /* OpenSSL < 1.1.0 or LibreSSL < 2.2.0 */
-#    define LRB_SSL_VTEXT_RUNTIME       SSLeay_version(SSLEAY_VERSION)
-#    define LRB_SSL_VNUM_COMPILETIME    SSLEAY_VERSION_NUMBER
-#  endif
-#endif
+#include "openssl_ratbox.h"
 
 static SSL_CTX *ssl_server_ctx = NULL;
 static SSL_CTX *ssl_client_ctx = NULL;
@@ -374,14 +315,8 @@ rb_init_ssl(void)
 int
 rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, const char *cipher_list)
 {
-	const char libratbox_ciphers[] = "kEECDH+HIGH:kEDH+HIGH:HIGH:!aNULL";
-
 	SSL_CTX *ssl_server_ctx_new;
 	SSL_CTX *ssl_client_ctx_new;
-
-	#ifdef LRB_HAVE_TLS_SET_CURVES
-	const char libratbox_curves[] = "P-521:P-384:P-256";
-	#endif
 
 	if(cert == NULL)
 	{
@@ -396,7 +331,7 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	}
 
 	if(cipher_list == NULL)
-		cipher_list = libratbox_ciphers;
+		cipher_list = rb_default_ciphers;
 
 	#ifdef LRB_HAVE_TLS_METHOD_API
 	if((ssl_server_ctx_new = SSL_CTX_new(TLS_server_method())) == NULL)
@@ -449,8 +384,8 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	#endif
 
 	#ifdef LRB_HAVE_TLS_SET_CURVES
-	SSL_CTX_set1_curves_list(ssl_server_ctx_new, libratbox_curves);
-	SSL_CTX_set1_curves_list(ssl_client_ctx_new, libratbox_curves);
+	SSL_CTX_set1_curves_list(ssl_server_ctx_new, rb_default_curves);
+	SSL_CTX_set1_curves_list(ssl_client_ctx_new, rb_default_curves);
 	#endif
 
 	SSL_CTX_set_verify(ssl_server_ctx_new, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
