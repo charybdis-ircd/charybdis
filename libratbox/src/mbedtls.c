@@ -244,7 +244,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 		return;
 	default:
 		errno = EIO;
-		F->ssl_errno = ret;
+		F->ssl_errno = (unsigned long) -ret;
 		F->accept->callback(F, RB_ERROR_SSL, NULL, 0, F->accept->data);
 		return;
 	}
@@ -279,7 +279,7 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 		return;
 	default:
 		errno = EIO;
-		F->ssl_errno = ret;
+		F->ssl_errno = (unsigned long) -ret;
 		rb_ssl_connect_realcb(F, RB_ERROR_SSL, data);
 		return;
 	}
@@ -531,7 +531,7 @@ rb_get_random(void *const buf, size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *const F)
 {
-	return rb_ssl_strerror(F->ssl_errno);
+	return rb_ssl_strerror((int) F->ssl_errno);
 }
 
 int
@@ -627,7 +627,7 @@ rb_ssl_read(rb_fde_t *const F, void *const buf, size_t count)
 		return RB_RW_SSL_NEED_WRITE;
 	default:
 		errno = EIO;
-		F->ssl_errno = ret;
+		F->ssl_errno = (unsigned long) -ret;
 		return RB_RW_SSL_ERROR;
 	}
 }
@@ -653,7 +653,7 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, size_t count)
 		return RB_RW_SSL_NEED_WRITE;
 	default:
 		errno = EIO;
-		F->ssl_errno = ret;
+		F->ssl_errno = (unsigned long) -ret;
 		return RB_RW_SSL_ERROR;
 	}
 }
