@@ -377,22 +377,20 @@ rb_init_ssl(void)
 }
 
 int
-rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *const dhfile, const char *cipher_list)
+rb_setup_ssl_server(const char *const certfile, const char *keyfile,
+                    const char *const dhfile, const char *cipherlist)
 {
-	if(cert == NULL)
+	if(certfile == NULL)
 	{
 		rb_lib_log("%s: no certificate file specified", __func__);
 		return 0;
 	}
 
 	if(keyfile == NULL)
-	{
-		rb_lib_log("%s: no key file specified", __func__);
-		return 0;
-	}
+		keyfile = certfile;
 
-	if(cipher_list == NULL)
-		cipher_list = rb_default_ciphers;
+	if(cipherlist == NULL)
+		cipherlist = rb_default_ciphers;
 
 
 	(void) rb_ssl_last_err();
@@ -410,98 +408,114 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 		return 0;
 	}
 
-	#ifndef LRB_HAVE_TLS_METHOD_API
-	SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-	#endif
-
-	#ifdef SSL_OP_SINGLE_DH_USE
-	SSL_CTX_set_options(ssl_ctx_new, SSL_OP_SINGLE_DH_USE);
-	#endif
-
-	#ifdef SSL_OP_SINGLE_ECDH_USE
-	SSL_CTX_set_options(ssl_ctx_new, SSL_OP_SINGLE_ECDH_USE);
-	#endif
-
-	#ifdef SSL_OP_NO_TICKET
-	SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_TICKET);
-	#endif
-
-	#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-	SSL_CTX_set_options(ssl_ctx_new, SSL_OP_CIPHER_SERVER_PREFERENCE);
-	#endif
-
-	#ifdef LRB_HAVE_TLS_ECDH_AUTO
-	SSL_CTX_set_ecdh_auto(ssl_ctx_new, 1);
-	#endif
-
-	#ifdef LRB_HAVE_TLS_SET_CURVES
-	SSL_CTX_set1_curves_list(ssl_ctx_new, rb_default_curves);
-	#endif
-
-	SSL_CTX_set_verify(ssl_ctx_new, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
-	SSL_CTX_set_session_cache_mode(ssl_ctx_new, SSL_SESS_CACHE_OFF);
-
-	/*
-	 * Set manual ECDHE curve on OpenSSL 1.0.0 & 1.0.1, but make sure it's actually available
-	 */
-	#if (OPENSSL_VERSION_NUMBER >= 0x10000000L) && (OPENSSL_VERSION_NUMBER < 0x10002000L) && !defined(OPENSSL_NO_ECDH)
-	EC_KEY *const key = EC_KEY_new_by_curve_name(NID_secp384r1);
-	if(key) {
-		SSL_CTX_set_tmp_ecdh(ssl_ctx_new, key);
-		EC_KEY_free(key);
-	}
-	#endif
-
-	SSL_CTX_set_cipher_list(ssl_ctx_new, cipher_list);
-
-	if(! SSL_CTX_use_certificate_chain_file(ssl_ctx_new, cert))
+	if(SSL_CTX_use_certificate_chain_file(ssl_ctx_new, certfile) != 1)
 	{
-		rb_lib_log("%s: Error loading certificate file [%s]: %s", __func__, cert,
+		rb_lib_log("%s: Error loading certificate file ('%s'): %s", __func__, certfile,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
 	}
 
-	if(! SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM))
+	if(SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM) != 1)
 	{
-		rb_lib_log("%s: Error loading keyfile [%s]: %s", __func__, keyfile,
+		rb_lib_log("%s: Error loading keyfile ('%s'): %s", __func__, keyfile,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
 	}
 
-	if(dhfile != NULL)
+	if(dhfile == NULL)
 	{
-		/* DH parameters aren't necessary, but they are nice..if they didn't pass one..that is their problem */
-		FILE *const fp = fopen(dhfile, "r");
-		DH *dh = NULL;
+		rb_lib_log("%s: no DH parameters file specified", __func__);
+	}
+	else
+	{
+		FILE *const dhf = fopen(dhfile, "r");
+		DH *dhp = NULL;
 
-		if(fp == NULL)
+		if(dhf == NULL)
 		{
-			rb_lib_log("%s: Error loading DH params file [%s]: %s", __func__,
-			           dhfile, strerror(errno));
+			rb_lib_log("%s: Error loading DH params file ('%s'): %s", __func__, dhfile, strerror(errno));
 		}
-		else if(PEM_read_DHparams(fp, &dh, NULL, NULL) == NULL)
+		else if(PEM_read_DHparams(dhf, &dhp, NULL, NULL) == NULL)
 		{
-			rb_lib_log("%s: Error loading DH params file [%s]: %s", __func__,
-			           dhfile, rb_ssl_strerror(rb_ssl_last_err()));
-			fclose(fp);
+			rb_lib_log("%s: Error loading DH params file ('%s'): %s", __func__, dhfile,
+			           rb_ssl_strerror(rb_ssl_last_err()));
+			fclose(dhf);
 		}
 		else
 		{
-			SSL_CTX_set_tmp_dh(ssl_ctx_new, dh);
-			DH_free(dh);
-			fclose(fp);
+			SSL_CTX_set_tmp_dh(ssl_ctx_new, dhp);
+			DH_free(dhp);
+			fclose(dhf);
 		}
 	}
+
+	if (SSL_CTX_set_cipher_list(ssl_ctx_new, cipherlist) != 1)
+	{
+		rb_lib_log("%s: SSL_CTX_set_cipher_list: could not configure any ciphers", __func__);
+		SSL_CTX_free(ssl_ctx_new);
+		return 0;
+	}
+
+	SSL_CTX_set_session_cache_mode(ssl_ctx_new, SSL_SESS_CACHE_OFF);
+	SSL_CTX_set_verify(ssl_ctx_new, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
+
+	#ifdef SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
+	(void) SSL_CTX_clear_options(ssl_ctx_new, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+	#endif
+
+	#ifndef LRB_HAVE_TLS_METHOD_API
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+	#endif
+
+	#ifdef SSL_OP_NO_TICKET
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_TICKET);
+	#endif
+
+	#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_CIPHER_SERVER_PREFERENCE);
+	#endif
+
+	#ifdef SSL_OP_SINGLE_DH_USE
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_SINGLE_DH_USE);
+	#endif
+
+	#ifdef SSL_OP_SINGLE_ECDH_USE
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_SINGLE_ECDH_USE);
+	#endif
+
+	#ifdef LRB_HAVE_TLS_ECDH_AUTO
+	(void) SSL_CTX_set_ecdh_auto(ssl_ctx_new, 1);
+	#endif
+
+	#ifdef LRB_HAVE_TLS_SET_CURVES
+	(void) SSL_CTX_set1_curves_list(ssl_ctx_new, rb_default_curves);
+	#else
+	#  if (OPENSSL_VERSION_NUMBER >= 0x10000000L) && !defined(OPENSSL_NO_ECDH) && defined(NID_secp384r1)
+	EC_KEY *const ec_key = EC_KEY_new_by_curve_name(NID_secp384r1);
+	if(ec_key != NULL)
+	{
+		SSL_CTX_set_tmp_ecdh(ssl_ctx_new, ec_key);
+		EC_KEY_free(ec_key);
+	}
+	else
+		rb_lib_log("%s: EC_KEY_new_by_curve_name failed; will not enable ECDHE- ciphers", __func__);
+	#  else
+	     rb_lib_log("%s: OpenSSL built without ECDH support; will not enable ECDHE- ciphers", __func__);
+	#  endif
+	#endif
+
 
 	if(ssl_ctx)
 		SSL_CTX_free(ssl_ctx);
 
 	ssl_ctx = ssl_ctx_new;
 
+
+	rb_lib_log("%s: TLS configuration successful", __func__);
 	return 1;
 }
 
