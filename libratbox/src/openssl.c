@@ -367,14 +367,12 @@ rb_ssl_shutdown(rb_fde_t *const F)
 int
 rb_init_ssl(void)
 {
-	/*
-	 * OpenSSL 1.1.0 and above automatically initialises itself with sane defaults
-	 */
-	#if defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	SSL_library_init();
+#ifndef LRB_SSL_NO_EXPLICIT_INIT
+	(void) SSL_library_init();
 	SSL_load_error_strings();
-	#endif
+#endif
 
+	rb_lib_log("%s: OpenSSL backend initialised", __func__);
 	return 1;
 }
 
