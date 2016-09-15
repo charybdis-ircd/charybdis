@@ -121,6 +121,15 @@ rb_mbedtls_cfg_decref(rb_mbedtls_cfg_context *const cfg)
 static void
 rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 {
+	rb_mbedtls_ssl_context *const mbed_ssl_ctx = rb_malloc(sizeof *mbed_ssl_ctx);
+
+	if(mbed_ssl_ctx == NULL)
+	{
+		rb_lib_log("rb_ssl_init_fd: rb_malloc: allocation failure");
+		rb_close(F);
+		return;
+	}
+
 	mbedtls_ssl_config *mbed_config;
 
 	switch(dir)
@@ -131,15 +140,6 @@ rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 	case RB_FD_TLS_DIRECTION_OUT:
 		mbed_config = &rb_mbedtls_cfg->client_cfg;
 		break;
-	}
-
-	rb_mbedtls_ssl_context *const mbed_ssl_ctx = rb_malloc(sizeof *mbed_ssl_ctx);
-
-	if(mbed_ssl_ctx == NULL)
-	{
-		rb_lib_log("rb_ssl_init_fd: rb_malloc: allocation failure");
-		rb_close(F);
-		return;
 	}
 
 	mbedtls_ssl_init(&mbed_ssl_ctx->ssl);
