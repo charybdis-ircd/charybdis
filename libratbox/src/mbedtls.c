@@ -288,7 +288,7 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 }
 
 static const char *
-rb_ssl_strerror(int err)
+rb_ssl_strerror(const int err)
 {
 	static char errbuf[512];
 
@@ -512,7 +512,7 @@ rb_init_prng(const char *const path, prng_seed_t seed_type)
 }
 
 int
-rb_get_random(void *const buf, size_t length)
+rb_get_random(void *const buf, const size_t length)
 {
 	int ret;
 
@@ -532,7 +532,7 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 }
 
 int
-rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], int method)
+rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
 	if(F == NULL || F->ssl == NULL)
 		return 0;
@@ -580,7 +580,7 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], in
 }
 
 void
-rb_get_ssl_info(char *const buf, size_t len)
+rb_get_ssl_info(char *const buf, const size_t len)
 {
 	char version_str[512];
 
@@ -666,7 +666,7 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
  */
 
 static void
-rb_ssl_connect_realcb(rb_fde_t *const F, int status, struct ssl_connect *const sconn)
+rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *const sconn)
 {
 	lrb_assert(F->connect != NULL);
 
@@ -692,7 +692,7 @@ rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
 }
 
 static void
-rb_ssl_tryconn(rb_fde_t *const F, int status, void *const data)
+rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 {
 	lrb_assert(F != NULL);
 
@@ -763,7 +763,7 @@ rb_ssl_clear_handshake_count(rb_fde_t *const F)
 }
 
 void
-rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, int timeout)
+rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const int timeout)
 {
 	F->type |= RB_FD_SSL;
 
@@ -796,9 +796,10 @@ rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockadd
 }
 
 int
-rb_ssl_listen(rb_fde_t *const F, int backlog, int defer_accept)
+rb_ssl_listen(rb_fde_t *const F, const int backlog, const int defer_accept)
 {
 	int result = rb_listen(F, backlog, defer_accept);
+
 	F->type = RB_FD_SOCKET | RB_FD_LISTEN | RB_FD_SSL;
 
 	return result;
@@ -806,7 +807,7 @@ rb_ssl_listen(rb_fde_t *const F, int backlog, int defer_accept)
 
 void
 rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockaddr *const clocal,
-                   const int socklen, CNCB *const callback, void *const data, int timeout)
+                   const int socklen, CNCB *const callback, void *const data, const int timeout)
 {
 	if(F == NULL)
 		return;
@@ -820,7 +821,7 @@ rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockad
 }
 
 void
-rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data, int timeout)
+rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data, const int timeout)
 {
 	if(F == NULL)
 		return;
