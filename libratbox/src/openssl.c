@@ -429,45 +429,32 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 int
 rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
-	if(seed_type == RB_PRNG_DEFAULT)
-	{
-#ifdef _WIN32
-		RAND_screen();
-#endif
-		return RAND_status();
-	}
-	if(path == NULL)
-		return RAND_status();
+	(void) rb_ssl_last_err();
 
-	switch(seed_type)
+	if(seed_type == RB_PRNG_FILE && RAND_load_file(path, -1) < 0)
+		rb_lib_log("%s: RAND_load_file: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
+
+	if(RAND_status() != 1)
 	{
-	case RB_PRNG_FILE:
-		if(RAND_load_file(path, -1) == -1)
-			return -1;
-		break;
-#ifdef _WIN32
-	case RB_PRNGWIN32:
-		RAND_screen();
-		break;
-#endif
-	default:
-		return -1;
+		rb_lib_log("%s: RAND_status: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
+		return 0;
 	}
 
-	return RAND_status();
+	return 1;
 }
 
 int
 rb_get_random(void *const buf, const size_t length)
 {
-	int ret;
+	(void) rb_ssl_last_err();
 
-	if((ret = RAND_bytes(buf, length)) == 0)
+	if(RAND_bytes(buf, (int) length) != 1)
 	{
-		/* remove the error from the queue */
-		rb_ssl_last_err();
+		rb_lib_log("%s: RAND_bytes: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
+		return 0;
 	}
-	return ret;
+
+	return 1;
 }
 
 const char *
