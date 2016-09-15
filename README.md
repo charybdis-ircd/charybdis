@@ -31,7 +31,7 @@ used with an IRCv3-capable services implementation such as [Atheme][atheme] or [
 
 # tips
 
- * To report bugs in charybdis, visit us at irc.freenode.net #charybdis
+ * To report bugs in charybdis, visit us at irc.charybdis.io #charybdis
 
  * Please read doc/index.txt to get an overview of the current documentation.
 
