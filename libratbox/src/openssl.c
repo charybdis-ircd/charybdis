@@ -381,13 +381,13 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 {
 	if(cert == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: No certificate file");
+		rb_lib_log("%s: no certificate file specified", __func__);
 		return 0;
 	}
 
 	if(keyfile == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: No key file");
+		rb_lib_log("%s: no key file specified", __func__);
 		return 0;
 	}
 
@@ -405,7 +405,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 
 	if(ssl_ctx_new == NULL)
 	{
-		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL context: %s",
+		rb_lib_log("%s: Unable to initialize OpenSSL context: %s", __func__,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 		return 0;
 	}
@@ -456,7 +456,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 
 	if(! SSL_CTX_use_certificate_chain_file(ssl_ctx_new, cert))
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading certificate file [%s]: %s", cert,
+		rb_lib_log("%s: Error loading certificate file [%s]: %s", __func__, cert,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
@@ -465,7 +465,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 
 	if(! SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM))
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading keyfile [%s]: %s", keyfile,
+		rb_lib_log("%s: Error loading keyfile [%s]: %s", __func__, keyfile,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
@@ -480,12 +480,12 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 
 		if(fp == NULL)
 		{
-			rb_lib_log("rb_setup_ssl_server: Error loading DH params file [%s]: %s",
+			rb_lib_log("%s: Error loading DH params file [%s]: %s", __func__,
 			           dhfile, strerror(errno));
 		}
 		else if(PEM_read_DHparams(fp, &dh, NULL, NULL) == NULL)
 		{
-			rb_lib_log("rb_setup_ssl_server: Error loading DH params file [%s]: %s",
+			rb_lib_log("%s: Error loading DH params file [%s]: %s", __func__,
 			           dhfile, rb_ssl_strerror(rb_ssl_last_err()));
 			fclose(fp);
 		}
