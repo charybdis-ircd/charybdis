@@ -724,4 +724,4 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	rb_ssl_tryconn_cb(F, sconn);
 }
 
-#endif /* HAVE_OPESSL */
+#endif /* HAVE_OPENSSL */
