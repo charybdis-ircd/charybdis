@@ -78,7 +78,7 @@ struct ssl_connect
 	int timeout;
 };
 
-static const char *rb_mbedtls_strerror(int);
+static const char *rb_ssl_strerror(int);
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
 static int rb_sock_net_recv(void *, unsigned char *, size_t);
@@ -153,7 +153,7 @@ rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 
 	if((ret = mbedtls_ssl_setup(&mbed_ssl_ctx->ssl, mbed_config)) != 0)
 	{
-		rb_lib_log("rb_ssl_init_fd: ssl_setup: %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_ssl_init_fd: ssl_setup: %s", rb_ssl_strerror(ret));
 		mbedtls_ssl_free(&mbed_ssl_ctx->ssl);
 		rb_free(mbed_ssl_ctx);
 		rb_close(F);
@@ -190,7 +190,7 @@ rb_mbedtls_cfg_new(void)
 	             MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
 	             MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
 	{
-		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (server): %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (server): %s", rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -199,7 +199,7 @@ rb_mbedtls_cfg_new(void)
 	             MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
 	             MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
 	{
-		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (client): %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (client): %s", rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -291,7 +291,7 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 }
 
 static const char *
-rb_mbedtls_strerror(int err)
+rb_ssl_strerror(int err)
 {
 	static char errbuf[512];
 
@@ -344,14 +344,14 @@ rb_init_ssl(void)
 	if((ret = mbedtls_ctr_drbg_seed(&ctr_drbg_ctx, mbedtls_entropy_func, &entropy_ctx,
 	    (const unsigned char *)rb_mbedtls_personal_str, sizeof(rb_mbedtls_personal_str))) != 0)
 	{
-		rb_lib_log("rb_init_ssl: ctr_drbg_seed: %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_init_ssl: ctr_drbg_seed: %s", rb_ssl_strerror(ret));
 		return 0;
 	}
 
 	if((ret = mbedtls_x509_crt_parse_der(&dummy_ca_ctx, rb_mbedtls_dummy_ca_certificate,
 	                                     sizeof(rb_mbedtls_dummy_ca_certificate))) != 0)
 	{
-		rb_lib_log("rb_init_ssl: x509_crt_parse_der (Dummy CA): %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_init_ssl: x509_crt_parse_der (Dummy CA): %s", rb_ssl_strerror(ret));
 		return 0;
 	}
 
@@ -384,13 +384,13 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if((ret = mbedtls_x509_crt_parse_file(&newcfg->crt, certfile)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: x509_crt_parse_file ('%s'): %s", certfile, rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_setup_ssl_server: x509_crt_parse_file ('%s'): %s", certfile, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
 	if((ret = mbedtls_pk_parse_keyfile(&newcfg->key, keyfile, NULL)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: pk_parse_keyfile ('%s'): %s", keyfile, rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_setup_ssl_server: pk_parse_keyfile ('%s'): %s", keyfile, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
@@ -407,23 +407,23 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		if((ret = mbedtls_dhm_parse_dhmfile(&newcfg->dhp, dhfile)) != 0)
 		{
 			rb_lib_log("rb_setup_ssl_server: dhm_parse_dhmfile ('%s'): %s",
-			           dhfile, rb_mbedtls_strerror(ret));
+			           dhfile, rb_ssl_strerror(ret));
 		}
 		else if((ret = mbedtls_ssl_conf_dh_param_ctx(&newcfg->server_cfg, &newcfg->dhp)) != 0)
 		{
-			rb_lib_log("rb_setup_ssl_server: ssl_conf_dh_param_ctx: %s", rb_mbedtls_strerror(ret));
+			rb_lib_log("rb_setup_ssl_server: ssl_conf_dh_param_ctx: %s", rb_ssl_strerror(ret));
 		}
 	}
 
 	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->server_cfg, &newcfg->crt, &newcfg->key)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (server): %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (server): %s", rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
 	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->client_cfg, &newcfg->crt, &newcfg->key)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (client): %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (client): %s", rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
@@ -524,7 +524,7 @@ rb_get_random(void *const buf, size_t length)
 
 	if((ret = mbedtls_ctr_drbg_random(&ctr_drbg_ctx, buf, length)) != 0)
 	{
-		rb_lib_log("rb_get_random: ctr_drbg_random: %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_get_random: ctr_drbg_random: %s", rb_ssl_strerror(ret));
 		return 0;
 	}
 
@@ -534,7 +534,7 @@ rb_get_random(void *const buf, size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *const F)
 {
-	return rb_mbedtls_strerror(F->ssl_errno);
+	return rb_ssl_strerror(F->ssl_errno);
 }
 
 int
@@ -575,7 +575,7 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], in
 
 	if((ret = mbedtls_md(md_info, peer_cert->raw.p, peer_cert->raw.len, certfp)) != 0)
 	{
-		rb_lib_log("rb_get_ssl_certfp: mbedtls_md: %s", rb_mbedtls_strerror(ret));
+		rb_lib_log("rb_get_ssl_certfp: mbedtls_md: %s", rb_ssl_strerror(ret));
 		return 0;
 	}
 
