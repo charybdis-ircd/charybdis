@@ -27,23 +27,13 @@
 
 #include <libratbox_config.h>
 #include <ratbox_lib.h>
-#include <commio-int.h>
-#include <commio-ssl.h>
 
 #ifdef HAVE_MBEDTLS
 
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/certs.h"
-#include "mbedtls/x509.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/net.h"
-#include "mbedtls/error.h"
-#include "mbedtls/debug.h"
-#include "mbedtls/dhm.h"
-#include "mbedtls/version.h"
+#include <commio-int.h>
+#include <commio-ssl.h>
 
-#include "mbedtls_embedded_data.h"
+#include "mbedtls_ratbox.h"
 
 typedef enum
 {

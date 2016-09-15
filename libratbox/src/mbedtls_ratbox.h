@@ -1,6 +1,6 @@
 /*
  *  libratbox: a library used by ircd-ratbox and other things
- *  mbedtls.h: embedded data for ARM mbedTLS backend
+ *  mbedtls_ratbox.h: embedded data for ARM MbedTLS backend
  *
  *  Copyright (C) 2016 Aaron Jones <aaronmdjones@gmail.com>
  *
@@ -25,7 +25,17 @@
 #ifndef RB_MBEDTLS_EMBEDDED_DATA_H
 #define RB_MBEDTLS_EMBEDDED_DATA_H
 
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/certs.h"
+#include "mbedtls/x509.h"
+#include "mbedtls/ssl.h"
 #include "mbedtls/ssl_ciphersuites.h"
+#include "mbedtls/net.h"
+#include "mbedtls/error.h"
+#include "mbedtls/debug.h"
+#include "mbedtls/dhm.h"
+#include "mbedtls/version.h"
 
 /*
  * Personalization string for CTR-DRBG initialization
