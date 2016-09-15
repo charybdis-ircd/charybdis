@@ -391,6 +391,19 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
+	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->server_cfg, &newcfg->crt, &newcfg->key)) != 0)
+	{
+		rb_lib_log("%s: ssl_conf_own_cert (server): %s", __func__, rb_ssl_strerror(ret));
+		rb_mbedtls_cfg_decref(newcfg);
+		return 0;
+	}
+	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->client_cfg, &newcfg->crt, &newcfg->key)) != 0)
+	{
+		rb_lib_log("%s: ssl_conf_own_cert (client): %s", __func__, rb_ssl_strerror(ret));
+		rb_mbedtls_cfg_decref(newcfg);
+		return 0;
+	}
+
 
 	/* Absense of DH parameters does not matter with mbedTLS, as it comes with its own defaults
 	   Thus, clients can still use DHE- ciphersuites, just over a weaker, common DH group
@@ -409,19 +422,6 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		{
 			rb_lib_log("%s: ssl_conf_dh_param_ctx: %s", __func__, rb_ssl_strerror(ret));
 		}
-	}
-
-	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->server_cfg, &newcfg->crt, &newcfg->key)) != 0)
-	{
-		rb_lib_log("%s: ssl_conf_own_cert (server): %s", __func__, rb_ssl_strerror(ret));
-		rb_mbedtls_cfg_decref(newcfg);
-		return 0;
-	}
-	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->client_cfg, &newcfg->crt, &newcfg->key)) != 0)
-	{
-		rb_lib_log("%s: ssl_conf_own_cert (client): %s", __func__, rb_ssl_strerror(ret));
-		rb_mbedtls_cfg_decref(newcfg);
-		return 0;
 	}
 
 
