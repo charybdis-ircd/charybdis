@@ -183,11 +183,11 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 static const char *
 rb_ssl_strerror(unsigned long err)
 {
-	static char buf[512];
+	static char errbuf[512];
 
-	ERR_error_string_n(err, buf, sizeof buf);
+	ERR_error_string_n(err, errbuf, sizeof errbuf);
 
-	return buf;
+	return errbuf;
 }
 
 static int
