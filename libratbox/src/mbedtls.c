@@ -119,7 +119,7 @@ rb_mbedtls_cfg_decref(rb_mbedtls_cfg_context *const cfg)
 }
 
 static void
-rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
+rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 {
 	rb_mbedtls_ssl_context *const mbed_ssl_ctx = rb_malloc(sizeof *mbed_ssl_ctx);
 
