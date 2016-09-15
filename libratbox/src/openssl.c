@@ -318,7 +318,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	if(SSL_CTX_use_certificate_chain_file(ssl_ctx_new, certfile) != 1)
 	{
 		rb_lib_log("%s: SSL_CTX_use_certificate_chain_file ('%s'): %s", __func__, certfile,
-			   rb_ssl_strerror(rb_ssl_last_err()));
+		           rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
@@ -327,7 +327,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	if(SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM) != 1)
 	{
 		rb_lib_log("%s: SSL_CTX_use_PrivateKey_file ('%s'): %s", __func__, keyfile,
-			   rb_ssl_strerror(rb_ssl_last_err()));
+		           rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
