@@ -360,7 +360,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		}
 	}
 
-	if (SSL_CTX_set_cipher_list(ssl_ctx_new, cipherlist) != 1)
+	if(SSL_CTX_set_cipher_list(ssl_ctx_new, cipherlist) != 1)
 	{
 		rb_lib_log("%s: SSL_CTX_set_cipher_list: could not configure any ciphers", __func__);
 		SSL_CTX_free(ssl_ctx_new);
