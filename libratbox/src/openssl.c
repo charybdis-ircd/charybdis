@@ -259,11 +259,12 @@ rb_ssl_shutdown(rb_fde_t *const F)
 
 	(void) rb_ssl_last_err();
 
-	SSL_set_shutdown(SSL_P(F), SSL_RECEIVED_SHUTDOWN);
-
 	for(int i = 0; i < 4; i++)
 	{
-		if(SSL_shutdown(SSL_P(F)))
+		int ret = SSL_shutdown(SSL_P(F));
+		int err = SSL_get_error(SSL_P(F), ret);
+
+		if(ret >= 0 || (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE))
 			break;
 	}
 
