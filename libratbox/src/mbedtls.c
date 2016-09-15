@@ -786,9 +786,9 @@ rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockadd
 	cli_F->accept = rb_malloc(sizeof(struct acceptdata));
 	cli_F->accept->callback = srv_F->accept->callback;
 	cli_F->accept->data = srv_F->accept->data;
-	cli_F->accept->addrlen = addrlen;
+	cli_F->accept->addrlen = (rb_socklen_t) addrlen;
 	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
-	(void) memcpy(&cli_F->accept->S, st, addrlen);
+	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
 
 	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
 	rb_ssl_init_fd(cli_F, RB_FD_TLS_DIRECTION_IN);
