@@ -56,7 +56,9 @@ static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 static void rb_ssl_tryconn_timeout_cb(rb_fde_t *, void *);
 static void rb_ssl_timeout(rb_fde_t *, void *);
 static void rb_ssl_tryaccept(rb_fde_t *, void *);
-static const char *get_ssl_error(unsigned long);
+
+static unsigned long rb_ssl_last_err(void);
+static const char *rb_ssl_strerror(unsigned long);
 
 
 
@@ -65,7 +67,7 @@ static const char *get_ssl_error(unsigned long);
  */
 
 static unsigned long
-get_last_err(void)
+rb_ssl_last_err(void)
 {
 	unsigned long err_saved, err = 0;
 
@@ -78,13 +80,13 @@ get_last_err(void)
 static void
 rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 {
-	(void) get_last_err();
+	(void) rb_ssl_last_err();
 
 	F->ssl = SSL_new(ssl_ctx);
 
 	if(F->ssl == NULL)
 	{
-		rb_lib_log("%s: SSL_new: %s", __func__, get_ssl_error(get_last_err()));
+		rb_lib_log("%s: SSL_new: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
 		rb_close(F);
 		return;
 	}
@@ -105,6 +107,8 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 static void
 rb_ssl_accept_common(rb_fde_t *const new_F)
 {
+	(void) rb_ssl_last_err();
+
 	int ssl_err = SSL_accept(SSL_P(new_F));
 
 	if(ssl_err <= 0)
@@ -116,13 +120,13 @@ rb_ssl_accept_common(rb_fde_t *const new_F)
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 				{
-					new_F->ssl_errno = get_last_err();
+					new_F->ssl_errno = rb_ssl_last_err();
 					rb_setselect(new_F, RB_SELECT_READ | RB_SELECT_WRITE,
 						     rb_ssl_tryaccept, NULL);
 					return;
 				}
 		default:
-			new_F->ssl_errno = get_last_err();
+			new_F->ssl_errno = rb_ssl_last_err();
 			new_F->accept->callback(new_F, RB_ERROR_SSL, NULL, 0, new_F->accept->data);
 			return;
 		}
@@ -141,6 +145,8 @@ rb_ssl_tryaccept(rb_fde_t *const F, void *const data)
 
 	if(! SSL_is_init_finished(SSL_P(F)))
 	{
+		(void) rb_ssl_last_err();
+
 		int flags;
 		int ssl_err = SSL_accept(SSL_P(F));
 
@@ -154,14 +160,14 @@ rb_ssl_tryaccept(rb_fde_t *const F, void *const data)
 					flags = RB_SELECT_WRITE;
 				else
 					flags = RB_SELECT_READ;
-				F->ssl_errno = get_last_err();
+				F->ssl_errno = rb_ssl_last_err();
 				rb_setselect(F, flags, rb_ssl_tryaccept, NULL);
 				break;
 			case SSL_ERROR_SYSCALL:
 				F->accept->callback(F, RB_ERROR, NULL, 0, F->accept->data);
 				break;
 			default:
-				F->ssl_errno = get_last_err();
+				F->ssl_errno = rb_ssl_last_err();
 				F->accept->callback(F, RB_ERROR_SSL, NULL, 0, F->accept->data);
 				break;
 			}
@@ -185,6 +191,8 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 {
 	if(! SSL_is_init_finished(SSL_P(F)))
 	{
+		(void) rb_ssl_last_err();
+
 		struct ssl_connect *const sconn = data;
 		int ssl_err = SSL_connect(SSL_P(F));
 
@@ -197,13 +205,13 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
 					{
-						F->ssl_errno = get_last_err();
+						F->ssl_errno = rb_ssl_last_err();
 						rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE,
 							     rb_ssl_tryconn_cb, sconn);
 						return;
 					}
 			default:
-				F->ssl_errno = get_last_err();
+				F->ssl_errno = rb_ssl_last_err();
 				rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
 				return;
 			}
@@ -234,6 +242,8 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 
+	(void) rb_ssl_last_err();
+
 	int ssl_err = SSL_connect(SSL_P(F));
 
 	if(ssl_err <= 0)
@@ -245,13 +255,13 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 				{
-					F->ssl_errno = get_last_err();
+					F->ssl_errno = rb_ssl_last_err();
 					rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE,
 						     rb_ssl_tryconn_cb, sconn);
 					return;
 				}
 		default:
-			F->ssl_errno = get_last_err();
+			F->ssl_errno = rb_ssl_last_err();
 			rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
 			return;
 		}
@@ -264,7 +274,7 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 }
 
 static const char *
-get_ssl_error(unsigned long err)
+rb_ssl_strerror(unsigned long err)
 {
 	static char buf[512];
 
@@ -285,6 +295,8 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 	ssize_t ret;
 	unsigned long err;
 
+	(void) rb_ssl_last_err();
+
 	if(r_or_w == 0)
 		ret = (ssize_t) SSL_read(SSL_P(F), rbuf, (int)count);
 	else
@@ -303,7 +315,7 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 		case SSL_ERROR_ZERO_RETURN:
 			return 0;
 		case SSL_ERROR_SYSCALL:
-			err = get_last_err();
+			err = rb_ssl_last_err();
 			if(err == 0)
 			{
 				F->ssl_errno = 0;
@@ -311,7 +323,7 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 			}
 			break;
 		default:
-			err = get_last_err();
+			err = rb_ssl_last_err();
 			break;
 		}
 
@@ -338,6 +350,8 @@ rb_ssl_shutdown(rb_fde_t *const F)
 	if(F == NULL || F->ssl == NULL)
 		return;
 
+	(void) rb_ssl_last_err();
+
 	SSL_set_shutdown(SSL_P(F), SSL_RECEIVED_SHUTDOWN);
 
 	for(int i = 0; i < 4; i++)
@@ -346,7 +360,6 @@ rb_ssl_shutdown(rb_fde_t *const F)
 			break;
 	}
 
-	get_last_err();
 	SSL_free(SSL_P(F));
 	F->ssl = NULL;
 }
@@ -383,6 +396,9 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 	if(cipher_list == NULL)
 		cipher_list = rb_default_ciphers;
 
+
+	(void) rb_ssl_last_err();
+
 	#ifdef LRB_HAVE_TLS_METHOD_API
 	SSL_CTX *const ssl_ctx_new = SSL_CTX_new(TLS_method());
 	#else
@@ -392,7 +408,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 	if(ssl_ctx_new == NULL)
 	{
 		rb_lib_log("rb_init_openssl: Unable to initialize OpenSSL context: %s",
-			   get_ssl_error(ERR_get_error()));
+			   rb_ssl_strerror(rb_ssl_last_err()));
 		return 0;
 	}
 
@@ -443,7 +459,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 	if(! SSL_CTX_use_certificate_chain_file(ssl_ctx_new, cert))
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading certificate file [%s]: %s", cert,
-			   get_ssl_error(ERR_get_error()));
+			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
@@ -452,7 +468,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 	if(! SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM))
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading keyfile [%s]: %s", keyfile,
-			   get_ssl_error(ERR_get_error()));
+			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
@@ -472,7 +488,7 @@ rb_setup_ssl_server(const char *const cert, const char *keyfile, const char *con
 		else if(PEM_read_DHparams(fp, &dh, NULL, NULL) == NULL)
 		{
 			rb_lib_log("rb_setup_ssl_server: Error loading DH params file [%s]: %s",
-			           dhfile, get_ssl_error(ERR_get_error()));
+			           dhfile, rb_ssl_strerror(rb_ssl_last_err()));
 			fclose(fp);
 		}
 		else
@@ -530,7 +546,7 @@ rb_get_random(void *const buf, const size_t length)
 	if((ret = RAND_bytes(buf, length)) == 0)
 	{
 		/* remove the error from the queue */
-		ERR_get_error();
+		rb_ssl_last_err();
 	}
 	return ret;
 }
@@ -538,7 +554,7 @@ rb_get_random(void *const buf, const size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *const F)
 {
-	return get_ssl_error(F->ssl_errno);
+	return rb_ssl_strerror(F->ssl_errno);
 }
 
 int
@@ -690,6 +706,8 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 
+	(void) rb_ssl_last_err();
+
 	int ssl_err = SSL_connect(SSL_P(F));
 
 	if(ssl_err <= 0)
@@ -701,13 +719,13 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 				{
-					F->ssl_errno = get_last_err();
+					F->ssl_errno = rb_ssl_last_err();
 					rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE,
 						     rb_ssl_tryconn_cb, sconn);
 					return;
 				}
 		default:
-			F->ssl_errno = get_last_err();
+			F->ssl_errno = rb_ssl_last_err();
 			rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
 			return;
 		}
