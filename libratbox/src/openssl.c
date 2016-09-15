@@ -440,6 +440,7 @@ rb_init_prng(const char *const path, prng_seed_t seed_type)
 		return 0;
 	}
 
+	rb_lib_log("%s: PRNG initialised", __func__);
 	return 1;
 }
 
