@@ -779,7 +779,7 @@ rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, int t
 }
 
 void
-rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, int addrlen)
+rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, const int addrlen)
 {
 	cli_F->type |= RB_FD_SSL;
 
@@ -806,7 +806,7 @@ rb_ssl_listen(rb_fde_t *const F, int backlog, int defer_accept)
 
 void
 rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockaddr *const clocal,
-                   int socklen, CNCB *const callback, void *const data, int timeout)
+                   const int socklen, CNCB *const callback, void *const data, int timeout)
 {
 	if(F == NULL)
 		return;
