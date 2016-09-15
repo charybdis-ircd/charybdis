@@ -612,10 +612,10 @@ rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	ssize_t ret = (ssize_t) mbedtls_ssl_read(SSL_P(F), buf, count);
+	int ret = mbedtls_ssl_read(SSL_P(F), buf, count);
 
 	if(ret >= 0)
-		return ret;
+		return (ssize_t) ret;
 
 	switch(ret)
 	{
@@ -638,10 +638,10 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	ssize_t ret = (ssize_t) mbedtls_ssl_write(SSL_P(F), buf, count);
+	int ret = mbedtls_ssl_write(SSL_P(F), buf, count);
 
 	if(ret >= 0)
-		return ret;
+		return (ssize_t) ret;
 
 	switch(ret)
 	{
