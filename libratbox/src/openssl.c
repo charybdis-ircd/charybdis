@@ -181,7 +181,7 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 }
 
 static const char *
-rb_ssl_strerror(unsigned long err)
+rb_ssl_strerror(const unsigned long err)
 {
 	static char errbuf[512];
 
