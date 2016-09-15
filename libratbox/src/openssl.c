@@ -592,6 +592,8 @@ static void
 rb_ssl_timeout(rb_fde_t *const F, void *const notused)
 {
 	lrb_assert(F->accept != NULL);
+	lrb_assert(F->accept->callback != NULL);
+
 	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
 }
 
