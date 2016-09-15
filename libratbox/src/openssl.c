@@ -311,14 +311,13 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if(ssl_ctx_new == NULL)
 	{
-		rb_lib_log("%s: Unable to initialize OpenSSL context: %s", __func__,
-			   rb_ssl_strerror(rb_ssl_last_err()));
+		rb_lib_log("%s: SSL_CTX_new: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
 		return 0;
 	}
 
 	if(SSL_CTX_use_certificate_chain_file(ssl_ctx_new, certfile) != 1)
 	{
-		rb_lib_log("%s: Error loading certificate file ('%s'): %s", __func__, certfile,
+		rb_lib_log("%s: SSL_CTX_use_certificate_chain_file ('%s'): %s", __func__, certfile,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
@@ -327,7 +326,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if(SSL_CTX_use_PrivateKey_file(ssl_ctx_new, keyfile, SSL_FILETYPE_PEM) != 1)
 	{
-		rb_lib_log("%s: Error loading keyfile ('%s'): %s", __func__, keyfile,
+		rb_lib_log("%s: SSL_CTX_use_PrivateKey_file ('%s'): %s", __func__, keyfile,
 			   rb_ssl_strerror(rb_ssl_last_err()));
 
 		SSL_CTX_free(ssl_ctx_new);
@@ -345,11 +344,11 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 		if(dhf == NULL)
 		{
-			rb_lib_log("%s: Error loading DH params file ('%s'): %s", __func__, dhfile, strerror(errno));
+			rb_lib_log("%s: fopen ('%s'): %s", __func__, dhfile, strerror(errno));
 		}
 		else if(PEM_read_DHparams(dhf, &dhp, NULL, NULL) == NULL)
 		{
-			rb_lib_log("%s: Error loading DH params file ('%s'): %s", __func__, dhfile,
+			rb_lib_log("%s: PEM_read_DHparams ('%s'): %s", __func__, dhfile,
 			           rb_ssl_strerror(rb_ssl_last_err()));
 			fclose(dhf);
 		}
