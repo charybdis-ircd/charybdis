@@ -125,7 +125,7 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 
 	if(mbed_ssl_ctx == NULL)
 	{
-		rb_lib_log("rb_ssl_init_fd: rb_malloc: allocation failure");
+		rb_lib_log("%s: rb_malloc: allocation failure", __func__);
 		rb_close(F);
 		return;
 	}
@@ -148,7 +148,7 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 
 	if((ret = mbedtls_ssl_setup(&mbed_ssl_ctx->ssl, mbed_config)) != 0)
 	{
-		rb_lib_log("rb_ssl_init_fd: ssl_setup: %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ssl_setup: %s", __func__, rb_ssl_strerror(ret));
 		mbedtls_ssl_free(&mbed_ssl_ctx->ssl);
 		rb_free(mbed_ssl_ctx);
 		rb_close(F);
@@ -187,7 +187,7 @@ rb_mbedtls_cfg_new(void)
 	             MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM,
 	             MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
 	{
-		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (server): %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ssl_config_defaults (server): %s", __func__, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -196,7 +196,7 @@ rb_mbedtls_cfg_new(void)
 	             MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
 	             MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
 	{
-		rb_lib_log("rb_mbedtls_cfg_new: ssl_config_defaults (client): %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ssl_config_defaults (client): %s", __func__, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(cfg);
 		return NULL;
 	}
@@ -341,18 +341,18 @@ rb_init_ssl(void)
 	if((ret = mbedtls_ctr_drbg_seed(&ctr_drbg_ctx, mbedtls_entropy_func, &entropy_ctx,
 	    (const unsigned char *)rb_mbedtls_personal_str, sizeof(rb_mbedtls_personal_str))) != 0)
 	{
-		rb_lib_log("rb_init_ssl: ctr_drbg_seed: %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ctr_drbg_seed: %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
 
 	if((ret = mbedtls_x509_crt_parse_der(&dummy_ca_ctx, rb_mbedtls_dummy_ca_certificate,
 	                                     sizeof(rb_mbedtls_dummy_ca_certificate))) != 0)
 	{
-		rb_lib_log("rb_init_ssl: x509_crt_parse_der (Dummy CA): %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: x509_crt_parse_der (Dummy CA): %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
 
-	rb_lib_log("rb_init_ssl: MbedTLS backend initialised");
+	rb_lib_log("%s: MbedTLS backend initialised", __func__);
 	return 1;
 }
 
@@ -362,7 +362,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 {
 	if(certfile == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: no certificate file specified");
+		rb_lib_log("%s: no certificate file specified", __func__);
 		return 0;
 	}
 
@@ -373,7 +373,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if(newcfg == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: rb_mbedtls_cfg_new: allocation failed");
+		rb_lib_log("%s: rb_mbedtls_cfg_new: allocation failed", __func__);
 		return 0;
 	}
 
@@ -381,13 +381,13 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if((ret = mbedtls_x509_crt_parse_file(&newcfg->crt, certfile)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: x509_crt_parse_file ('%s'): %s", certfile, rb_ssl_strerror(ret));
+		rb_lib_log("%s: x509_crt_parse_file ('%s'): %s", __func__, certfile, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
 	if((ret = mbedtls_pk_parse_keyfile(&newcfg->key, keyfile, NULL)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: pk_parse_keyfile ('%s'): %s", keyfile, rb_ssl_strerror(ret));
+		rb_lib_log("%s: pk_parse_keyfile ('%s'): %s", __func__, keyfile, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
@@ -397,34 +397,32 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	   So, we do not consider failure to parse DH parameters as fatal */
 	if(dhfile == NULL)
 	{
-		rb_lib_log("rb_setup_ssl_server: no DH parameters file specified");
+		rb_lib_log("%s: no DH parameters file specified", __func__);
 	}
 	else
 	{
 		if((ret = mbedtls_dhm_parse_dhmfile(&newcfg->dhp, dhfile)) != 0)
 		{
-			rb_lib_log("rb_setup_ssl_server: dhm_parse_dhmfile ('%s'): %s",
-			           dhfile, rb_ssl_strerror(ret));
+			rb_lib_log("%s: dhm_parse_dhmfile ('%s'): %s", __func__, dhfile, rb_ssl_strerror(ret));
 		}
 		else if((ret = mbedtls_ssl_conf_dh_param_ctx(&newcfg->server_cfg, &newcfg->dhp)) != 0)
 		{
-			rb_lib_log("rb_setup_ssl_server: ssl_conf_dh_param_ctx: %s", rb_ssl_strerror(ret));
+			rb_lib_log("%s: ssl_conf_dh_param_ctx: %s", __func__, rb_ssl_strerror(ret));
 		}
 	}
 
 	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->server_cfg, &newcfg->crt, &newcfg->key)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (server): %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ssl_conf_own_cert (server): %s", __func__, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
 	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->client_cfg, &newcfg->crt, &newcfg->key)) != 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: ssl_conf_own_cert (client): %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ssl_conf_own_cert (client): %s", __func__, rb_ssl_strerror(ret));
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
-
 
 
 	const int *rb_ciphersuites = newcfg->suites;
@@ -472,23 +470,23 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 			} while(cipher_idx && suites_count < RB_MAX_CIPHERSUITES);
 
 			if(suites_count == 0)
-				rb_lib_log("rb_setup_ssl_server: Ciphersuites provided, but could not parse any");
+				rb_lib_log("%s: Ciphersuites provided, but could not parse any", __func__);
 
 			free(cipherlist_dup);
 		}
 		else
 		{
-			rb_lib_log("rb_setup_ssl_server: strdup: %s", strerror(errno));
+			rb_lib_log("%s: strdup: %s", __func__, strerror(errno));
 		}
 	}
 	else
 	{
-		rb_lib_log("rb_setup_ssl_server: No ciphersuite list provided");
+		rb_lib_log("%s: No ciphersuite list provided", __func__);
 	}
 
 	if(suites_count == 0)
 	{
-		rb_lib_log("rb_setup_ssl_server: Using default ciphersuites");
+		rb_lib_log("%s: Using default ciphersuites", __func__);
 
 		rb_ciphersuites = rb_mbedtls_ciphersuites;
 		suites_count = (sizeof(rb_mbedtls_ciphersuites) / sizeof(rb_mbedtls_ciphersuites[0])) - 1;
@@ -496,21 +494,20 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	mbedtls_ssl_conf_ciphersuites(&newcfg->server_cfg, rb_ciphersuites);
 	mbedtls_ssl_conf_ciphersuites(&newcfg->client_cfg, rb_ciphersuites);
-	rb_lib_log("rb_setup_ssl_server: Configured %zu ciphersuites", suites_count);
-
+	rb_lib_log("%s: Configured %zu ciphersuites", __func__, suites_count);
 
 
 	rb_mbedtls_cfg_decref(rb_mbedtls_cfg);
 	rb_mbedtls_cfg = newcfg;
 
-	rb_lib_log("rb_setup_ssl_server: TLS configuration successful");
+	rb_lib_log("%s: TLS configuration successful", __func__);
 	return 1;
 }
 
 int
 rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
-	rb_lib_log("rb_init_prng: Skipping PRNG initialisation; not required by MbedTLS backend");
+	rb_lib_log("%s: Skipping PRNG initialisation; not required by MbedTLS backend", __func__);
 	return 1;
 }
 
@@ -521,7 +518,7 @@ rb_get_random(void *const buf, size_t length)
 
 	if((ret = mbedtls_ctr_drbg_random(&ctr_drbg_ctx, buf, length)) != 0)
 	{
-		rb_lib_log("rb_get_random: ctr_drbg_random: %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: ctr_drbg_random: %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
 
@@ -572,7 +569,7 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], in
 
 	if((ret = mbedtls_md(md_info, peer_cert->raw.p, peer_cert->raw.len, certfp)) != 0)
 	{
-		rb_lib_log("rb_get_ssl_certfp: mbedtls_md: %s", rb_ssl_strerror(ret));
+		rb_lib_log("%s: mbedtls_md: %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
 
