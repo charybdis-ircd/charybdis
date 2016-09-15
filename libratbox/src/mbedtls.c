@@ -607,7 +607,7 @@ rb_ssl_get_cipher(rb_fde_t *const F)
 }
 
 ssize_t
-rb_ssl_read(rb_fde_t *const F, void *const buf, size_t count)
+rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
@@ -633,7 +633,7 @@ rb_ssl_read(rb_fde_t *const F, void *const buf, size_t count)
 }
 
 ssize_t
-rb_ssl_write(rb_fde_t *const F, const void *const buf, size_t count)
+rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
@@ -712,7 +712,7 @@ rb_ssl_tryconn(rb_fde_t *const F, int status, void *const data)
 }
 
 static int
-rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, size_t count)
+rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, const size_t count)
 {
 	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
 
@@ -725,7 +725,7 @@ rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, size_t count
 }
 
 static int
-rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, size_t count)
+rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, const size_t count)
 {
 	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
 
