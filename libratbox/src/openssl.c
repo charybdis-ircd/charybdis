@@ -56,13 +56,10 @@ static void rb_ssl_tryaccept(rb_fde_t *, void *);
 static unsigned long
 get_last_err(void)
 {
-	unsigned long t_err, err = 0;
-	err = ERR_get_error();
-	if(err == 0)
-		return 0;
+	unsigned long err_saved, err = 0;
 
-	while((t_err = ERR_get_error()) > 0)
-		err = t_err;
+	while((err_saved = ERR_get_error()) != 0)
+		err = err_saved;
 
 	return err;
 }
@@ -70,10 +67,11 @@ get_last_err(void)
 static void
 rb_ssl_accept_common(rb_fde_t *const new_F)
 {
-	int ssl_err;
-	if((ssl_err = SSL_accept((SSL *) new_F->ssl)) <= 0)
+	int ssl_err = SSL_accept((SSL *) new_F->ssl);
+
+	if(ssl_err <= 0)
 	{
-		switch (ssl_err = SSL_get_error((SSL *) new_F->ssl, ssl_err))
+		switch((ssl_err = SSL_get_error((SSL *) new_F->ssl, ssl_err)))
 		{
 		case SSL_ERROR_SYSCALL:
 			if(rb_ignore_errno(errno))
@@ -101,15 +99,16 @@ rb_ssl_accept_common(rb_fde_t *const new_F)
 static void
 rb_ssl_tryaccept(rb_fde_t *const F, void *const data)
 {
-	int ssl_err;
 	lrb_assert(F->accept != NULL);
-	int flags;
 
-	if(!SSL_is_init_finished((SSL *) F->ssl))
+	if(! SSL_is_init_finished((SSL *) F->ssl))
 	{
-		if((ssl_err = SSL_accept((SSL *) F->ssl)) <= 0)
+		int flags;
+		int ssl_err = SSL_accept((SSL *) F->ssl);
+
+		if(ssl_err <= 0)
 		{
-			switch (ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
+			switch(ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
 			{
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
@@ -133,6 +132,7 @@ rb_ssl_tryaccept(rb_fde_t *const F, void *const data)
 		else
 			F->handshake_count++;
 	}
+
 	rb_settimeout(F, 0, NULL, NULL);
 	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
 
@@ -145,13 +145,14 @@ rb_ssl_tryaccept(rb_fde_t *const F, void *const data)
 static void
 rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 {
-	struct ssl_connect *const sconn = data;
-	int ssl_err;
-	if(!SSL_is_init_finished((SSL *) F->ssl))
+	if(! SSL_is_init_finished((SSL *) F->ssl))
 	{
-		if((ssl_err = SSL_connect((SSL *) F->ssl)) <= 0)
+		struct ssl_connect *const sconn = data;
+		int ssl_err = SSL_connect((SSL *) F->ssl);
+
+		if(ssl_err <= 0)
 		{
-			switch (ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
+			switch(ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
 			{
 			case SSL_ERROR_SYSCALL:
 				if(rb_ignore_errno(errno))
@@ -181,7 +182,7 @@ static void
 rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 {
 	struct ssl_connect *const sconn = data;
-	int ssl_err;
+
 	if(status != RB_OK)
 	{
 		rb_ssl_connect_realcb(F, status, sconn);
@@ -189,13 +190,18 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 	}
 
 	F->type |= RB_FD_SSL;
+
 	F->ssl = SSL_new(ssl_ctx);
 	SSL_set_fd((SSL *) F->ssl, F->fd);
 	SSL_set_connect_state((SSL *) F->ssl);
+
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
-	if((ssl_err = SSL_connect((SSL *) F->ssl)) <= 0)
+
+	int ssl_err = SSL_connect((SSL *) F->ssl);
+
+	if(ssl_err <= 0)
 	{
-		switch (ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
+		switch(ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
 		{
 		case SSL_ERROR_SYSCALL:
 			if(rb_ignore_errno(errno))
@@ -226,6 +232,7 @@ get_ssl_error(unsigned long err)
 	static char buf[512];
 
 	ERR_error_string_n(err, buf, sizeof buf);
+
 	return buf;
 }
 
@@ -249,7 +256,7 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 
 	if(ret < 0)
 	{
-		switch (SSL_get_error(ssl, ret))
+		switch(SSL_get_error(ssl, ret))
 		{
 		case SSL_ERROR_WANT_READ:
 			errno = EAGAIN;
@@ -271,6 +278,7 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 			err = get_last_err();
 			break;
 		}
+
 		F->ssl_errno = err;
 		if(err > 0)
 		{
@@ -291,16 +299,17 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 void
 rb_ssl_shutdown(rb_fde_t *const F)
 {
-	int i;
 	if(F == NULL || F->ssl == NULL)
 		return;
+
 	SSL_set_shutdown((SSL *) F->ssl, SSL_RECEIVED_SHUTDOWN);
 
-	for(i = 0; i < 4; i++)
+	for(int i = 0; i < 4; i++)
 	{
 		if(SSL_shutdown((SSL *) F->ssl))
 			break;
 	}
+
 	get_last_err();
 	SSL_free((SSL *) F->ssl);
 }
@@ -308,8 +317,6 @@ rb_ssl_shutdown(rb_fde_t *const F)
 int
 rb_init_ssl(void)
 {
-	char libratbox_data[] = "libratbox data";
-
 	/*
 	 * OpenSSL 1.1.0 and above automatically initialises itself with sane defaults
 	 */
@@ -460,7 +467,7 @@ rb_init_prng(const char *const path, prng_seed_t seed_type)
 	if(path == NULL)
 		return RAND_status();
 
-	switch (seed_type)
+	switch(seed_type)
 	{
 	case RB_PRNG_FILE:
 		if(RAND_load_file(path, -1) == -1)
@@ -500,12 +507,11 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
-	const EVP_MD *evp;
-	unsigned int len;
-	int res;
-
 	if(F->ssl == NULL)
 		return 0;
+
+	const EVP_MD *evp;
+	unsigned int len;
 
 	switch(method)
 	{
@@ -529,7 +535,7 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	if(cert == NULL)
 		return 0;
 
-	res = SSL_get_verify_result((SSL *) F->ssl);
+	int res = SSL_get_verify_result((SSL *) F->ssl);
 	switch(res)
 	{
 	case X509_V_OK:
@@ -554,16 +560,16 @@ void
 rb_get_ssl_info(char *const buf, const size_t len)
 {
 #ifdef LRB_SSL_FULL_VERSION_INFO
-	if (LRB_SSL_VNUM_RUNTIME == LRB_SSL_VNUM_COMPILETIME)
-		rb_snprintf(buf, len, "OpenSSL: compiled 0x%lx, library %s",
-		            LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_COMPILETIME);
+	if(LRB_SSL_VNUM_RUNTIME == LRB_SSL_VNUM_COMPILETIME)
+		(void) rb_snprintf(buf, len, "OpenSSL: compiled 0x%lx, library %s",
+		                   LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_COMPILETIME);
 	else
-		rb_snprintf(buf, len, "OpenSSL: compiled (0x%lx, %s), library (0x%lx, %s)",
-		            LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_COMPILETIME,
-		            LRB_SSL_VNUM_RUNTIME, LRB_SSL_VTEXT_RUNTIME);
+		(void) rb_snprintf(buf, len, "OpenSSL: compiled (0x%lx, %s), library (0x%lx, %s)",
+		                   LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_COMPILETIME,
+		                   LRB_SSL_VNUM_RUNTIME, LRB_SSL_VTEXT_RUNTIME);
 #else
-	rb_snprintf(buf, len, "OpenSSL: compiled 0x%lx, library %s",
-	            LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_RUNTIME);
+	(void) rb_snprintf(buf, len, "OpenSSL: compiled 0x%lx, library %s",
+	                   LRB_SSL_VNUM_COMPILETIME, LRB_SSL_VTEXT_RUNTIME);
 #endif
 }
 
@@ -596,38 +602,40 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 }
 
 void
-rb_ssl_start_accepted(rb_fde_t *const new_F, ACCB *const cb, void *const data, const int timeout)
+rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const int timeout)
 {
-	new_F->type |= RB_FD_SSL;
-	new_F->ssl = SSL_new(ssl_ctx);
-	new_F->accept = rb_malloc(sizeof(struct acceptdata));
+	F->type |= RB_FD_SSL;
 
-	new_F->accept->callback = cb;
-	new_F->accept->data = data;
-	rb_settimeout(new_F, timeout, rb_ssl_timeout, NULL);
+	F->accept = rb_malloc(sizeof(struct acceptdata));
+	F->accept->callback = cb;
+	F->accept->data = data;
+	F->accept->addrlen = 0;
+	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
 
-	new_F->accept->addrlen = 0;
-	SSL_set_fd((SSL *) new_F->ssl, rb_get_fd(new_F));
-	SSL_set_accept_state((SSL *) new_F->ssl);
-	rb_ssl_accept_common(new_F);
+	rb_settimeout(F, timeout, rb_ssl_timeout, NULL);
+	F->ssl = SSL_new(ssl_ctx);
+	SSL_set_fd((SSL *) F->ssl, rb_get_fd(F));
+	SSL_set_accept_state((SSL *) F->ssl);
+	rb_ssl_accept_common(F);
 }
 
 void
-rb_ssl_accept_setup(rb_fde_t *const F, rb_fde_t *const new_F, struct sockaddr *const st, const int addrlen)
+rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, const int addrlen)
 {
-	new_F->type |= RB_FD_SSL;
-	new_F->ssl = SSL_new(ssl_ctx);
-	new_F->accept = rb_malloc(sizeof(struct acceptdata));
+	cli_F->type |= RB_FD_SSL;
 
-	new_F->accept->callback = F->accept->callback;
-	new_F->accept->data = F->accept->data;
-	rb_settimeout(new_F, 10, rb_ssl_timeout, NULL);
-	memcpy(&new_F->accept->S, st, addrlen);
-	new_F->accept->addrlen = addrlen;
+	cli_F->accept = rb_malloc(sizeof(struct acceptdata));
+	cli_F->accept->callback = srv_F->accept->callback;
+	cli_F->accept->data = srv_F->accept->data;
+	cli_F->accept->addrlen = addrlen;
+	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
+	(void) memcpy(&cli_F->accept->S, st, addrlen);
 
-	SSL_set_fd((SSL *) new_F->ssl, rb_get_fd(new_F));
-	SSL_set_accept_state((SSL *) new_F->ssl);
-	rb_ssl_accept_common(new_F);
+	rb_settimeout(cli_F, 10, rb_ssl_timeout, NULL);
+	cli_F->ssl = SSL_new(ssl_ctx);
+	SSL_set_fd((SSL *) cli_F->ssl, rb_get_fd(cli_F));
+	SSL_set_accept_state((SSL *) cli_F->ssl);
+	rb_ssl_accept_common(cli_F);
 }
 
 void
@@ -635,8 +643,6 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 {
 	if(F == NULL)
 		return;
-
-	int ssl_err;
 
 	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
@@ -647,14 +653,17 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	F->connect->callback = callback;
 	F->connect->data = data;
 	F->type |= RB_FD_SSL;
-	F->ssl = SSL_new(ssl_ctx);
 
+	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
+	F->ssl = SSL_new(ssl_ctx);
 	SSL_set_fd((SSL *) F->ssl, F->fd);
 	SSL_set_connect_state((SSL *) F->ssl);
-	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
-	if((ssl_err = SSL_connect((SSL *) F->ssl)) <= 0)
+
+	int ssl_err = SSL_connect((SSL *) F->ssl);
+
+	if(ssl_err <= 0)
 	{
-		switch (ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
+		switch(ssl_err = SSL_get_error((SSL *) F->ssl, ssl_err))
 		{
 		case SSL_ERROR_SYSCALL:
 			if(rb_ignore_errno(errno))
@@ -733,9 +742,8 @@ rb_ssl_clear_handshake_count(rb_fde_t *const F)
 int
 rb_ssl_listen(rb_fde_t *const F, const int backlog, const int defer_accept)
 {
-	int result;
+	int result = rb_listen(F, backlog, defer_accept);
 
-	result = rb_listen(F, backlog, defer_accept);
 	F->type = RB_FD_SOCKET | RB_FD_LISTEN | RB_FD_SSL;
 
 	return result;
