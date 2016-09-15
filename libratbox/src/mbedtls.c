@@ -131,10 +131,6 @@ rb_ssl_init_fd(rb_fde_t *const F, rb_fd_tls_direction dir)
 	case RB_FD_TLS_DIRECTION_OUT:
 		mbed_config = &rb_mbedtls_cfg->client_cfg;
 		break;
-	default:
-		rb_lib_log("rb_ssl_init_fd: bad direction");
-		abort();
-		return;
 	}
 
 	rb_mbedtls_ssl_context *const mbed_ssl_ctx = rb_malloc(sizeof *mbed_ssl_ctx);
