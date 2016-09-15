@@ -295,7 +295,7 @@ rb_ssl_strerror(int err)
 #ifdef MBEDTLS_ERROR_C
 	char mbed_errbuf[512];
 	mbedtls_strerror(err, mbed_errbuf, sizeof mbed_errbuf);
-	(void) rb_snprintf(errbuf, sizeof errbuf, "(-0x%x) %s", -err, mbed_errbuf);
+	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%x: %s", -err, mbed_errbuf);
 #else
 	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%x", -err);
 #endif
