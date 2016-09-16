@@ -161,8 +161,23 @@ h_hdl_new_remote_user(struct Client *client_p)
 static void
 h_hdl_client_exit(hook_data_client_exit *hdata)
 {
-	if (hdata->target->umodes & UMODE_HELPOPS)
-		rb_dlinkFindDestroy(hdata->target, &helper_list);
+	if (MyClient(hdata->target) && IsPerson(hdata->target))
+	{
+		if (hdata->target->umodes & UMODE_HELPOPS)
+			rb_dlinkFindDestroy(hdata->target, &helper_list);
+	}
+	else if (IsServer(hdata->target))
+	{
+		rb_dlink_node *nptr;
+
+		RB_DLINK_FOREACH(nptr, hdata->target->serv->users.head)
+		{
+			struct Client *client_p = nptr->data;
+
+			if (client_p->umodes & UMODE_HELPOPS)
+				rb_dlinkFindDestroy(client_p, &helper_list);
+		}
+	}
 }
 
 static void
