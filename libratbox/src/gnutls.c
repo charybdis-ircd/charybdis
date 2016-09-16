@@ -73,6 +73,9 @@ struct ssl_connect
 
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
+static ssize_t rb_sock_net_recv(gnutls_transport_ptr_t, void *, size_t);
+static ssize_t rb_sock_net_xmit(gnutls_transport_ptr_t, const void *, size_t);
+
 
 
 /*
@@ -111,6 +114,22 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 	return 0;
 }
 
+static ssize_t
+rb_sock_net_recv(gnutls_transport_ptr_t context_ptr, void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return recv(fd, buf, count, 0);
+}
+
+static ssize_t
+rb_sock_net_xmit(gnutls_transport_ptr_t context_ptr, const void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return send(fd, buf, count, 0);
+}
+
 static void
 rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 {
@@ -140,6 +159,10 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
 	gnutls_priority_set(SSL_P(F), default_priority);
+
+	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) F);
+	gnutls_transport_set_pull_function(SSL_P(F), rb_sock_net_recv);
+	gnutls_transport_set_push_function(SSL_P(F), rb_sock_net_xmit);
 
 	if(dir == RB_FD_TLS_DIRECTION_IN)
 		gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
