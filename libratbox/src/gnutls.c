@@ -39,14 +39,6 @@
 # include <gnutls/crypto.h>
 #endif
 
-#if GNUTLS_VERSION_MAJOR < 3
-static int cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nreqs,
-	const gnutls_pk_algorithm_t *sign_algos, int sign_algos_len, gnutls_retr_st *st);
-#else
-static int cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nreqs,
-	const gnutls_pk_algorithm_t *sign_algos, int sign_algos_len, gnutls_retr2_st *st);
-#endif
-
 #define SSL_P(x) *((gnutls_session_t *)F->ssl)
 
 
@@ -65,6 +57,42 @@ static unsigned int client_cert_count;
 static gnutls_priority_t default_priority;
 
 
+
+/*
+ * We only have one certificate to authenticate with, as both a client and server.
+ *
+ * Unfortunately, GNUTLS tries to be clever, and as client, will attempt to use a certificate that the server will
+ * trust. We usually use self-signed certs, though, so the result of this search is always nothing. Therefore, it
+ * uses no certificate to authenticate as a client. This is undesirable, as it breaks fingerprint authentication;
+ * e.g. the connect::fingerprint on the remote ircd will not match.
+ *
+ * Thus, we use this callback to force GNUTLS to authenticate with our (server) certificate as a client.
+ */
+
+static int
+rb_ssl_cert_auth_cb(gnutls_session_t session,
+                    const gnutls_datum_t *const req_ca_rdn, const int req_ca_rdn_len,
+                    const gnutls_pk_algorithm_t *const sign_algos, const int sign_algos_len,
+#if (GNUTLS_VERSION_MAJOR < 3)
+                    gnutls_retr_st *const st)
+#else
+                    gnutls_retr2_st *const st)
+#endif
+{
+#if (GNUTLS_VERSION_MAJOR < 3)
+	st->type = GNUTLS_CRT_X509;
+#else
+	st->cert_type = GNUTLS_CRT_X509;
+	st->key_type = GNUTLS_PRIVKEY_X509;
+#endif
+
+	st->ncerts = client_cert_count;
+	st->cert.x509 = client_cert;
+	st->key.x509 = client_key;
+	st->deinit_all = 0;
+
+	return 0;
+}
 
 void
 rb_ssl_shutdown(rb_fde_t *const F)
@@ -291,9 +319,9 @@ rb_init_ssl(void)
 	}
 
 #if GNUTLS_VERSION_MAJOR < 3
-	gnutls_certificate_client_set_retrieve_function(server_cert_key, cert_callback);
+	gnutls_certificate_client_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
 #else
-	gnutls_certificate_set_retrieve_function(server_cert_key, cert_callback);
+	gnutls_certificate_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
 #endif
 
 #if (GNUTLS_VERSION_MAJOR < 3)
@@ -301,38 +329,6 @@ rb_init_ssl(void)
 #endif
 
 	return 1;
-}
-
-/* We only have one certificate to authenticate with, as both client and server.  Unfortunately,
- * GnuTLS tries to be clever, and as client, will attempt to use a certificate that the server
- * will trust.  We usually use self-signed certs, though, so the result of this search is always
- * nothing.  Therefore, it uses no certificate to authenticate as a client.  This is undesirable
- * as it breaks fingerprint auth.  Thus, we use this callback to force GnuTLS to always
- * authenticate with our certificate at all times.
- */
-#if GNUTLS_VERSION_MAJOR < 3
-static int
-cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nreqs,
-	const gnutls_pk_algorithm_t *sign_algos, int sign_algos_len, gnutls_retr_st *st)
-#else
-static int
-cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nreqs,
-	const gnutls_pk_algorithm_t *sign_algos, int sign_algos_len, gnutls_retr2_st *st)
-#endif
-{
-	/* XXX - ugly hack. Tell GnuTLS to use the first (only) certificate we have for auth. */
-#if (GNUTLS_VERSION_MAJOR < 3)
-	st->type = GNUTLS_CRT_X509;
-#else
-	st->cert_type = GNUTLS_CRT_X509;
-	st->key_type = GNUTLS_PRIVKEY_X509;
-#endif
-	st->ncerts = client_cert_count;
-	st->cert.x509 = client_cert;
-	st->key.x509 = client_key;
-	st->deinit_all = 0;
-
-	return 0;
 }
 
 static void
@@ -391,7 +387,7 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	}
 
 	/* In addition to creating the certificate set, we also need to store our cert elsewhere
-	 * so we can force GnuTLS to identify with it when acting as a client.
+	 * so we can force GNUTLS to identify with it when acting as a client.
 	 */
 	gnutls_x509_privkey_init(&client_key);
 	if ((ret = gnutls_x509_privkey_import(client_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
