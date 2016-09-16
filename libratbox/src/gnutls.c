@@ -708,6 +708,9 @@ rb_init_prng(const char *path, prng_seed_t seed_type)
 {
 #if GNUTLS_VERSION_MAJOR < 3
 	gcry_fast_random_poll();
+	rb_lib_log("%s: PRNG initialised", __func__);
+#else
+	rb_lib_log("%s: Skipping PRNG initialisation; not required by GNUTLS v3+ backend", __func__);
 #endif
 	return 1;
 }
