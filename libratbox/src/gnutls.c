@@ -71,6 +71,7 @@ struct ssl_connect
 	int timeout;
 };
 
+static const char *rb_ssl_strerror(int);
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
 static ssize_t rb_sock_net_recv(gnutls_transport_ptr_t, void *, size_t);
@@ -112,6 +113,12 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 	st->deinit_all = 0;
 
 	return 0;
+}
+
+static const char *
+rb_ssl_strerror(int err)
+{
+	return gnutls_strerror(err);
 }
 
 static ssize_t
@@ -336,7 +343,7 @@ rb_init_ssl(void)
 
 	if ((ret = gnutls_global_init()) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("%s: gnutls_global_init: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_global_init: %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
 
@@ -444,7 +451,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if((ret = gnutls_certificate_allocate_credentials(&server_cert_key)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("%s: gnutls_certificate_allocate_credentials: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_certificate_allocate_credentials: %s", __func__, rb_ssl_strerror(ret));
 		rb_free_datum_t(d_cert);
 		rb_free_datum_t(d_key);
 		return 0;
@@ -459,7 +466,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	if((ret = gnutls_certificate_set_x509_key_mem(server_cert_key, d_cert, d_key,
 	                                              GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("%s: gnutls_certificate_set_x509_key_mem: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_certificate_set_x509_key_mem: %s", __func__, rb_ssl_strerror(ret));
 		gnutls_certificate_free_credentials(server_cert_key);
 		rb_free_datum_t(d_cert);
 		rb_free_datum_t(d_key);
@@ -468,7 +475,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	if((ret = gnutls_x509_crt_list_import(client_cert, &client_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
 	                                      GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED)) < 1)
 	{
-		rb_lib_log("%s: gnutls_x509_crt_list_import: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_x509_crt_list_import: %s", __func__, rb_ssl_strerror(ret));
 		gnutls_certificate_free_credentials(server_cert_key);
 		rb_free_datum_t(d_cert);
 		rb_free_datum_t(d_key);
@@ -478,7 +485,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if((ret = gnutls_x509_privkey_init(&client_key)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("%s: gnutls_x509_privkey_init: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_x509_privkey_init: %s", __func__, rb_ssl_strerror(ret));
 		gnutls_certificate_free_credentials(server_cert_key);
 		for(unsigned int i = 0; i < client_cert_count; i++)
 			gnutls_x509_crt_deinit(client_cert[i]);
@@ -488,7 +495,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	}
 	if((ret = gnutls_x509_privkey_import(client_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("%s: gnutls_x509_privkey_import: %s", __func__, gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_x509_privkey_import: %s", __func__, rb_ssl_strerror(ret));
 		gnutls_certificate_free_credentials(server_cert_key);
 		for(unsigned int i = 0; i < client_cert_count; i++)
 			gnutls_x509_crt_deinit(client_cert[i]);
@@ -516,7 +523,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		}
 		if((ret = gnutls_dh_params_init(&server_dhp)) != GNUTLS_E_SUCCESS)
 		{
-			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, gnutls_strerror(ret));
+			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, rb_ssl_strerror(ret));
 			gnutls_certificate_free_credentials(server_cert_key);
 			for(unsigned int i = 0; i < client_cert_count; i++)
 				gnutls_x509_crt_deinit(client_cert[i]);
@@ -526,7 +533,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		}
 		if((ret = gnutls_dh_params_import_pkcs3(server_dhp, d_dhp, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 		{
-			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, gnutls_strerror(ret));
+			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, rb_ssl_strerror(ret));
 			gnutls_certificate_free_credentials(server_cert_key);
 			for(unsigned int i = 0; i < client_cert_count; i++)
 				gnutls_x509_crt_deinit(client_cert[i]);
@@ -544,7 +551,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	if((ret = gnutls_priority_init(&default_priority, cipherlist, &err)) != GNUTLS_E_SUCCESS)
 	{
 		rb_lib_log("%s: gnutls_priority_init: %s, error begins at '%s'? -- using defaults instead",
-		           __func__, gnutls_strerror(ret), err ? err : "<unknown>");
+		           __func__, rb_ssl_strerror(ret), err ? err : "<unknown>");
 
 		(void) gnutls_priority_init(&default_priority, NULL, &err);
 	}
@@ -683,7 +690,7 @@ rb_get_random(void *buf, size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *F)
 {
-	return gnutls_strerror(F->ssl_errno);
+	return rb_ssl_strerror(F->ssl_errno);
 }
 
 int
