@@ -308,7 +308,7 @@ init_isupport(void)
 	static int topiclen = TOPICLEN;
 	static int maxnicklen = NICKLEN - 1;
 
-	add_isupport("CHANTYPES", isupport_stringptr, &allowed_chantypes);
+	add_isupport("CHANTYPES", isupport_string, allowed_chantypes);
 	add_isupport("EXCEPTS", isupport_boolean, &ConfigChannel.use_except);
 	add_isupport("INVEX", isupport_boolean, &ConfigChannel.use_invex);
 	add_isupport("CHANMODES", isupport_chanmodes, NULL);
