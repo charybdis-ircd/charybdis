@@ -308,7 +308,7 @@ rb_ssl_read_or_write(int r_or_w, rb_fde_t *F, void *rbuf, const void *wbuf, size
 				break;
 			}
 		default:
-			F->ssl_errno = ret;
+			F->ssl_errno = (unsigned long) -ret;
 			errno = EIO;
 			return RB_RW_IO_ERROR;
 		}
@@ -606,6 +606,8 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 
 	struct ssl_connect *const sconn = data;
 
+	F->ssl_errno = (unsigned long) -ret;
+
 	if(ret == GNUTLS_E_SUCCESS)
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	else
@@ -690,7 +692,8 @@ rb_get_random(void *buf, size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *F)
 {
-	return rb_ssl_strerror(F->ssl_errno);
+	int err = (int) F->ssl_errno;
+	return rb_ssl_strerror(-err);
 }
 
 int
