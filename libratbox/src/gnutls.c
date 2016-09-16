@@ -703,7 +703,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 int
 rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
-#if GNUTLS_VERSION_MAJOR < 3
+#if (GNUTLS_VERSION_MAJOR < 3)
 	gcry_fast_random_poll();
 	rb_lib_log("%s: PRNG initialised", __func__);
 #else
@@ -715,7 +715,7 @@ rb_init_prng(const char *const path, prng_seed_t seed_type)
 int
 rb_get_random(void *const buf, const size_t length)
 {
-#if GNUTLS_VERSION_MAJOR < 3
+#if (GNUTLS_VERSION_MAJOR < 3)
 	gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
 #else
 	gnutls_rnd(GNUTLS_RND_KEY, buf, length);
