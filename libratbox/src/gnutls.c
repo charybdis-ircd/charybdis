@@ -321,22 +321,24 @@ rb_gcry_random_seed(void *unused)
 int
 rb_init_ssl(void)
 {
-	gnutls_global_init();
+	int ret;
 
-	if(gnutls_certificate_allocate_credentials(&server_cert_key) != GNUTLS_E_SUCCESS)
+	if ((ret = gnutls_global_init()) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_init_ssl: Unable to allocate SSL/TLS certificate credentials");
+		rb_lib_log("%s: gnutls_global_init: %s", __func__, gnutls_strerror(ret));
+		return 0;
+	}
+	if((ret = gnutls_certificate_allocate_credentials(&server_cert_key)) != GNUTLS_E_SUCCESS)
+	{
+		rb_lib_log("%s: gnutls_certificate_allocate_credentials: %s", __func__, gnutls_strerror(ret));
 		return 0;
 	}
 
-#if GNUTLS_VERSION_MAJOR < 3
+#if (GNUTLS_VERSION_MAJOR < 3)
+	rb_event_addish("rb_gcry_random_seed", rb_gcry_random_seed, NULL, 300);
 	gnutls_certificate_client_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
 #else
 	gnutls_certificate_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
-#endif
-
-#if (GNUTLS_VERSION_MAJOR < 3)
-	rb_event_addish("rb_gcry_random_seed", rb_gcry_random_seed, NULL, 300);
 #endif
 
 	return 1;
