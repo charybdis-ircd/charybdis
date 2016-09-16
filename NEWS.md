@@ -86,6 +86,8 @@ See LICENSE for licensing details (GPL v2).
   servicing clients will remain in use, but not service new connections, and
   are garbage collected when they are no longer servicing connections.
 - Support for ratbox-style 'iodebug' hooks has been removed.
+- New channel types may be added by modules, see `extensions/chantype_dummy.c`
+  for a very simple example.
 
 ## charybdis-3.5.0
 
