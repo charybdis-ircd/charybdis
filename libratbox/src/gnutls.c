@@ -209,48 +209,29 @@ rb_ssl_timeout_cb(rb_fde_t *F, void *notused)
 	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
 }
 
-
-static int
-do_ssl_handshake(rb_fde_t *F, PF * callback, void *data)
-{
-	int ret;
-	int flags;
-
-	ret = gnutls_handshake(SSL_P(F));
-	if(ret < 0)
-	{
-		if((ret == GNUTLS_E_INTERRUPTED && rb_ignore_errno(errno)) || ret == GNUTLS_E_AGAIN)
-		{
-			if(gnutls_record_get_direction(SSL_P(F)) == 0)
-				flags = RB_SELECT_READ;
-			else
-				flags = RB_SELECT_WRITE;
-			rb_setselect(F, flags, callback, data);
-			return 0;
-		}
-		F->ssl_errno = ret;
-		return -1;
-	}
-	return 1;		/* handshake is finished..go about life */
-}
-
 static void
 rb_ssl_accept_common(rb_fde_t *F, void *data)
 {
 	lrb_assert(F->accept != NULL);
+	lrb_assert(F->accept->callback != NULL);
 
-	int ret = do_ssl_handshake(F, rb_ssl_accept_common, data);
+	errno = 0;
 
-	if(ret == 0)
+	int ret = gnutls_handshake(SSL_P(F));
+
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (errno == 0 || rb_ignore_errno(errno))))
+	{
+		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
+		rb_setselect(F, flags, rb_ssl_accept_common, data);
 		return;
-
-	rb_settimeout(F, 0, NULL, NULL);
-	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
+	}
 
 	struct acceptdata *const ad = F->accept;
-	F->accept = NULL;
 
-	if(ret > 0)
+	F->accept = NULL;
+	F->ssl_errno = (unsigned long) -ret;
+
+	if(ret == GNUTLS_E_SUCCESS)
 		ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
 	else
 		ad->callback(F, RB_ERROR_SSL, NULL, 0, ad->data);
@@ -560,14 +541,20 @@ rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
 static void
 rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
-	int ret = do_ssl_handshake(F, rb_ssl_connect_common, data);
+	errno = 0;
 
-	if(ret == 0)
+	int ret = gnutls_handshake(SSL_P(F));
+
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (errno == 0 || rb_ignore_errno(errno))))
+	{
+		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
+		rb_setselect(F, flags, rb_ssl_connect_common, data);
 		return;
+	}
 
 	struct ssl_connect *const sconn = data;
 
-	if(ret > 0)
+	if(ret == GNUTLS_E_SUCCESS)
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	else
 		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
