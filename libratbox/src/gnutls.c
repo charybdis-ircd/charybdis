@@ -58,18 +58,23 @@ static int cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_
 #define SSL_P(x) *((gnutls_session_t *)F->ssl)
 
 void
-rb_ssl_shutdown(rb_fde_t *F)
+rb_ssl_shutdown(rb_fde_t *const F)
 {
-	int i;
 	if(F == NULL || F->ssl == NULL)
 		return;
-	for(i = 0; i < 4; i++)
+
+	for(int i = 0; i < 4; i++)
 	{
-		if(gnutls_bye(SSL_P(F), GNUTLS_SHUT_RDWR) == GNUTLS_E_SUCCESS)
+		int ret = gnutls_bye(SSL_P(F), GNUTLS_SHUT_RDWR);
+
+		if(ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN)
 			break;
 	}
+
 	gnutls_deinit(SSL_P(F));
+
 	rb_free(F->ssl);
+	F->ssl = NULL;
 }
 
 unsigned int
