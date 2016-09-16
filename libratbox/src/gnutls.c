@@ -375,33 +375,66 @@ rb_init_ssl(void)
 }
 
 static void
-rb_free_datum_t(gnutls_datum_t * d)
+rb_free_datum_t(gnutls_datum_t *const datum)
 {
-	rb_free(d->data);
-	rb_free(d);
+	if(datum == NULL)
+		return;
+
+	rb_free(datum->data);
+	rb_free(datum);
 }
 
 static gnutls_datum_t *
-rb_load_file_into_datum_t(const char *file)
+rb_load_file_into_datum_t(const char *const file)
 {
-	FILE *f;
-	gnutls_datum_t *datum;
+	const int datum_fd = open(file, O_RDONLY);
+	if(datum_fd < 0)
+		return NULL;
+
 	struct stat fileinfo;
-	if((f = fopen(file, "r")) == NULL)
+	if(fstat(datum_fd, &fileinfo) != 0)
+	{
+		(void) close(datum_fd);
 		return NULL;
-	if(fstat(fileno(f), &fileinfo))
+	}
+
+	const size_t datum_size = (fileinfo.st_size < 131072) ? (size_t) fileinfo.st_size : 131072;
+	if(datum_size == 0)
+	{
+		(void) close(datum_fd);
 		return NULL;
+	}
 
-	datum = rb_malloc(sizeof(gnutls_datum_t));
+	gnutls_datum_t *datum;
+	if((datum = rb_malloc(sizeof *datum)) == NULL)
+	{
+		(void) close(datum_fd);
+		return NULL;
+	}
+	if((datum->data = rb_malloc(datum_size + 1)) == NULL)
+	{
+		rb_free(datum);
+		(void) close(datum_fd);
+		return NULL;
+	}
 
-	if(fileinfo.st_size > 131072)	/* deal with retards */
-		datum->size = 131072;
-	else
-		datum->size = fileinfo.st_size;
+	for(size_t data_read = 0; data_read < datum_size; )
+	{
+		ssize_t ret = read(datum_fd, ((unsigned char *)datum->data) + data_read, datum_size - data_read);
 
-	datum->data = rb_malloc(datum->size + 1);
-	fread(datum->data, datum->size, 1, f);
-	fclose(f);
+		if(ret <= 0)
+		{
+			rb_free_datum_t(datum);
+			(void) close(datum_fd);
+			return NULL;
+		}
+
+		data_read += (size_t) ret;
+	}
+	(void) close(datum_fd);
+
+	datum->data[datum_size] = '\0';
+	datum->size = (unsigned int) datum_size;
 	return datum;
 }
 
