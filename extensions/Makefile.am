@@ -6,6 +6,7 @@ LIBS += $(top_srcdir)/ircd/libircd.la
 extensiondir=@moduledir@/extensions
 
 extension_LTLIBRARIES =		\
+  chantype_dummy.la		\
   chm_adminonly.la		\
   chm_operonly.la		\
   chm_operonly_compat.la	\
