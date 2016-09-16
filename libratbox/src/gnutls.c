@@ -248,7 +248,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 		F->handshake_count++;
 		ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
 	}
-	else if(err != 0)
+	else if(ret == GNUTLS_E_INTERRUPTED && err != 0)
 	{
 		errno = err;
 		ad->callback(F, RB_ERROR, NULL, 0, ad->data);
@@ -632,7 +632,7 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 		F->handshake_count++;
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
 	}
-	else if(err != 0)
+	else if(ret == GNUTLS_E_INTERRUPTED && err != 0)
 	{
 		errno = err;
 		rb_ssl_connect_realcb(F, RB_ERROR, sconn);
