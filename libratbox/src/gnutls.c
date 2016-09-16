@@ -172,20 +172,16 @@ do_ssl_handshake(rb_fde_t *F, PF * callback, void *data)
 }
 
 static void
-rb_ssl_tryaccept(rb_fde_t *F, void *data)
+rb_ssl_accept_common(rb_fde_t *F, void *data)
 {
-	int ret;
-	struct acceptdata *ad;
-
 	lrb_assert(F->accept != NULL);
 
-	ret = do_ssl_handshake(F, rb_ssl_tryaccept, NULL);
+	int ret = do_ssl_handshake(F, rb_ssl_accept_common, data);
 
-	/* do_ssl_handshake does the rb_setselect */
 	if(ret == 0)
 		return;
 
-	ad = F->accept;
+	struct acceptdata *const ad = F->accept;
 	F->accept = NULL;
 	rb_settimeout(F, 0, NULL, NULL);
 	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
@@ -199,68 +195,52 @@ rb_ssl_tryaccept(rb_fde_t *F, void *data)
 }
 
 void
-rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
+rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const int timeout)
 {
-	gnutls_session_t *ssl;
-	new_F->type |= RB_FD_SSL;
-	ssl = new_F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	new_F->accept = rb_malloc(sizeof(struct acceptdata));
+	F->type |= RB_FD_SSL;
 
-	new_F->accept->callback = cb;
-	new_F->accept->data = data;
-	rb_settimeout(new_F, timeout, rb_ssl_timeout_cb, NULL);
+	F->accept = rb_malloc(sizeof(struct acceptdata));
+	F->accept->callback = cb;
+	F->accept->data = data;
+	F->accept->addrlen = 0;
+	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
 
-	new_F->accept->addrlen = 0;
-
-	gnutls_init(ssl, GNUTLS_SERVER);
-	gnutls_set_default_priority(*ssl);
-	gnutls_credentials_set(*ssl, GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(*ssl, 1024);
-	gnutls_transport_set_ptr(*ssl, (gnutls_transport_ptr_t) (long int)new_F->fd);
-	gnutls_certificate_server_set_request(*ssl, GNUTLS_CERT_REQUEST);
-	gnutls_priority_set(*ssl, default_priority);
-
-	if(do_ssl_handshake(new_F, rb_ssl_tryaccept, NULL))
-	{
-		struct acceptdata *ad = new_F->accept;
-		new_F->accept = NULL;
-		ad->callback(new_F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
-		rb_free(ad);
-	}
-
-}
-
-
-
-
-void
-rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrlen)
-{
-	new_F->type |= RB_FD_SSL;
-	new_F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	new_F->accept = rb_malloc(sizeof(struct acceptdata));
-
-	new_F->accept->callback = F->accept->callback;
-	new_F->accept->data = F->accept->data;
-	rb_settimeout(new_F, 10, rb_ssl_timeout_cb, NULL);
-	memcpy(&new_F->accept->S, st, addrlen);
-	new_F->accept->addrlen = addrlen;
-
-	gnutls_init((gnutls_session_t *) new_F->ssl, GNUTLS_SERVER);
-	gnutls_set_default_priority(SSL_P(new_F));
-	gnutls_credentials_set(SSL_P(new_F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(new_F), 1024);
-	gnutls_transport_set_ptr(SSL_P(new_F), (gnutls_transport_ptr_t) (long int)rb_get_fd(new_F));
-	gnutls_certificate_server_set_request(SSL_P(new_F), GNUTLS_CERT_REQUEST);
+	F->ssl = rb_malloc(sizeof(gnutls_session_t));
+	gnutls_init((gnutls_session_t *) F->ssl, GNUTLS_SERVER);
+	gnutls_set_default_priority(SSL_P(F));
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
+	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
+	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)rb_get_fd(F));
+	gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
 	gnutls_priority_set(SSL_P(F), default_priority);
 
-	if(do_ssl_handshake(F, rb_ssl_tryaccept, NULL))
-	{
-		struct acceptdata *ad = F->accept;
-		F->accept = NULL;
-		ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
-		rb_free(ad);
-	}
+	rb_settimeout(F, timeout, rb_ssl_timeout_cb, NULL);
+	rb_ssl_accept_common(F, NULL);
+}
+
+void
+rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, const int addrlen)
+{
+	cli_F->type |= RB_FD_SSL;
+
+	cli_F->accept = rb_malloc(sizeof(struct acceptdata));
+	cli_F->accept->callback = srv_F->accept->callback;
+	cli_F->accept->data = srv_F->accept->data;
+	cli_F->accept->addrlen = (rb_socklen_t) addrlen;
+	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
+	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
+
+	cli_F->ssl = rb_malloc(sizeof(gnutls_session_t));
+	gnutls_init((gnutls_session_t *) cli_F->ssl, GNUTLS_SERVER);
+	gnutls_set_default_priority(SSL_P(cli_F));
+	gnutls_credentials_set(SSL_P(cli_F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
+	gnutls_dh_set_prime_bits(SSL_P(cli_F), 1024);
+	gnutls_transport_set_ptr(SSL_P(cli_F), (gnutls_transport_ptr_t) (long int)rb_get_fd(cli_F));
+	gnutls_certificate_server_set_request(SSL_P(cli_F), GNUTLS_CERT_REQUEST);
+	gnutls_priority_set(SSL_P(cli_F), default_priority);
+
+	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
+	rb_ssl_accept_common(cli_F, NULL);
 }
 
 
