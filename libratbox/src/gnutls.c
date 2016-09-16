@@ -116,7 +116,7 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 }
 
 static const char *
-rb_ssl_strerror(int err)
+rb_ssl_strerror(const int err)
 {
 	return gnutls_strerror(err);
 }
@@ -196,19 +196,19 @@ rb_ssl_shutdown(rb_fde_t *const F)
 }
 
 unsigned int
-rb_ssl_handshake_count(rb_fde_t *F)
+rb_ssl_handshake_count(rb_fde_t *const F)
 {
 	return F->handshake_count;
 }
 
 void
-rb_ssl_clear_handshake_count(rb_fde_t *F)
+rb_ssl_clear_handshake_count(rb_fde_t *const F)
 {
 	F->handshake_count = 0;
 }
 
 static void
-rb_ssl_timeout_cb(rb_fde_t *F, void *notused)
+rb_ssl_timeout_cb(rb_fde_t *const F, void *const notused)
 {
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);
@@ -217,7 +217,7 @@ rb_ssl_timeout_cb(rb_fde_t *F, void *notused)
 }
 
 static void
-rb_ssl_accept_common(rb_fde_t *F, void *data)
+rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->accept != NULL);
@@ -226,8 +226,8 @@ rb_ssl_accept_common(rb_fde_t *F, void *data)
 
 	errno = 0;
 
-	int ret = gnutls_handshake(SSL_P(F));
-	int err = errno;
+	const int ret = gnutls_handshake(SSL_P(F));
+	const int err = errno;
 
 	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
 	{
@@ -300,10 +300,10 @@ rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockadd
 
 
 static ssize_t
-rb_ssl_read_or_write(int r_or_w, rb_fde_t *F, void *rbuf, const void *wbuf, size_t count)
+rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, const void *const wbuf, const size_t count)
 {
 	ssize_t ret;
-	gnutls_session_t *ssl = F->ssl;
+	gnutls_session_t *const ssl = F->ssl;
 
 	if(r_or_w == 0)
 		ret = gnutls_record_recv(*ssl, rbuf, count);
@@ -334,20 +334,20 @@ rb_ssl_read_or_write(int r_or_w, rb_fde_t *F, void *rbuf, const void *wbuf, size
 }
 
 ssize_t
-rb_ssl_read(rb_fde_t *F, void *buf, size_t count)
+rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
 {
 	return rb_ssl_read_or_write(0, F, buf, NULL, count);
 }
 
 ssize_t
-rb_ssl_write(rb_fde_t *F, const void *buf, size_t count)
+rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 {
 	return rb_ssl_read_or_write(1, F, NULL, buf, count);
 }
 
 #if (GNUTLS_VERSION_MAJOR < 3)
 static void
-rb_gcry_random_seed(void *unused)
+rb_gcry_random_seed(void *const unused)
 {
 	gcry_fast_random_poll();
 }
@@ -614,8 +614,8 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 
 	errno = 0;
 
-	int ret = gnutls_handshake(SSL_P(F));
-	int err = errno;
+	const int ret = gnutls_handshake(SSL_P(F));
+	const int err = errno;
 
 	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
 	{
@@ -649,7 +649,7 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 }
 
 static void
-rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
+rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 {
 	struct ssl_connect *const sconn = data;
 
@@ -704,7 +704,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 }
 
 int
-rb_init_prng(const char *path, prng_seed_t seed_type)
+rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
 #if GNUTLS_VERSION_MAJOR < 3
 	gcry_fast_random_poll();
@@ -716,7 +716,7 @@ rb_init_prng(const char *path, prng_seed_t seed_type)
 }
 
 int
-rb_get_random(void *buf, size_t length)
+rb_get_random(void *const buf, const size_t length)
 {
 #if GNUTLS_VERSION_MAJOR < 3
 	gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
@@ -727,9 +727,9 @@ rb_get_random(void *buf, size_t length)
 }
 
 const char *
-rb_get_ssl_strerror(rb_fde_t *F)
+rb_get_ssl_strerror(rb_fde_t *const F)
 {
-	int err = (int) F->ssl_errno;
+	const int err = (int) F->ssl_errno;
 	return rb_ssl_strerror(-err);
 }
 
@@ -792,7 +792,7 @@ rb_supports_ssl(void)
 }
 
 void
-rb_get_ssl_info(char *buf, size_t len)
+rb_get_ssl_info(char *const buf, const size_t len)
 {
 	(void) rb_snprintf(buf, len, "GNUTLS: compiled (v%s), library (v%s)",
 	                   LIBGNUTLS_VERSION, gnutls_check_version(NULL));
