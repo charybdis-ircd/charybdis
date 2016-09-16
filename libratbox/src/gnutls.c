@@ -458,48 +458,45 @@ rb_ssl_listen(rb_fde_t *F, int backlog, int defer_accept)
 }
 
 static void
-rb_ssl_connect_realcb(rb_fde_t *F, int status, struct ssl_connect *sconn)
+rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *const sconn)
 {
+	lrb_assert(F != NULL);
+	lrb_assert(F->connect != NULL);
+
 	F->connect->callback = sconn->callback;
 	F->connect->data = sconn->data;
-	rb_free(sconn);
+
 	rb_connect_callback(F, status);
+	rb_free(sconn);
 }
 
 static void
-rb_ssl_tryconn_timeout_cb(rb_fde_t *F, void *data)
+rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
 {
 	rb_ssl_connect_realcb(F, RB_ERR_TIMEOUT, data);
 }
 
 static void
-rb_ssl_tryconn_cb(rb_fde_t *F, void *data)
+rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
-	struct ssl_connect *sconn = data;
-	int ret;
+	int ret = do_ssl_handshake(F, rb_ssl_connect_common, data);
 
-	ret = do_ssl_handshake(F, rb_ssl_tryconn_cb, (void *)sconn);
-
-	switch (ret)
-	{
-	case -1:
-		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
-		break;
-	case 0:
-		/* do_ssl_handshake does the rb_setselect stuff */
+	if(ret == 0)
 		return;
-	default:
-		break;
 
+	struct ssl_connect *const sconn = data;
 
-	}
-	rb_ssl_connect_realcb(F, RB_OK, sconn);
+	if(ret > 0)
+		rb_ssl_connect_realcb(F, RB_OK, sconn);
+	else
+		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
 }
 
 static void
 rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 {
-	struct ssl_connect *sconn = data;
+	struct ssl_connect *const sconn = data;
+
 	if(status != RB_OK)
 	{
 		rb_ssl_connect_realcb(F, status, sconn);
@@ -508,8 +505,6 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 
 	F->type |= RB_FD_SSL;
 
-
-	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	F->ssl = rb_malloc(sizeof(gnutls_session_t));
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
@@ -518,42 +513,43 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
 	gnutls_priority_set(SSL_P(F), default_priority);
 
-	do_ssl_handshake(F, rb_ssl_tryconn_cb, (void *)sconn);
+	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 void
-rb_connect_tcp_ssl(rb_fde_t *F, struct sockaddr *dest,
-		   struct sockaddr *clocal, int socklen, CNCB * callback, void *data, int timeout)
+rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockaddr *const clocal,
+                   const int socklen, CNCB *const callback, void *const data, const int timeout)
 {
-	struct ssl_connect *sconn;
 	if(F == NULL)
 		return;
 
-	sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
+
 	rb_connect_tcp(F, dest, clocal, socklen, rb_ssl_tryconn, sconn, timeout);
-
 }
 
 void
-rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
+rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data, const int timeout)
 {
-	struct ssl_connect *sconn;
 	if(F == NULL)
 		return;
 
-	sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
+
 	F->connect = rb_malloc(sizeof(struct conndata));
 	F->connect->callback = callback;
 	F->connect->data = data;
-	F->type |= RB_FD_SSL;
-	F->ssl = rb_malloc(sizeof(gnutls_session_t));
 
+	F->type |= RB_FD_SSL;
+
+	F->ssl = rb_malloc(sizeof(gnutls_session_t));
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
 	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
@@ -562,8 +558,7 @@ rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
 	gnutls_priority_set(SSL_P(F), default_priority);
 
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
-
-	do_ssl_handshake(F, rb_ssl_tryconn_cb, (void *)sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 int
