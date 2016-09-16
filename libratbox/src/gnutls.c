@@ -58,6 +58,17 @@ static gnutls_priority_t default_priority;
 
 
 
+struct ssl_connect
+{
+	CNCB *callback;
+	void *data;
+	int timeout;
+};
+
+static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
+
+
+
 /*
  * We only have one certificate to authenticate with, as both a client and server.
  *
@@ -461,13 +472,6 @@ rb_ssl_listen(rb_fde_t *F, int backlog, int defer_accept)
 
 	return result;
 }
-
-struct ssl_connect
-{
-	CNCB *callback;
-	void *data;
-	int timeout;
-};
 
 static void
 rb_ssl_connect_realcb(rb_fde_t *F, int status, struct ssl_connect *sconn)
