@@ -734,24 +734,20 @@ rb_get_ssl_strerror(rb_fde_t *F)
 }
 
 int
-rb_get_ssl_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
+rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
-	gnutls_x509_crt_t cert;
-	gnutls_digest_algorithm_t algo;
-	unsigned int cert_list_size = 0;
-	const gnutls_datum_t *cert_list;
-	size_t digest_size;
+	gnutls_digest_algorithm_t md_type;
 
 	switch(method)
 	{
 	case RB_SSL_CERTFP_METH_SHA1:
-		algo = GNUTLS_DIG_SHA1;
+		md_type = GNUTLS_DIG_SHA1;
 		break;
 	case RB_SSL_CERTFP_METH_SHA256:
-		algo = GNUTLS_DIG_SHA256;
+		md_type = GNUTLS_DIG_SHA256;
 		break;
 	case RB_SSL_CERTFP_METH_SHA512:
-		algo = GNUTLS_DIG_SHA512;
+		md_type = GNUTLS_DIG_SHA512;
 		break;
 	default:
 		return 0;
@@ -760,29 +756,33 @@ rb_get_ssl_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
 	if (gnutls_certificate_type_get(SSL_P(F)) != GNUTLS_CRT_X509)
 		return 0;
 
-	cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
-
-	if (cert_list_size <= 0)
+	unsigned int cert_list_size = 0;
+	const gnutls_datum_t *const cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
+	if (cert_list == NULL || cert_list_size <= 0)
 		return 0;
 
-	if (gnutls_x509_crt_init(&cert) != GNUTLS_E_SUCCESS)
+	gnutls_x509_crt_t peer_cert;
+	if (gnutls_x509_crt_init(&peer_cert) != GNUTLS_E_SUCCESS)
 		return 0;
 
-	if (gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS)
+	if (gnutls_x509_crt_import(peer_cert, &cert_list[0], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS)
 	{
-		gnutls_x509_crt_deinit(cert);
+		gnutls_x509_crt_deinit(peer_cert);
 		return 0;
 	}
 
-	if (gnutls_x509_crt_get_fingerprint(cert, algo, certfp, &digest_size) != 0)
+	int ret;
+	size_t hashlen;
+	if ((ret = gnutls_x509_crt_get_fingerprint(peer_cert, md_type, certfp, &hashlen)) != 0)
 	{
-		gnutls_x509_crt_deinit(cert);
+		rb_lib_log("%s: gnutls_x509_crt_get_fingerprint: %s", __func__, rb_ssl_strerror(ret));
+		gnutls_x509_crt_deinit(peer_cert);
 		return 0;
 	}
 
-	gnutls_x509_crt_deinit(cert);
+	gnutls_x509_crt_deinit(peer_cert);
 
-	return (int) digest_size;
+	return (int) hashlen;
 }
 
 int
