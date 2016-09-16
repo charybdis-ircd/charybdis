@@ -303,12 +303,11 @@ static ssize_t
 rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, const void *const wbuf, const size_t count)
 {
 	ssize_t ret;
-	gnutls_session_t *const ssl = F->ssl;
 
 	if(r_or_w == 0)
-		ret = gnutls_record_recv(*ssl, rbuf, count);
+		ret = gnutls_record_recv(SSL_P(F), rbuf, count);
 	else
-		ret = gnutls_record_send(*ssl, wbuf, count);
+		ret = gnutls_record_send(SSL_P(F), wbuf, count);
 
 	if(ret < 0)
 	{
