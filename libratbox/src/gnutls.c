@@ -39,7 +39,7 @@
 # include <gnutls/crypto.h>
 #endif
 
-#define SSL_P(x) *((gnutls_session_t *)F->ssl)
+#define SSL_P(x) *((gnutls_session_t *) ((x)->ssl))
 
 
 
