@@ -1,4 +1,4 @@
-/* dummy channel type (^): just a global channel type */
+/* dummy channel type (>): just a global channel type */
 
 #include "stdinc.h"
 #include "modules.h"
@@ -6,7 +6,7 @@
 #include "ircd.h"
 #include "supported.h"
 
-static const char chantype_desc[] = "Secondary global channel type (^)";
+static const char chantype_desc[] = "Secondary global channel type (>)";
 
 static int _modinit(void);
 static void _moddeinit(void);
@@ -16,7 +16,7 @@ DECLARE_MODULE_AV2(chantype_dummy, _modinit, _moddeinit, NULL, NULL, NULL, NULL,
 static int
 _modinit(void)
 {
-	CharAttrs['^'] |= CHANPFX_C;
+	CharAttrs['>'] |= CHANPFX_C;
 	chantypes_update();
 
 	return 0;
@@ -25,6 +25,6 @@ _modinit(void)
 static void
 _moddeinit(void)
 {
-	CharAttrs['^'] &= ~CHANPFX_C;
+	CharAttrs['>'] &= ~CHANPFX_C;
 	chantypes_update();
 }
