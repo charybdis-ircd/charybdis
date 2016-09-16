@@ -799,30 +799,20 @@ rb_get_ssl_info(char *buf, size_t len)
 }
 
 const char *
-rb_ssl_get_cipher(rb_fde_t *F)
+rb_ssl_get_cipher(rb_fde_t *const F)
 {
-	static char buf[1024];
+	if(F == NULL || F->ssl == NULL)
+		return NULL;
 
-	const char* proto_name =
-	    gnutls_protocol_get_name(gnutls_protocol_get_version(SSL_P(F)));
+	static char buf[512];
 
-	const char* kex_alg_name =
-	    gnutls_kx_get_name(gnutls_kx_get(SSL_P(F)));
+	gnutls_protocol_t version_ptr = gnutls_protocol_get_version(SSL_P(F));
+	gnutls_cipher_algorithm_t cipher_ptr = gnutls_cipher_get(SSL_P(F));
 
-	const char* cipher_alg_name =
-	    gnutls_cipher_get_name(gnutls_cipher_get(SSL_P(F)));
+	const char *const version = gnutls_protocol_get_name(version_ptr);
+	const char *const cipher = gnutls_cipher_get_name(cipher_ptr);
 
-	const char* mac_alg_name =
-	    gnutls_mac_get_name(gnutls_mac_get(SSL_P(F)));
-
-	(void) rb_snprintf(buf, sizeof buf, "%s%s%s%s%s%s%s",
-	                   proto_name ? proto_name : "",
-	                   proto_name ? ", " : "",
-	                   kex_alg_name ? kex_alg_name : "",
-	                   kex_alg_name ? "-" : "",
-	                   cipher_alg_name ? cipher_alg_name : "",
-	                   cipher_alg_name ? "-" : "",
-	                   mac_alg_name ? mac_alg_name : "");
+	(void) rb_snprintf(buf, sizeof buf, "%s, %s", version, cipher);
 
 	return buf;
 }
