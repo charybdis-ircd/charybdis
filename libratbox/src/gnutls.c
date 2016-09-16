@@ -610,25 +610,43 @@ rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
 static void
 rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
+	lrb_assert(F != NULL);
+	lrb_assert(F->ssl != NULL);
+
 	errno = 0;
 
 	int ret = gnutls_handshake(SSL_P(F));
+	int err = errno;
 
-	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (errno == 0 || rb_ignore_errno(errno))))
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
 	{
 		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
 		rb_setselect(F, flags, rb_ssl_connect_common, data);
 		return;
 	}
 
+	// These 2 calls may affect errno, which is why we save it above and restore it below
+	rb_settimeout(F, 0, NULL, NULL);
+	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
+
 	struct ssl_connect *const sconn = data;
 
-	F->ssl_errno = (unsigned long) -ret;
-
 	if(ret == GNUTLS_E_SUCCESS)
+	{
+		F->handshake_count++;
 		rb_ssl_connect_realcb(F, RB_OK, sconn);
+	}
+	else if(err != 0)
+	{
+		errno = err;
+		rb_ssl_connect_realcb(F, RB_ERROR, sconn);
+	}
 	else
+	{
+		errno = EIO;
+		F->ssl_errno = (unsigned long) -ret;
 		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
+	}
 }
 
 static void
