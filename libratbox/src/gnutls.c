@@ -41,6 +41,12 @@
 
 #define SSL_P(x) *((gnutls_session_t *) ((x)->ssl))
 
+typedef enum
+{
+	RB_FD_TLS_DIRECTION_IN = 0,
+	RB_FD_TLS_DIRECTION_OUT = 1
+} rb_fd_tls_direction;
+
 
 
 // Server side variables
@@ -103,6 +109,40 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 	st->deinit_all = 0;
 
 	return 0;
+}
+
+static void
+rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
+{
+	F->ssl = rb_malloc(sizeof(gnutls_session_t));
+
+	if(F->ssl == NULL)
+	{
+		rb_lib_log("%s: rb_malloc: allocation failure", __func__);
+		rb_close(F);
+		return;
+	}
+
+	unsigned int init_flags = 0;
+
+	switch(dir)
+	{
+	case RB_FD_TLS_DIRECTION_IN:
+		init_flags |= GNUTLS_SERVER;
+		break;
+	case RB_FD_TLS_DIRECTION_OUT:
+		init_flags |= GNUTLS_CLIENT;
+		break;
+	}
+
+	gnutls_init((gnutls_session_t *) F->ssl, init_flags);
+	gnutls_set_default_priority(SSL_P(F));
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
+	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
+	gnutls_priority_set(SSL_P(F), default_priority);
+
+	if(dir == RB_FD_TLS_DIRECTION_IN)
+		gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
 }
 
 void
@@ -181,10 +221,11 @@ rb_ssl_accept_common(rb_fde_t *F, void *data)
 	if(ret == 0)
 		return;
 
-	struct acceptdata *const ad = F->accept;
-	F->accept = NULL;
 	rb_settimeout(F, 0, NULL, NULL);
 	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
+
+	struct acceptdata *const ad = F->accept;
+	F->accept = NULL;
 
 	if(ret > 0)
 		ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
@@ -205,16 +246,8 @@ rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const
 	F->accept->addrlen = 0;
 	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
 
-	F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	gnutls_init((gnutls_session_t *) F->ssl, GNUTLS_SERVER);
-	gnutls_set_default_priority(SSL_P(F));
-	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
-	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)rb_get_fd(F));
-	gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
-	gnutls_priority_set(SSL_P(F), default_priority);
-
 	rb_settimeout(F, timeout, rb_ssl_timeout_cb, NULL);
+	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_IN);
 	rb_ssl_accept_common(F, NULL);
 }
 
@@ -230,16 +263,8 @@ rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockadd
 	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
 	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
 
-	cli_F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	gnutls_init((gnutls_session_t *) cli_F->ssl, GNUTLS_SERVER);
-	gnutls_set_default_priority(SSL_P(cli_F));
-	gnutls_credentials_set(SSL_P(cli_F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(cli_F), 1024);
-	gnutls_transport_set_ptr(SSL_P(cli_F), (gnutls_transport_ptr_t) (long int)rb_get_fd(cli_F));
-	gnutls_certificate_server_set_request(SSL_P(cli_F), GNUTLS_CERT_REQUEST);
-	gnutls_priority_set(SSL_P(cli_F), default_priority);
-
 	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
+	rb_ssl_init_fd(cli_F, RB_FD_TLS_DIRECTION_IN);
 	rb_ssl_accept_common(cli_F, NULL);
 }
 
@@ -505,15 +530,8 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 
 	F->type |= RB_FD_SSL;
 
-	F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	gnutls_init(F->ssl, GNUTLS_CLIENT);
-	gnutls_set_default_priority(SSL_P(F));
-	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
-	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
-	gnutls_priority_set(SSL_P(F), default_priority);
-
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
+	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
 }
 
@@ -549,15 +567,8 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 
 	F->type |= RB_FD_SSL;
 
-	F->ssl = rb_malloc(sizeof(gnutls_session_t));
-	gnutls_init(F->ssl, GNUTLS_CLIENT);
-	gnutls_set_default_priority(SSL_P(F));
-	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
-	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
-	gnutls_priority_set(SSL_P(F), default_priority);
-
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
+	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
 }
 
