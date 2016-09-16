@@ -20,14 +20,15 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
  *  USA
  *
- *  $Id: gnutls.c 26296 2008-12-13 03:36:00Z androsyn $
  */
 
 #include <libratbox_config.h>
 #include <ratbox_lib.h>
+
+#ifdef HAVE_GNUTLS
+
 #include <commio-int.h>
 #include <commio-ssl.h>
-#ifdef HAVE_GNUTLS
 
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
