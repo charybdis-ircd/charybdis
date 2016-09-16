@@ -304,32 +304,30 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 {
 	ssize_t ret;
 
+	errno = 0;
+
 	if(r_or_w == 0)
 		ret = gnutls_record_recv(SSL_P(F), rbuf, count);
 	else
 		ret = gnutls_record_send(SSL_P(F), wbuf, count);
 
-	if(ret < 0)
+	if(ret >= 0)
+		return ret;
+
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (errno == 0 || rb_ignore_errno(errno))))
 	{
-		switch (ret)
-		{
-		case GNUTLS_E_AGAIN:
-		case GNUTLS_E_INTERRUPTED:
-			if(rb_ignore_errno(errno))
-			{
-				if(gnutls_record_get_direction(*ssl) == 0)
-					return RB_RW_SSL_NEED_READ;
-				else
-					return RB_RW_SSL_NEED_WRITE;
-				break;
-			}
-		default:
-			F->ssl_errno = (unsigned long) -ret;
-			errno = EIO;
-			return RB_RW_IO_ERROR;
-		}
+		if(gnutls_record_get_direction(SSL_P(F)) == 0)
+			return RB_RW_SSL_NEED_READ;
+		else
+			return RB_RW_SSL_NEED_WRITE;
 	}
-	return ret;
+
+	if(ret == GNUTLS_E_INTERRUPTED && errno != 0)
+		return RB_RW_IO_ERROR;
+
+	errno = EIO;
+	F->ssl_errno = (unsigned long) -ret;
+	return RB_RW_SSL_ERROR;
 }
 
 ssize_t
