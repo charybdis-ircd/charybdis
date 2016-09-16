@@ -107,7 +107,7 @@ void grant_revoke(struct Client *const source,
 static
 void grant(struct MsgBuf *msgbuf, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	if(!HasPrivilege(source_p, "oper:grant"))
+	if(MyClient(source_p) && !HasPrivilege(source_p, "oper:grant"))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "grant");
 		return;
@@ -129,7 +129,7 @@ void grant(struct MsgBuf *msgbuf, struct Client *client_p, struct Client *source
 		return;
 	}
 
-	if(!find_shared_conf(source_p->username, source_p->host, source_p->servptr->name, SHARED_GRANT))
+	if(!MyClient(source_p) && !find_shared_conf(source_p->username, source_p->host, source_p->servptr->name, SHARED_GRANT))
 	{
 		sendto_one_notice(source_p, ":GRANT failed: You have no shared configuration block on this server.");
 		return;
