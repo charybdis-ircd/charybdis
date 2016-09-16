@@ -670,7 +670,7 @@ const unsigned char irctoupper_tab[] = {
  * NOTE: RFC 1459 sez: anything but a ^G, comma, or space is allowed
  * for channel names
  */
-const unsigned int CharAttrs[] = {
+unsigned int CharAttrs[] = {
 /* 0  */ CNTRL_C,
 /* 1  */ CNTRL_C | CHAN_C | NONEOS_C,
 /* 2  */ CNTRL_C | CHAN_C | FCHAN_C | NONEOS_C,

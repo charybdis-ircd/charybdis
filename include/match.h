@@ -87,7 +87,7 @@ extern const unsigned char irctolower_tab[];
 extern const unsigned char irctoupper_tab[];
 #define irctoupper(c) (irctoupper_tab[(unsigned char)(c)])
 
-extern const unsigned int CharAttrs[];
+extern unsigned int CharAttrs[];
 
 #define PRINT_C   0x001
 #define CNTRL_C   0x002
