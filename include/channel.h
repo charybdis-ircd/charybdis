@@ -193,7 +193,7 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define IsMember(who, chan) ((who && who->user && \
                 find_channel_membership(chan, who)) ? 1 : 0)
 
-#define IsChannelName(name) ((name) && (*(name) == '#' || *(name) == '&'))
+#define IsChannelName(name) ((name) && (IsChanPrefix(*(name))))
 
 /* extban function results */
 #define EXTBAN_INVALID -1  /* invalid mask, false even if negated */
