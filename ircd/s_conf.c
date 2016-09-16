@@ -52,6 +52,7 @@
 #include "hook.h"
 #include "s_assert.h"
 #include "authproc.h"
+#include "supported.h"
 
 struct config_server_hide ConfigServerHide;
 
@@ -918,6 +919,12 @@ validate_conf(void)
 		splitmode = 0;
 		splitchecking = 0;
 	}
+
+	CharAttrs['&'] |= CHANPFX_C;
+	if (ConfigChannel.disable_local_channels)
+		CharAttrs['&'] &= ~CHANPFX_C;
+
+	chantypes_update();
 }
 
 /* add_temp_kline()

@@ -38,6 +38,7 @@ extern const void *change_isupport(const char *, const char *(*)(const void *), 
 extern void delete_isupport(const char *);
 extern void show_isupport(struct Client *);
 extern void init_isupport(void);
+extern void chantypes_update(void);
 
 extern const char *isupport_intptr(const void *);
 extern const char *isupport_boolean(const void *);

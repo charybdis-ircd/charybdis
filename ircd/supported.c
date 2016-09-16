@@ -80,6 +80,7 @@
 #include "chmode.h"
 #include "send.h"
 
+static char allowed_chantypes[BUFSIZE];
 rb_dlink_list isupportlist;
 
 struct isupportitem
@@ -246,18 +247,11 @@ isupport_chanmodes(const void *ptr)
 }
 
 static const char *
-isupport_chantypes(const void *ptr)
-{
-	return ConfigChannel.disable_local_channels ? "#" : "&#";
-}
-
-static const char *
 isupport_chanlimit(const void *ptr)
 {
 	static char result[30];
 
-	snprintf(result, sizeof result, "%s:%i",
-		ConfigChannel.disable_local_channels ? "#" : "&#", ConfigChannel.max_chans_per_user);
+	snprintf(result, sizeof result, "%s:%i", allowed_chantypes, ConfigChannel.max_chans_per_user);
 	return result;
 }
 
@@ -314,7 +308,7 @@ init_isupport(void)
 	static int topiclen = TOPICLEN;
 	static int maxnicklen = NICKLEN - 1;
 
-	add_isupport("CHANTYPES", isupport_chantypes, NULL);
+	add_isupport("CHANTYPES", isupport_stringptr, &allowed_chantypes);
 	add_isupport("EXCEPTS", isupport_boolean, &ConfigChannel.use_except);
 	add_isupport("INVEX", isupport_boolean, &ConfigChannel.use_invex);
 	add_isupport("CHANMODES", isupport_chanmodes, NULL);
@@ -334,4 +328,19 @@ init_isupport(void)
 	add_isupport("TARGMAX", isupport_targmax, NULL);
 	add_isupport("EXTBAN", isupport_extban, NULL);
 	add_isupport("CLIENTVER", isupport_string, "3.0");
+}
+
+void
+chantypes_update(void)
+{
+	unsigned char *p;
+	memset(allowed_chantypes, '\0', sizeof allowed_chantypes);
+
+	p = (unsigned char *) allowed_chantypes;
+
+	for (unsigned int i = 0; i < 256; i++)
+	{
+		if (IsChanPrefix(i))
+			*p++ = (unsigned char) i;
+	}
 }
