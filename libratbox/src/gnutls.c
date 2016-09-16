@@ -138,9 +138,11 @@ rb_ssl_clear_handshake_count(rb_fde_t *F)
 }
 
 static void
-rb_ssl_timeout(rb_fde_t *F, void *notused)
+rb_ssl_timeout_cb(rb_fde_t *F, void *notused)
 {
 	lrb_assert(F->accept != NULL);
+	lrb_assert(F->accept->callback != NULL);
+
 	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
 }
 
@@ -206,7 +208,7 @@ rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
 
 	new_F->accept->callback = cb;
 	new_F->accept->data = data;
-	rb_settimeout(new_F, timeout, rb_ssl_timeout, NULL);
+	rb_settimeout(new_F, timeout, rb_ssl_timeout_cb, NULL);
 
 	new_F->accept->addrlen = 0;
 
@@ -240,7 +242,7 @@ rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrl
 
 	new_F->accept->callback = F->accept->callback;
 	new_F->accept->data = F->accept->data;
-	rb_settimeout(new_F, 10, rb_ssl_timeout, NULL);
+	rb_settimeout(new_F, 10, rb_ssl_timeout_cb, NULL);
 	memcpy(&new_F->accept->S, st, addrlen);
 	new_F->accept->addrlen = addrlen;
 
