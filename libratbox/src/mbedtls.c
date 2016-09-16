@@ -22,7 +22,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
  *  USA
  *
- *  $Id$
  */
 
 #include <libratbox_config.h>
@@ -259,7 +258,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 }
 
 static void
-rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
+rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
@@ -272,10 +271,10 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 		F->handshake_count++;
 		break;
 	case MBEDTLS_ERR_SSL_WANT_READ:
-		rb_setselect(F, RB_SELECT_READ, rb_ssl_tryconn_cb, data);
+		rb_setselect(F, RB_SELECT_READ, rb_ssl_connect_common, data);
 		return;
 	case MBEDTLS_ERR_SSL_WANT_WRITE:
-		rb_setselect(F, RB_SELECT_WRITE, rb_ssl_tryconn_cb, data);
+		rb_setselect(F, RB_SELECT_WRITE, rb_ssl_connect_common, data);
 		return;
 	default:
 		errno = EIO;
@@ -559,17 +558,14 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	}
 
 	const mbedtls_x509_crt *const peer_cert = mbedtls_ssl_get_peer_cert(SSL_P(F));
-
 	if(peer_cert == NULL)
 		return 0;
 
 	const mbedtls_md_info_t *const md_info = mbedtls_md_info_from_type(md_type);
-
 	if(md_info == NULL)
 		return 0;
 
 	int ret;
-
 	if((ret = mbedtls_md(md_info, peer_cert->raw.p, peer_cert->raw.len, certfp)) != 0)
 	{
 		rb_lib_log("%s: mbedtls_md: %s", __func__, rb_ssl_strerror(ret));
@@ -662,7 +658,6 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 
 /*
  * Internal library-agnostic code
- * Mostly copied from the OpenSSL backend, with some optimisations and complete const-correctness
  */
 
 static void
@@ -672,6 +667,7 @@ rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *c
 
 	F->connect->callback = sconn->callback;
 	F->connect->data = sconn->data;
+
 	rb_connect_callback(F, status);
 	rb_free(sconn);
 }
@@ -696,19 +692,19 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 {
 	lrb_assert(F != NULL);
 
+	struct ssl_connect *const sconn = data;
+
 	if(status != RB_OK)
 	{
-		rb_ssl_connect_realcb(F, status, data);
+		rb_ssl_connect_realcb(F, status, sconn);
 		return;
 	}
 
 	F->type |= RB_FD_SSL;
 
-	struct ssl_connect *const sconn = data;
-
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
-	rb_ssl_tryconn_cb(F, sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 static int
@@ -741,7 +737,6 @@ rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, const 
 
 /*
  * External library-agnostic code
- * Mostly copied from the OpenSSL backend, with some optimisations and const-correctness
  */
 
 int
@@ -826,19 +821,19 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	if(F == NULL)
 		return;
 
-	F->connect = rb_malloc(sizeof(struct conndata));
-	F->connect->callback = callback;
-	F->connect->data = data;
-	F->type |= RB_FD_SSL;
-
 	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
 
+	F->connect = rb_malloc(sizeof(struct conndata));
+	F->connect->callback = callback;
+	F->connect->data = data;
+	F->type |= RB_FD_SSL;
+
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
-	rb_ssl_tryconn_cb(F, sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 #endif /* HAVE_MBEDTLS */

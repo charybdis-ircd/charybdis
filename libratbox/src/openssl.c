@@ -143,7 +143,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 }
 
 static void
-rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
+rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
@@ -166,12 +166,12 @@ rb_ssl_tryconn_cb(rb_fde_t *const F, void *const data)
 	}
 	if(ret == -1 && err == SSL_ERROR_WANT_READ)
 	{
-		rb_setselect(F, RB_SELECT_READ, rb_ssl_tryconn_cb, data);
+		rb_setselect(F, RB_SELECT_READ, rb_ssl_connect_common, data);
 		return;
 	}
 	if(ret == -1 && err == SSL_ERROR_WANT_WRITE)
 	{
-		rb_setselect(F, RB_SELECT_WRITE, rb_ssl_tryconn_cb, data);
+		rb_setselect(F, RB_SELECT_WRITE, rb_ssl_connect_common, data);
 		return;
 	}
 
@@ -467,36 +467,35 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
-	if(F->ssl == NULL)
+	if(F == NULL || F->ssl == NULL)
 		return 0;
 
-	const EVP_MD *evp;
-	unsigned int len;
+	const EVP_MD *md_type;
+	unsigned int hashlen;
 
 	switch(method)
 	{
 	case RB_SSL_CERTFP_METH_SHA1:
-		evp = EVP_sha1();
-		len = RB_SSL_CERTFP_LEN_SHA1;
+		md_type = EVP_sha1();
+		hashlen = RB_SSL_CERTFP_LEN_SHA1;
 		break;
 	case RB_SSL_CERTFP_METH_SHA256:
-		evp = EVP_sha256();
-		len = RB_SSL_CERTFP_LEN_SHA256;
+		md_type = EVP_sha256();
+		hashlen = RB_SSL_CERTFP_LEN_SHA256;
 		break;
 	case RB_SSL_CERTFP_METH_SHA512:
-		evp = EVP_sha512();
-		len = RB_SSL_CERTFP_LEN_SHA512;
+		md_type = EVP_sha512();
+		hashlen = RB_SSL_CERTFP_LEN_SHA512;
 		break;
 	default:
 		return 0;
 	}
 
-	X509 *const cert = SSL_get_peer_certificate(SSL_P(F));
-	if(cert == NULL)
+	X509 *const peer_cert = SSL_get_peer_certificate(SSL_P(F));
+	if(peer_cert == NULL)
 		return 0;
 
-	int res = SSL_get_verify_result(SSL_P(F));
-	switch(res)
+	switch(SSL_get_verify_result(SSL_P(F)))
 	{
 	case X509_V_OK:
 	case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
@@ -506,14 +505,14 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	case X509_V_ERR_CERT_UNTRUSTED:
 		break;
 	default:
-		X509_free(cert);
+		X509_free(peer_cert);
 		return 0;
 	}
 
-	X509_digest(cert, evp, certfp, &len);
-	X509_free(cert);
+	X509_digest(peer_cert, md_type, certfp, &hashlen);
+	X509_free(peer_cert);
 
-	return (int) len;
+	return (int) hashlen;
 }
 
 void
@@ -580,7 +579,7 @@ rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *c
 }
 
 static void
-rb_ssl_timeout(rb_fde_t *const F, void *const notused)
+rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
 {
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);
@@ -611,7 +610,7 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
-	rb_ssl_tryconn_cb(F, sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 
@@ -649,7 +648,7 @@ rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const
 	F->accept->addrlen = 0;
 	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
 
-	rb_settimeout(F, timeout, rb_ssl_timeout, NULL);
+	rb_settimeout(F, timeout, rb_ssl_timeout_cb, NULL);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_IN);
 	rb_ssl_accept_common(F, NULL);
 }
@@ -666,7 +665,7 @@ rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockadd
 	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
 	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
 
-	rb_settimeout(cli_F, 10, rb_ssl_timeout, NULL);
+	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
 	rb_ssl_init_fd(cli_F, RB_FD_TLS_DIRECTION_IN);
 	rb_ssl_accept_common(cli_F, NULL);
 }
@@ -714,7 +713,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
-	rb_ssl_tryconn_cb(F, sconn);
+	rb_ssl_connect_common(F, sconn);
 }
 
 #endif /* HAVE_OPENSSL */
