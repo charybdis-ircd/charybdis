@@ -22,6 +22,7 @@ static void h_hdl_new_remote_user(struct Client *client_p);
 static void h_hdl_client_exit(hook_data_client_exit *hdata);
 static void h_hdl_umode_changed(hook_data_umode_changed *hdata);
 static void h_hdl_whois(hook_data_client *hdata);
+static void recurse_client_exit(struct Client *client_p);
 static void mo_dehelper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 static void me_dehelper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 static void do_dehelper(struct Client *source_p, struct Client *target_p);
@@ -159,25 +160,29 @@ h_hdl_new_remote_user(struct Client *client_p)
 }
 
 static void
-h_hdl_client_exit(hook_data_client_exit *hdata)
+recurse_client_exit(struct Client *client_p)
 {
-	if (IsPerson(hdata->target))
+	if (IsPerson(client_p))
 	{
-		if (hdata->target->umodes & UMODE_HELPOPS)
-			rb_dlinkFindDestroy(hdata->target, &helper_list);
+		if (client_p->umodes & UMODE_HELPOPS)
+			rb_dlinkFindDestroy(client_p, &helper_list);
 	}
-	else if (IsServer(hdata->target))
+	else if (IsServer(client_p))
 	{
 		rb_dlink_node *nptr;
 
-		RB_DLINK_FOREACH(nptr, hdata->target->serv->users.head)
-		{
-			struct Client *client_p = nptr->data;
+		RB_DLINK_FOREACH(nptr, client_p->serv->users.head)
+			recurse_client_exit(nptr->data);
 
-			if (client_p->umodes & UMODE_HELPOPS)
-				rb_dlinkFindDestroy(client_p, &helper_list);
-		}
+		RB_DLINK_FOREACH(nptr, client_p->serv->servers.head)
+			recurse_client_exit(nptr->data);
 	}
+}
+
+static void
+h_hdl_client_exit(hook_data_client_exit *hdata)
+{
+	recurse_client_exit(hdata->target);
 }
 
 static void
