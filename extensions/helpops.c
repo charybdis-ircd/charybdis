@@ -161,7 +161,7 @@ h_hdl_new_remote_user(struct Client *client_p)
 static void
 h_hdl_client_exit(hook_data_client_exit *hdata)
 {
-	if (MyClient(hdata->target) && IsPerson(hdata->target))
+	if (IsPerson(hdata->target))
 	{
 		if (hdata->target->umodes & UMODE_HELPOPS)
 			rb_dlinkFindDestroy(hdata->target, &helper_list);
