@@ -219,29 +219,46 @@ rb_ssl_timeout_cb(rb_fde_t *F, void *notused)
 static void
 rb_ssl_accept_common(rb_fde_t *F, void *data)
 {
+	lrb_assert(F != NULL);
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);
+	lrb_assert(F->ssl != NULL);
 
 	errno = 0;
 
 	int ret = gnutls_handshake(SSL_P(F));
+	int err = errno;
 
-	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (errno == 0 || rb_ignore_errno(errno))))
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
 	{
 		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
 		rb_setselect(F, flags, rb_ssl_accept_common, data);
 		return;
 	}
 
-	struct acceptdata *const ad = F->accept;
+	// These 2 calls may affect errno, which is why we save it above and restore it below
+	rb_settimeout(F, 0, NULL, NULL);
+	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
 
+	struct acceptdata *const ad = F->accept;
 	F->accept = NULL;
-	F->ssl_errno = (unsigned long) -ret;
 
 	if(ret == GNUTLS_E_SUCCESS)
+	{
+		F->handshake_count++;
 		ad->callback(F, RB_OK, (struct sockaddr *)&ad->S, ad->addrlen, ad->data);
+	}
+	else if(err != 0)
+	{
+		errno = err;
+		ad->callback(F, RB_ERROR, NULL, 0, ad->data);
+	}
 	else
+	{
+		errno = EIO;
+		F->ssl_errno = (unsigned long) -ret;
 		ad->callback(F, RB_ERROR_SSL, NULL, 0, ad->data);
+	}
 
 	rb_free(ad);
 }
