@@ -617,6 +617,9 @@ burst_TS6(struct Client *client_p)
 		if(!IsPerson(target_p))
 			continue;
 
+		if(MyClient(target_p->from) && target_p->localClient->att_sconf != NULL && ServerConfNoExport(target_p->localClient->att_sconf))
+			continue;
+
 		send_umode(NULL, target_p, 0, ubuf);
 		if(!*ubuf)
 		{
@@ -910,6 +913,9 @@ server_estab(struct Client *client_p)
 		if(target_p == client_p)
 			continue;
 
+		if(target_p->localClient->att_sconf != NULL && ServerConfNoExport(target_p->localClient->att_sconf))
+			continue;
+
 		if(has_id(target_p) && has_id(client_p))
 		{
 			sendto_one(target_p, ":%s SID %s 2 %s :%s%s",
@@ -956,6 +962,10 @@ server_estab(struct Client *client_p)
 
 		/* target_p->from == target_p for target_p == client_p */
 		if(IsMe(target_p) || target_p->from == client_p)
+			continue;
+
+		/* don't distribute downstream leaves of servers that are no-export */
+		if(MyClient(target_p->from) && target_p->from->localClient->att_sconf != NULL && ServerConfNoExport(target_p->from->localClient->att_sconf))
 			continue;
 
 		/* presumption, if target has an id, so does its uplink */
