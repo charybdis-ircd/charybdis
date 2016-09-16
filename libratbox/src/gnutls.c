@@ -339,17 +339,9 @@ rb_init_ssl(void)
 		rb_lib_log("%s: gnutls_global_init: %s", __func__, gnutls_strerror(ret));
 		return 0;
 	}
-	if((ret = gnutls_certificate_allocate_credentials(&server_cert_key)) != GNUTLS_E_SUCCESS)
-	{
-		rb_lib_log("%s: gnutls_certificate_allocate_credentials: %s", __func__, gnutls_strerror(ret));
-		return 0;
-	}
 
 #if (GNUTLS_VERSION_MAJOR < 3)
 	rb_event_addish("rb_gcry_random_seed", rb_gcry_random_seed, NULL, 300);
-	gnutls_certificate_client_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
-#else
-	gnutls_certificate_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
 #endif
 
 	return 1;
@@ -420,54 +412,89 @@ rb_load_file_into_datum_t(const char *const file)
 }
 
 int
-rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, const char *cipher_list)
+rb_setup_ssl_server(const char *const certfile, const char *keyfile,
+                    const char *const dhfile, const char *const cipherlist)
 {
+	if(certfile == NULL)
+	{
+		rb_lib_log("%s: no certificate file specified", __func__);
+		return 0;
+	}
+
+	if(keyfile == NULL)
+		keyfile = certfile;
+
+
+	gnutls_datum_t *const d_cert = rb_load_file_into_datum_t(certfile);
+	if(d_cert == NULL)
+	{
+		rb_lib_log("%s: Error loading certificate: %s", __func__, strerror(errno));
+		return 0;
+	}
+
+	gnutls_datum_t *const d_key = rb_load_file_into_datum_t(keyfile);
+	if(d_key == NULL)
+	{
+		rb_lib_log("%s: Error loading key: %s", __func__, strerror(errno));
+		rb_free_datum_t(d_cert);
+		return 0;
+	}
+
 	int ret;
-	const char *err;
-	gnutls_datum_t *d_cert, *d_key;
-	if(cert == NULL)
+
+	if((ret = gnutls_certificate_allocate_credentials(&server_cert_key)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_setup_ssl_server: No certificate file");
+		rb_lib_log("%s: gnutls_certificate_allocate_credentials: %s", __func__, gnutls_strerror(ret));
+		rb_free_datum_t(d_cert);
+		rb_free_datum_t(d_key);
 		return 0;
 	}
 
-	if((d_cert = rb_load_file_into_datum_t(cert)) == NULL)
+#if (GNUTLS_VERSION_MAJOR < 3)
+	gnutls_certificate_client_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
+#else
+	gnutls_certificate_set_retrieve_function(server_cert_key, rb_ssl_cert_auth_cb);
+#endif
+
+	if((ret = gnutls_certificate_set_x509_key_mem(server_cert_key, d_cert, d_key,
+	                                              GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading certificate: %s", strerror(errno));
+		rb_lib_log("%s: gnutls_certificate_set_x509_key_mem: %s", __func__, gnutls_strerror(ret));
+		gnutls_certificate_free_credentials(server_cert_key);
+		rb_free_datum_t(d_cert);
+		rb_free_datum_t(d_key);
 		return 0;
 	}
-
-	if((d_key = rb_load_file_into_datum_t(keyfile)) == NULL)
+	if((ret = gnutls_x509_crt_list_import(client_cert, &client_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
+	                                      GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED)) < 1)
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading key: %s", strerror(errno));
+		rb_lib_log("%s: gnutls_x509_crt_list_import: %s", __func__, gnutls_strerror(ret));
+		gnutls_certificate_free_credentials(server_cert_key);
+		rb_free_datum_t(d_cert);
+		rb_free_datum_t(d_key);
 		return 0;
 	}
+	client_cert_count = (unsigned int) ret;
 
-	/* In addition to creating the certificate set, we also need to store our cert elsewhere
-	 * so we can force GNUTLS to identify with it when acting as a client.
-	 */
-	gnutls_x509_privkey_init(&client_key);
-	if ((ret = gnutls_x509_privkey_import(client_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
+	if((ret = gnutls_x509_privkey_init(&client_key)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading key file: %s", gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_x509_privkey_init: %s", __func__, gnutls_strerror(ret));
+		gnutls_certificate_free_credentials(server_cert_key);
+		for(unsigned int i = 0; i < client_cert_count; i++)
+			gnutls_x509_crt_deinit(client_cert[i]);
+		rb_free_datum_t(d_cert);
+		rb_free_datum_t(d_key);
 		return 0;
 	}
-
-	client_cert_count = MAX_CERTS;
-	if ((ret = gnutls_x509_crt_list_import(client_cert, &client_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
-		GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED)) < 0)
+	if((ret = gnutls_x509_privkey_import(client_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_setup_ssl_server: Error loading certificate: %s", gnutls_strerror(ret));
-		return 0;
-	}
-	client_cert_count = ret;
-
-	if((ret =
-	    gnutls_certificate_set_x509_key_mem(server_cert_key, d_cert, d_key,
-						GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
-	{
-		rb_lib_log("rb_setup_ssl_server: Error loading certificate or key file: %s",
-			   gnutls_strerror(ret));
+		rb_lib_log("%s: gnutls_x509_privkey_import: %s", __func__, gnutls_strerror(ret));
+		gnutls_certificate_free_credentials(server_cert_key);
+		for(unsigned int i = 0; i < client_cert_count; i++)
+			gnutls_x509_crt_deinit(client_cert[i]);
+		gnutls_x509_privkey_deinit(client_key);
+		rb_free_datum_t(d_cert);
+		rb_free_datum_t(d_key);
 		return 0;
 	}
 
@@ -476,35 +503,53 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 
 	if(dhfile != NULL)
 	{
-		if(gnutls_dh_params_init(&server_dhp) == GNUTLS_E_SUCCESS)
+		gnutls_datum_t *const d_dhp = rb_load_file_into_datum_t(dhfile);
+
+		if(d_dhp == NULL)
 		{
-			gnutls_datum_t *data;
-			int xret;
-			data = rb_load_file_into_datum_t(dhfile);
-			if(data != NULL)
-			{
-				xret = gnutls_dh_params_import_pkcs3(server_dhp, data,
-								     GNUTLS_X509_FMT_PEM);
-				if(xret < 0)
-					rb_lib_log
-						("rb_setup_ssl_server: Error parsing DH file: %s\n",
-						 gnutls_strerror(xret));
-				rb_free_datum_t(data);
-			}
-			gnutls_certificate_set_dh_params(server_cert_key, server_dhp);
+			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, strerror(errno));
+			gnutls_certificate_free_credentials(server_cert_key);
+			for(unsigned int i = 0; i < client_cert_count; i++)
+				gnutls_x509_crt_deinit(client_cert[i]);
+			gnutls_x509_privkey_deinit(client_key);
+			return 0;
 		}
-		else
-			rb_lib_log("rb_setup_ssl_server: Unable to setup DH parameters");
+		if((ret = gnutls_dh_params_init(&server_dhp)) != GNUTLS_E_SUCCESS)
+		{
+			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, gnutls_strerror(ret));
+			gnutls_certificate_free_credentials(server_cert_key);
+			for(unsigned int i = 0; i < client_cert_count; i++)
+				gnutls_x509_crt_deinit(client_cert[i]);
+			gnutls_x509_privkey_deinit(client_key);
+			rb_free_datum_t(d_dhp);
+			return 0;
+		}
+		if((ret = gnutls_dh_params_import_pkcs3(server_dhp, d_dhp, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
+		{
+			rb_lib_log("%s: Error parsing DH parameters: %s", __func__, gnutls_strerror(ret));
+			gnutls_certificate_free_credentials(server_cert_key);
+			for(unsigned int i = 0; i < client_cert_count; i++)
+				gnutls_x509_crt_deinit(client_cert[i]);
+			gnutls_x509_privkey_deinit(client_key);
+			gnutls_dh_params_deinit(server_dhp);
+			rb_free_datum_t(d_dhp);
+			return 0;
+		}
+
+		gnutls_certificate_set_dh_params(server_cert_key, server_dhp);
+		rb_free_datum_t(d_dhp);
 	}
 
-	ret = gnutls_priority_init(&default_priority, cipher_list, &err);
-	if (ret < 0)
+	const char *err = NULL;
+	if((ret = gnutls_priority_init(&default_priority, cipherlist, &err)) != GNUTLS_E_SUCCESS)
 	{
-		rb_lib_log("rb_setup_ssl_server: syntax error (using defaults instead) in ssl cipher list at: %s", err);
-		gnutls_priority_init(&default_priority, NULL, &err);
-		return 1;
+		rb_lib_log("%s: gnutls_priority_init: %s, error begins at '%s'? -- using defaults instead",
+		           __func__, gnutls_strerror(ret), err ? err : "<unknown>");
+
+		(void) gnutls_priority_init(&default_priority, NULL, &err);
 	}
 
+	rb_lib_log("%s: TLS configuration successful", __func__);
 	return 1;
 }
 
