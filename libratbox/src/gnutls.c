@@ -208,7 +208,7 @@ rb_ssl_clear_handshake_count(rb_fde_t *const F)
 }
 
 static void
-rb_ssl_timeout_cb(rb_fde_t *const F, void *const notused)
+rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
 {
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);
@@ -648,6 +648,8 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 static void
 rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 {
+	lrb_assert(F != NULL);
+
 	struct ssl_connect *const sconn = data;
 
 	if(status != RB_OK)
@@ -733,6 +735,9 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
+	if (F == NULL || F->ssl == NULL)
+		return 0;
+
 	gnutls_digest_algorithm_t md_type;
 
 	switch(method)
