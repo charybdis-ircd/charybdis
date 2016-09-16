@@ -157,7 +157,7 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 	gnutls_init((gnutls_session_t *) F->ssl, init_flags);
 	gnutls_set_default_priority(SSL_P(F));
 	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
-	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
+	gnutls_dh_set_prime_bits(SSL_P(F), 2048);
 	gnutls_priority_set(SSL_P(F), default_priority);
 
 	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) F);
