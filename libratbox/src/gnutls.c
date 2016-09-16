@@ -673,7 +673,7 @@ rb_connect_tcp_ssl(rb_fde_t *const F, struct sockaddr *const dest, struct sockad
 	if(F == NULL)
 		return;
 
-	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
@@ -687,7 +687,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	if(F == NULL)
 		return;
 
-	struct ssl_connect *const sconn = rb_malloc(sizeof(struct ssl_connect));
+	struct ssl_connect *const sconn = rb_malloc(sizeof *sconn);
 	sconn->data = data;
 	sconn->callback = callback;
 	sconn->timeout = timeout;
