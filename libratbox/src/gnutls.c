@@ -38,15 +38,6 @@
 # include <gnutls/crypto.h>
 #endif
 
-static gnutls_certificate_credentials_t x509;
-static gnutls_dh_params_t dh_params;
-static gnutls_priority_t default_priority;
-
-/* These are all used for getting GnuTLS to supply a client cert. */
-#define MAX_CERTS 6
-static unsigned int x509_cert_count;
-static gnutls_x509_crt_t x509_cert[MAX_CERTS];
-static gnutls_x509_privkey_t x509_key;
 #if GNUTLS_VERSION_MAJOR < 3
 static int cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nreqs,
 	const gnutls_pk_algorithm_t *sign_algos, int sign_algos_len, gnutls_retr_st *st);
@@ -56,6 +47,23 @@ static int cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_
 #endif
 
 #define SSL_P(x) *((gnutls_session_t *)F->ssl)
+
+
+
+// Server side variables
+static gnutls_certificate_credentials_t server_cert_key;
+static gnutls_dh_params_t server_dhp;
+
+// Client side variables
+#define MAX_CERTS 6
+static gnutls_x509_crt_t client_cert[MAX_CERTS];
+static gnutls_x509_privkey_t client_key;
+static unsigned int client_cert_count;
+
+// Shared variables
+static gnutls_priority_t default_priority;
+
+
 
 void
 rb_ssl_shutdown(rb_fde_t *const F)
@@ -164,7 +172,7 @@ rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
 
 	gnutls_init(ssl, GNUTLS_SERVER);
 	gnutls_set_default_priority(*ssl);
-	gnutls_credentials_set(*ssl, GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_credentials_set(*ssl, GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(*ssl, 1024);
 	gnutls_transport_set_ptr(*ssl, (gnutls_transport_ptr_t) (long int)new_F->fd);
 	gnutls_certificate_server_set_request(*ssl, GNUTLS_CERT_REQUEST);
@@ -198,7 +206,7 @@ rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrl
 
 	gnutls_init((gnutls_session_t *) new_F->ssl, GNUTLS_SERVER);
 	gnutls_set_default_priority(SSL_P(new_F));
-	gnutls_credentials_set(SSL_P(new_F), GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_credentials_set(SSL_P(new_F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(SSL_P(new_F), 1024);
 	gnutls_transport_set_ptr(SSL_P(new_F), (gnutls_transport_ptr_t) (long int)rb_get_fd(new_F));
 	gnutls_certificate_server_set_request(SSL_P(new_F), GNUTLS_CERT_REQUEST);
@@ -275,16 +283,16 @@ rb_init_ssl(void)
 {
 	gnutls_global_init();
 
-	if(gnutls_certificate_allocate_credentials(&x509) != GNUTLS_E_SUCCESS)
+	if(gnutls_certificate_allocate_credentials(&server_cert_key) != GNUTLS_E_SUCCESS)
 	{
 		rb_lib_log("rb_init_ssl: Unable to allocate SSL/TLS certificate credentials");
 		return 0;
 	}
 
 #if GNUTLS_VERSION_MAJOR < 3
-	gnutls_certificate_client_set_retrieve_function(x509, cert_callback);
+	gnutls_certificate_client_set_retrieve_function(server_cert_key, cert_callback);
 #else
-	gnutls_certificate_set_retrieve_function(x509, cert_callback);
+	gnutls_certificate_set_retrieve_function(server_cert_key, cert_callback);
 #endif
 
 #if (GNUTLS_VERSION_MAJOR < 3)
@@ -318,9 +326,9 @@ cert_callback(gnutls_session_t session, const gnutls_datum_t *req_ca_rdn, int nr
 	st->cert_type = GNUTLS_CRT_X509;
 	st->key_type = GNUTLS_PRIVKEY_X509;
 #endif
-	st->ncerts = x509_cert_count;
-	st->cert.x509 = x509_cert;
-	st->key.x509 = x509_key;
+	st->ncerts = client_cert_count;
+	st->cert.x509 = client_cert;
+	st->key.x509 = client_key;
 	st->deinit_all = 0;
 
 	return 0;
@@ -384,24 +392,24 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 	/* In addition to creating the certificate set, we also need to store our cert elsewhere
 	 * so we can force GnuTLS to identify with it when acting as a client.
 	 */
-	gnutls_x509_privkey_init(&x509_key);
-	if ((ret = gnutls_x509_privkey_import(x509_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
+	gnutls_x509_privkey_init(&client_key);
+	if ((ret = gnutls_x509_privkey_import(client_key, d_key, GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading key file: %s", gnutls_strerror(ret));
 		return 0;
 	}
 
-	x509_cert_count = MAX_CERTS;
-	if ((ret = gnutls_x509_crt_list_import(x509_cert, &x509_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
+	client_cert_count = MAX_CERTS;
+	if ((ret = gnutls_x509_crt_list_import(client_cert, &client_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
 		GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED)) < 0)
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading certificate: %s", gnutls_strerror(ret));
 		return 0;
 	}
-	x509_cert_count = ret;
+	client_cert_count = ret;
 
 	if((ret =
-	    gnutls_certificate_set_x509_key_mem(x509, d_cert, d_key,
+	    gnutls_certificate_set_x509_key_mem(server_cert_key, d_cert, d_key,
 						GNUTLS_X509_FMT_PEM)) != GNUTLS_E_SUCCESS)
 	{
 		rb_lib_log("rb_setup_ssl_server: Error loading certificate or key file: %s",
@@ -414,14 +422,14 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 
 	if(dhfile != NULL)
 	{
-		if(gnutls_dh_params_init(&dh_params) == GNUTLS_E_SUCCESS)
+		if(gnutls_dh_params_init(&server_dhp) == GNUTLS_E_SUCCESS)
 		{
 			gnutls_datum_t *data;
 			int xret;
 			data = rb_load_file_into_datum_t(dhfile);
 			if(data != NULL)
 			{
-				xret = gnutls_dh_params_import_pkcs3(dh_params, data,
+				xret = gnutls_dh_params_import_pkcs3(server_dhp, data,
 								     GNUTLS_X509_FMT_PEM);
 				if(xret < 0)
 					rb_lib_log
@@ -429,7 +437,7 @@ rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, c
 						 gnutls_strerror(xret));
 				rb_free_datum_t(data);
 			}
-			gnutls_certificate_set_dh_params(x509, dh_params);
+			gnutls_certificate_set_dh_params(server_cert_key, server_dhp);
 		}
 		else
 			rb_lib_log("rb_setup_ssl_server: Unable to setup DH parameters");
@@ -520,7 +528,7 @@ rb_ssl_tryconn(rb_fde_t *F, int status, void *data)
 	F->ssl = rb_malloc(sizeof(gnutls_session_t));
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
-	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
 	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
 	gnutls_priority_set(SSL_P(F), default_priority);
@@ -563,7 +571,7 @@ rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
 
 	gnutls_init(F->ssl, GNUTLS_CLIENT);
 	gnutls_set_default_priority(SSL_P(F));
-	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, x509);
+	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(SSL_P(F), 1024);
 	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) (long int)F->fd);
 	gnutls_priority_set(SSL_P(F), default_priority);
