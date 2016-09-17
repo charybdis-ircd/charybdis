@@ -228,7 +228,7 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 	lrb_assert(F->accept->callback != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	int ret = mbedtls_ssl_handshake(SSL_P(F));
+	const int ret = mbedtls_ssl_handshake(SSL_P(F));
 
 	switch(ret)
 	{
@@ -263,7 +263,7 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	int ret = mbedtls_ssl_handshake(SSL_P(F));
+	const int ret = mbedtls_ssl_handshake(SSL_P(F));
 
 	switch(ret)
 	{
@@ -527,7 +527,8 @@ rb_get_random(void *const buf, const size_t length)
 const char *
 rb_get_ssl_strerror(rb_fde_t *const F)
 {
-	return rb_ssl_strerror((int) F->ssl_errno);
+	const int err = (int) F->ssl_errno;
+	return rb_ssl_strerror(-err);
 }
 
 int
@@ -608,7 +609,7 @@ rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	int ret = mbedtls_ssl_read(SSL_P(F), buf, count);
+	const int ret = mbedtls_ssl_read(SSL_P(F), buf, count);
 
 	if(ret >= 0)
 		return (ssize_t) ret;
@@ -634,7 +635,7 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 	lrb_assert(F != NULL);
 	lrb_assert(F->ssl != NULL);
 
-	int ret = mbedtls_ssl_write(SSL_P(F), buf, count);
+	const int ret = mbedtls_ssl_write(SSL_P(F), buf, count);
 
 	if(ret >= 0)
 		return (ssize_t) ret;
@@ -663,6 +664,7 @@ rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
 static void
 rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *const sconn)
 {
+	lrb_assert(F != NULL);
 	lrb_assert(F->connect != NULL);
 
 	F->connect->callback = sconn->callback;
@@ -712,7 +714,7 @@ rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, const size_t
 {
 	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
 
-	int ret = (int) read(fd, buf, count);
+	const int ret = (int) read(fd, buf, count);
 
 	if(ret < 0 && rb_ignore_errno(errno))
 		return MBEDTLS_ERR_SSL_WANT_READ;
@@ -725,7 +727,7 @@ rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, const 
 {
 	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
 
-	int ret = (int) write(fd, buf, count);
+	const int ret = (int) write(fd, buf, count);
 
 	if(ret < 0 && rb_ignore_errno(errno))
 		return MBEDTLS_ERR_SSL_WANT_WRITE;
@@ -829,6 +831,7 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	F->connect = rb_malloc(sizeof(struct conndata));
 	F->connect->callback = callback;
 	F->connect->data = data;
+
 	F->type |= RB_FD_SSL;
 
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
