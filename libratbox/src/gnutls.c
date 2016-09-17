@@ -39,13 +39,13 @@
 # include <gnutls/crypto.h>
 #endif
 
-#define SSL_P(x) *((gnutls_session_t *) ((x)->ssl))
-
 typedef enum
 {
 	RB_FD_TLS_DIRECTION_IN = 0,
 	RB_FD_TLS_DIRECTION_OUT = 1
 } rb_fd_tls_direction;
+
+#define SSL_P(x) *((gnutls_session_t *) ((x)->ssl))
 
 
 
@@ -80,6 +80,10 @@ static ssize_t rb_sock_net_xmit(gnutls_transport_ptr_t, const void *, size_t);
 
 
 /*
+ * Internal GNUTLS-specific code
+ */
+
+/*
  * We only have one certificate to authenticate with, as both a client and server.
  *
  * Unfortunately, GNUTLS tries to be clever, and as client, will attempt to use a certificate that the server will
@@ -89,7 +93,6 @@ static ssize_t rb_sock_net_xmit(gnutls_transport_ptr_t, const void *, size_t);
  *
  * Thus, we use this callback to force GNUTLS to authenticate with our (server) certificate as a client.
  */
-
 static int
 rb_ssl_cert_auth_cb(gnutls_session_t session,
                     const gnutls_datum_t *const req_ca_rdn, const int req_ca_rdn_len,
@@ -113,28 +116,6 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 	st->deinit_all = 0;
 
 	return 0;
-}
-
-static const char *
-rb_ssl_strerror(const int err)
-{
-	return gnutls_strerror(err);
-}
-
-static ssize_t
-rb_sock_net_recv(gnutls_transport_ptr_t context_ptr, void *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	return recv(fd, buf, count, 0);
-}
-
-static ssize_t
-rb_sock_net_xmit(gnutls_transport_ptr_t context_ptr, const void *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	return send(fd, buf, count, 0);
 }
 
 static void
@@ -173,47 +154,6 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 
 	if(dir == RB_FD_TLS_DIRECTION_IN)
 		gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
-}
-
-void
-rb_ssl_shutdown(rb_fde_t *const F)
-{
-	if(F == NULL || F->ssl == NULL)
-		return;
-
-	for(int i = 0; i < 4; i++)
-	{
-		int ret = gnutls_bye(SSL_P(F), GNUTLS_SHUT_RDWR);
-
-		if(ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN)
-			break;
-	}
-
-	gnutls_deinit(SSL_P(F));
-
-	rb_free(F->ssl);
-	F->ssl = NULL;
-}
-
-unsigned int
-rb_ssl_handshake_count(rb_fde_t *const F)
-{
-	return F->handshake_count;
-}
-
-void
-rb_ssl_clear_handshake_count(rb_fde_t *const F)
-{
-	F->handshake_count = 0;
-}
-
-static void
-rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
-{
-	lrb_assert(F->accept != NULL);
-	lrb_assert(F->accept->callback != NULL);
-
-	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
 }
 
 static void
@@ -263,41 +203,53 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 	rb_free(ad);
 }
 
-void
-rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const int timeout)
+static void
+rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 {
-	F->type |= RB_FD_SSL;
+	lrb_assert(F != NULL);
+	lrb_assert(F->ssl != NULL);
 
-	F->accept = rb_malloc(sizeof(struct acceptdata));
-	F->accept->callback = cb;
-	F->accept->data = data;
-	F->accept->addrlen = 0;
-	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
+	errno = 0;
 
-	rb_settimeout(F, timeout, rb_ssl_timeout_cb, NULL);
-	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_IN);
-	rb_ssl_accept_common(F, NULL);
+	const int ret = gnutls_handshake(SSL_P(F));
+	const int err = errno;
+
+	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
+	{
+		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
+		rb_setselect(F, flags, rb_ssl_connect_common, data);
+		return;
+	}
+
+	// These 2 calls may affect errno, which is why we save it above and restore it below
+	rb_settimeout(F, 0, NULL, NULL);
+	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
+
+	struct ssl_connect *const sconn = data;
+
+	if(ret == GNUTLS_E_SUCCESS)
+	{
+		F->handshake_count++;
+		rb_ssl_connect_realcb(F, RB_OK, sconn);
+	}
+	else if(ret == GNUTLS_E_INTERRUPTED && err != 0)
+	{
+		errno = err;
+		rb_ssl_connect_realcb(F, RB_ERROR, sconn);
+	}
+	else
+	{
+		errno = EIO;
+		F->ssl_errno = (unsigned long) -ret;
+		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
+	}
 }
 
-void
-rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, const int addrlen)
+static const char *
+rb_ssl_strerror(const int err)
 {
-	cli_F->type |= RB_FD_SSL;
-
-	cli_F->accept = rb_malloc(sizeof(struct acceptdata));
-	cli_F->accept->callback = srv_F->accept->callback;
-	cli_F->accept->data = srv_F->accept->data;
-	cli_F->accept->addrlen = (rb_socklen_t) addrlen;
-	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
-	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
-
-	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
-	rb_ssl_init_fd(cli_F, RB_FD_TLS_DIRECTION_IN);
-	rb_ssl_accept_common(cli_F, NULL);
+	return gnutls_strerror(err);
 }
-
-
-
 
 static ssize_t
 rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, const void *const wbuf, const size_t count)
@@ -330,18 +282,6 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 	return RB_RW_SSL_ERROR;
 }
 
-ssize_t
-rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
-{
-	return rb_ssl_read_or_write(0, F, buf, NULL, count);
-}
-
-ssize_t
-rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
-{
-	return rb_ssl_read_or_write(1, F, NULL, buf, count);
-}
-
 #if (GNUTLS_VERSION_MAJOR < 3)
 static void
 rb_gcry_random_seed(void *const unused)
@@ -349,24 +289,6 @@ rb_gcry_random_seed(void *const unused)
 	gcry_fast_random_poll();
 }
 #endif
-
-int
-rb_init_ssl(void)
-{
-	int ret;
-
-	if ((ret = gnutls_global_init()) != GNUTLS_E_SUCCESS)
-	{
-		rb_lib_log("%s: gnutls_global_init: %s", __func__, rb_ssl_strerror(ret));
-		return 0;
-	}
-
-#if (GNUTLS_VERSION_MAJOR < 3)
-	rb_event_addish("rb_gcry_random_seed", rb_gcry_random_seed, NULL, 300);
-#endif
-
-	return 1;
-}
 
 static void
 rb_free_datum_t(gnutls_datum_t *const datum)
@@ -430,6 +352,50 @@ rb_load_file_into_datum_t(const char *const file)
 	datum->data[datum_size] = '\0';
 	datum->size = (unsigned int) datum_size;
 	return datum;
+}
+
+
+
+/*
+ * External GNUTLS-specific code
+ */
+
+void
+rb_ssl_shutdown(rb_fde_t *const F)
+{
+	if(F == NULL || F->ssl == NULL)
+		return;
+
+	for(int i = 0; i < 4; i++)
+	{
+		int ret = gnutls_bye(SSL_P(F), GNUTLS_SHUT_RDWR);
+
+		if(ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN)
+			break;
+	}
+
+	gnutls_deinit(SSL_P(F));
+
+	rb_free(F->ssl);
+	F->ssl = NULL;
+}
+
+int
+rb_init_ssl(void)
+{
+	int ret;
+
+	if((ret = gnutls_global_init()) != GNUTLS_E_SUCCESS)
+	{
+		rb_lib_log("%s: gnutls_global_init: %s", __func__, rb_ssl_strerror(ret));
+		return 0;
+	}
+
+#if (GNUTLS_VERSION_MAJOR < 3)
+	rb_event_addish("rb_gcry_random_seed", rb_gcry_random_seed, NULL, 300);
+#endif
+
+	return 1;
 }
 
 int
@@ -575,14 +541,133 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 }
 
 int
-rb_ssl_listen(rb_fde_t *const F, const int backlog, const int defer_accept)
+rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
-	int result = rb_listen(F, backlog, defer_accept);
-
-	F->type = RB_FD_SOCKET | RB_FD_LISTEN | RB_FD_SSL;
-
-	return result;
+#if (GNUTLS_VERSION_MAJOR < 3)
+	gcry_fast_random_poll();
+	rb_lib_log("%s: PRNG initialised", __func__);
+#else
+	rb_lib_log("%s: Skipping PRNG initialisation; not required by GNUTLS v3+ backend", __func__);
+#endif
+	return 1;
 }
+
+int
+rb_get_random(void *const buf, const size_t length)
+{
+#if (GNUTLS_VERSION_MAJOR < 3)
+	gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
+#else
+	gnutls_rnd(GNUTLS_RND_KEY, buf, length);
+#endif
+	return 1;
+}
+
+const char *
+rb_get_ssl_strerror(rb_fde_t *const F)
+{
+	const int err = (int) F->ssl_errno;
+	return rb_ssl_strerror(-err);
+}
+
+int
+rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
+{
+	if(F == NULL || F->ssl == NULL)
+		return 0;
+
+	gnutls_digest_algorithm_t md_type;
+
+	switch(method)
+	{
+	case RB_SSL_CERTFP_METH_SHA1:
+		md_type = GNUTLS_DIG_SHA1;
+		break;
+	case RB_SSL_CERTFP_METH_SHA256:
+		md_type = GNUTLS_DIG_SHA256;
+		break;
+	case RB_SSL_CERTFP_METH_SHA512:
+		md_type = GNUTLS_DIG_SHA512;
+		break;
+	default:
+		return 0;
+	}
+
+	if(gnutls_certificate_type_get(SSL_P(F)) != GNUTLS_CRT_X509)
+		return 0;
+
+	unsigned int cert_list_size = 0;
+	const gnutls_datum_t *const cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
+	if(cert_list == NULL || cert_list_size <= 0)
+		return 0;
+
+	gnutls_x509_crt_t peer_cert;
+	if(gnutls_x509_crt_init(&peer_cert) != GNUTLS_E_SUCCESS)
+		return 0;
+
+	if(gnutls_x509_crt_import(peer_cert, &cert_list[0], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS)
+	{
+		gnutls_x509_crt_deinit(peer_cert);
+		return 0;
+	}
+
+	int ret;
+	size_t hashlen;
+	if((ret = gnutls_x509_crt_get_fingerprint(peer_cert, md_type, certfp, &hashlen)) != 0)
+	{
+		rb_lib_log("%s: gnutls_x509_crt_get_fingerprint: %s", __func__, rb_ssl_strerror(ret));
+		gnutls_x509_crt_deinit(peer_cert);
+		return 0;
+	}
+
+	gnutls_x509_crt_deinit(peer_cert);
+
+	return (int) hashlen;
+}
+
+void
+rb_get_ssl_info(char *const buf, const size_t len)
+{
+	(void) rb_snprintf(buf, len, "GNUTLS: compiled (v%s), library (v%s)",
+	                   LIBGNUTLS_VERSION, gnutls_check_version(NULL));
+}
+
+const char *
+rb_ssl_get_cipher(rb_fde_t *const F)
+{
+	if(F == NULL || F->ssl == NULL)
+		return NULL;
+
+	static char buf[512];
+
+	gnutls_protocol_t version_ptr = gnutls_protocol_get_version(SSL_P(F));
+	gnutls_cipher_algorithm_t cipher_ptr = gnutls_cipher_get(SSL_P(F));
+
+	const char *const version = gnutls_protocol_get_name(version_ptr);
+	const char *const cipher = gnutls_cipher_get_name(cipher_ptr);
+
+	(void) rb_snprintf(buf, sizeof buf, "%s, %s", version, cipher);
+
+	return buf;
+}
+
+ssize_t
+rb_ssl_read(rb_fde_t *const F, void *const buf, const size_t count)
+{
+	return rb_ssl_read_or_write(0, F, buf, NULL, count);
+}
+
+ssize_t
+rb_ssl_write(rb_fde_t *const F, const void *const buf, const size_t count)
+{
+	return rb_ssl_read_or_write(1, F, NULL, buf, count);
+}
+
+
+
+/*
+ * Internal library-agnostic code
+ */
 
 static void
 rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *const sconn)
@@ -598,51 +683,18 @@ rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *c
 }
 
 static void
-rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
+rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
 {
-	rb_ssl_connect_realcb(F, RB_ERR_TIMEOUT, data);
+	lrb_assert(F->accept != NULL);
+	lrb_assert(F->accept->callback != NULL);
+
+	F->accept->callback(F, RB_ERR_TIMEOUT, NULL, 0, F->accept->data);
 }
 
 static void
-rb_ssl_connect_common(rb_fde_t *const F, void *const data)
+rb_ssl_tryconn_timeout_cb(rb_fde_t *const F, void *const data)
 {
-	lrb_assert(F != NULL);
-	lrb_assert(F->ssl != NULL);
-
-	errno = 0;
-
-	const int ret = gnutls_handshake(SSL_P(F));
-	const int err = errno;
-
-	if(ret == GNUTLS_E_AGAIN || (ret == GNUTLS_E_INTERRUPTED && (err == 0 || rb_ignore_errno(err))))
-	{
-		unsigned int flags = (gnutls_record_get_direction(SSL_P(F)) == 0) ? RB_SELECT_READ : RB_SELECT_WRITE;
-		rb_setselect(F, flags, rb_ssl_connect_common, data);
-		return;
-	}
-
-	// These 2 calls may affect errno, which is why we save it above and restore it below
-	rb_settimeout(F, 0, NULL, NULL);
-	rb_setselect(F, RB_SELECT_READ | RB_SELECT_WRITE, NULL, NULL);
-
-	struct ssl_connect *const sconn = data;
-
-	if(ret == GNUTLS_E_SUCCESS)
-	{
-		F->handshake_count++;
-		rb_ssl_connect_realcb(F, RB_OK, sconn);
-	}
-	else if(ret == GNUTLS_E_INTERRUPTED && err != 0)
-	{
-		errno = err;
-		rb_ssl_connect_realcb(F, RB_ERROR, sconn);
-	}
-	else
-	{
-		errno = EIO;
-		F->ssl_errno = (unsigned long) -ret;
-		rb_ssl_connect_realcb(F, RB_ERROR_SSL, sconn);
-	}
+	rb_ssl_connect_realcb(F, RB_ERR_TIMEOUT, data);
 }
 
 static void
@@ -663,6 +715,89 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
+}
+
+static ssize_t
+rb_sock_net_recv(gnutls_transport_ptr_t context_ptr, void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return recv(fd, buf, count, 0);
+}
+
+static ssize_t
+rb_sock_net_xmit(gnutls_transport_ptr_t context_ptr, const void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return send(fd, buf, count, 0);
+}
+
+
+
+/*
+ * External library-agnostic code
+ */
+
+int
+rb_supports_ssl(void)
+{
+	return 1;
+}
+
+unsigned int
+rb_ssl_handshake_count(rb_fde_t *const F)
+{
+	return F->handshake_count;
+}
+
+void
+rb_ssl_clear_handshake_count(rb_fde_t *const F)
+{
+	F->handshake_count = 0;
+}
+
+void
+rb_ssl_start_accepted(rb_fde_t *const F, ACCB *const cb, void *const data, const int timeout)
+{
+	F->type |= RB_FD_SSL;
+
+	F->accept = rb_malloc(sizeof(struct acceptdata));
+	F->accept->callback = cb;
+	F->accept->data = data;
+	F->accept->addrlen = 0;
+	(void) memset(&F->accept->S, 0x00, sizeof F->accept->S);
+
+	rb_settimeout(F, timeout, rb_ssl_timeout_cb, NULL);
+	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_IN);
+	rb_ssl_accept_common(F, NULL);
+}
+
+void
+rb_ssl_accept_setup(rb_fde_t *const srv_F, rb_fde_t *const cli_F, struct sockaddr *const st, const int addrlen)
+{
+	cli_F->type |= RB_FD_SSL;
+
+	cli_F->accept = rb_malloc(sizeof(struct acceptdata));
+	cli_F->accept->callback = srv_F->accept->callback;
+	cli_F->accept->data = srv_F->accept->data;
+	cli_F->accept->addrlen = (rb_socklen_t) addrlen;
+	(void) memset(&cli_F->accept->S, 0x00, sizeof cli_F->accept->S);
+	(void) memcpy(&cli_F->accept->S, st, (size_t) addrlen);
+
+	rb_settimeout(cli_F, 10, rb_ssl_timeout_cb, NULL);
+	rb_ssl_init_fd(cli_F, RB_FD_TLS_DIRECTION_IN);
+	rb_ssl_accept_common(cli_F, NULL);
+}
+
+int
+rb_ssl_listen(rb_fde_t *const F, const int backlog, const int defer_accept)
+{
+	int result = rb_listen(F, backlog, defer_accept);
+
+	F->type = RB_FD_SOCKET | RB_FD_LISTEN | RB_FD_SSL;
+
+	return result;
 }
 
 void
@@ -700,123 +835,6 @@ rb_ssl_start_connected(rb_fde_t *const F, CNCB *const callback, void *const data
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
-}
-
-int
-rb_init_prng(const char *const path, prng_seed_t seed_type)
-{
-#if (GNUTLS_VERSION_MAJOR < 3)
-	gcry_fast_random_poll();
-	rb_lib_log("%s: PRNG initialised", __func__);
-#else
-	rb_lib_log("%s: Skipping PRNG initialisation; not required by GNUTLS v3+ backend", __func__);
-#endif
-	return 1;
-}
-
-int
-rb_get_random(void *const buf, const size_t length)
-{
-#if (GNUTLS_VERSION_MAJOR < 3)
-	gcry_randomize(buf, length, GCRY_STRONG_RANDOM);
-#else
-	gnutls_rnd(GNUTLS_RND_KEY, buf, length);
-#endif
-	return 1;
-}
-
-const char *
-rb_get_ssl_strerror(rb_fde_t *const F)
-{
-	const int err = (int) F->ssl_errno;
-	return rb_ssl_strerror(-err);
-}
-
-int
-rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
-{
-	if (F == NULL || F->ssl == NULL)
-		return 0;
-
-	gnutls_digest_algorithm_t md_type;
-
-	switch(method)
-	{
-	case RB_SSL_CERTFP_METH_SHA1:
-		md_type = GNUTLS_DIG_SHA1;
-		break;
-	case RB_SSL_CERTFP_METH_SHA256:
-		md_type = GNUTLS_DIG_SHA256;
-		break;
-	case RB_SSL_CERTFP_METH_SHA512:
-		md_type = GNUTLS_DIG_SHA512;
-		break;
-	default:
-		return 0;
-	}
-
-	if (gnutls_certificate_type_get(SSL_P(F)) != GNUTLS_CRT_X509)
-		return 0;
-
-	unsigned int cert_list_size = 0;
-	const gnutls_datum_t *const cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
-	if (cert_list == NULL || cert_list_size <= 0)
-		return 0;
-
-	gnutls_x509_crt_t peer_cert;
-	if (gnutls_x509_crt_init(&peer_cert) != GNUTLS_E_SUCCESS)
-		return 0;
-
-	if (gnutls_x509_crt_import(peer_cert, &cert_list[0], GNUTLS_X509_FMT_DER) != GNUTLS_E_SUCCESS)
-	{
-		gnutls_x509_crt_deinit(peer_cert);
-		return 0;
-	}
-
-	int ret;
-	size_t hashlen;
-	if ((ret = gnutls_x509_crt_get_fingerprint(peer_cert, md_type, certfp, &hashlen)) != 0)
-	{
-		rb_lib_log("%s: gnutls_x509_crt_get_fingerprint: %s", __func__, rb_ssl_strerror(ret));
-		gnutls_x509_crt_deinit(peer_cert);
-		return 0;
-	}
-
-	gnutls_x509_crt_deinit(peer_cert);
-
-	return (int) hashlen;
-}
-
-int
-rb_supports_ssl(void)
-{
-	return 1;
-}
-
-void
-rb_get_ssl_info(char *const buf, const size_t len)
-{
-	(void) rb_snprintf(buf, len, "GNUTLS: compiled (v%s), library (v%s)",
-	                   LIBGNUTLS_VERSION, gnutls_check_version(NULL));
-}
-
-const char *
-rb_ssl_get_cipher(rb_fde_t *const F)
-{
-	if(F == NULL || F->ssl == NULL)
-		return NULL;
-
-	static char buf[512];
-
-	gnutls_protocol_t version_ptr = gnutls_protocol_get_version(SSL_P(F));
-	gnutls_cipher_algorithm_t cipher_ptr = gnutls_cipher_get(SSL_P(F));
-
-	const char *const version = gnutls_protocol_get_name(version_ptr);
-	const char *const cipher = gnutls_cipher_get_name(cipher_ptr);
-
-	(void) rb_snprintf(buf, sizeof buf, "%s, %s", version, cipher);
-
-	return buf;
 }
 
 #endif /* HAVE_GNUTLS */
