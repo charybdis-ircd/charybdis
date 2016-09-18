@@ -23,6 +23,8 @@ static void h_hdl_client_exit(hook_data_client_exit *hdata);
 static void h_hdl_umode_changed(hook_data_umode_changed *hdata);
 static void h_hdl_whois(hook_data_client *hdata);
 static void recurse_client_exit(struct Client *client_p);
+static void helper_add(struct Client *client_p);
+static void helper_delete(struct Client *client_p);
 static void mo_dehelper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 static void me_dehelper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 static void do_dehelper(struct Client *source_p, struct Client *target_p);
@@ -153,10 +155,25 @@ h_hdl_stats_request(hook_data_int *hdata)
 }
 
 static void
+helper_add(struct Client *client_p)
+{
+	if (rb_dlinkFind(client_p, &helper_list) != NULL)
+		return;
+
+	rb_dlinkAddAlloc(client_p, &helper_list);
+}
+
+static void
+helper_delete(struct Client *client_p)
+{
+	rb_dlinkFindDestroy(client_p, &helper_list);
+}
+
+static void
 h_hdl_new_remote_user(struct Client *client_p)
 {
 	if (client_p->umodes & UMODE_HELPOPS)
-		rb_dlinkAddAlloc(client_p, &helper_list);
+		helper_add(client_p);
 }
 
 static void
@@ -165,7 +182,7 @@ recurse_client_exit(struct Client *client_p)
 	if (IsPerson(client_p))
 	{
 		if (client_p->umodes & UMODE_HELPOPS)
-			rb_dlinkFindDestroy(client_p, &helper_list);
+			helper_delete(client_p);
 	}
 	else if (IsServer(client_p))
 	{
@@ -203,10 +220,10 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 			return;
 		}
 
-		rb_dlinkAddAlloc(source_p, &helper_list);
+		helper_add(source_p);
 	}
 	else if (!(source_p->umodes & UMODE_HELPOPS))
-		rb_dlinkFindDestroy(source_p, &helper_list);
+		helper_delete(source_p);
 }
 
 static void
