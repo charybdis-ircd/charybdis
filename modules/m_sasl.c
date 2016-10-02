@@ -250,8 +250,12 @@ me_sasl(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			{
 				if(*target_p->name)
 				{
-					target_p->localClient->sasl_failures++;
-					target_p->localClient->sasl_next_retry = rb_current_time() + (1 << MIN(target_p->localClient->sasl_failures + 5, 13));
+					/* Allow 2 tries before rate-limiting as some clients try EXTERNAL
+					 * then PLAIN right after it if the auth failed, causing the client to be
+					 * rate-limited immediately and not being able to login with SASL.
+					 */
+					if (target_p->localClient->sasl_failures++ > 0)
+						target_p->localClient->sasl_next_retry = rb_current_time() + (1 << MIN(target_p->localClient->sasl_failures + 5, 13));
 				}
 				else if(throttle_add((struct sockaddr*)&target_p->localClient->ip))
 				{
