@@ -255,7 +255,7 @@ me_sasl(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 					 * rate-limited immediately and not being able to login with SASL.
 					 */
 					if (target_p->localClient->sasl_failures++ > 0)
-						target_p->localClient->sasl_next_retry = rb_current_time() + (1 << MIN(target_p->localClient->sasl_failures + 5, 13));
+						target_p->localClient->sasl_next_retry = rb_current_time() + (1 << MIN(target_p->localClient->sasl_failures + 1, 8));
 				}
 				else if(throttle_add((struct sockaddr*)&target_p->localClient->ip))
 				{
