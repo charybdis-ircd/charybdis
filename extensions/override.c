@@ -98,7 +98,7 @@ expire_override_deadlines(void *unused)
 			break;
 		else if (session_p->deadline < rb_current_time())
 		{
-		        const char *parv[4] = {session_p->client->name, session_p->client->name, "-p", NULL};
+			const char *parv[4] = {session_p->client->name, session_p->client->name, "-p", NULL};
 			user_mode(session_p->client, session_p->client, 3, parv);
 		}
 	}
@@ -201,6 +201,33 @@ hack_can_kick(void *vdata)
 	hook_data_channel_approval *data = (hook_data_channel_approval *) vdata;
 	int alevel;
 
+	if (data->target->umodes & user_modes['p'])
+	{
+		if (data->client->umodes & user_modes['p'])
+		{
+			/* Using oper-override to kick an oper
+			 * who's also using oper-override, better
+			 * report what happened.
+			 */
+			update_session_deadline(data->client, NULL);
+			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is using oper-override on %s (KICK %s)",
+					       get_oper_name(data->client), data->chptr->chname, data->target->name);
+		}
+		else
+		{
+			/* Like cmode +M, let's report any attempt
+			 * to kick the immune oper.
+			 */
+			update_session_deadline(data->target, NULL);
+			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s attempted to kick %s from %s (who is +p)",
+				data->client->name, data->target->name, data->chptr->chname);
+			sendto_one_numeric(data->client, ERR_ISCHANSERVICE, "%s %s :Cannot kick immune IRC operators.",
+				data->target->name, data->chptr->chname);
+			data->approved = 0;
+		}
+		return;
+	}
+
 	alevel = get_channel_access(data->client, data->chptr, data->msptr, data->dir, NULL);
 	if (alevel != CHFL_OVERRIDE)
 		return;
@@ -265,7 +292,7 @@ _modinit(void)
 	user_modes['p'] = find_umode_slot();
 	construct_umodebuf();
 
-        expire_override_deadlines_ev = rb_event_add("expire_override_deadlines", expire_override_deadlines, NULL, 60);
+	expire_override_deadlines_ev = rb_event_add("expire_override_deadlines", expire_override_deadlines, NULL, 60);
 
 	return 0;
 }
