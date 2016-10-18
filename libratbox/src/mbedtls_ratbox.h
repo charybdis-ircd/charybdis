@@ -44,79 +44,107 @@ static const char rb_mbedtls_personal_str[] = "charybdis/librb personalization s
 
 /*
  * Default list of supported ciphersuites
- * User can override with ssl_cipher_list option in ircd.conf
+ * The user can override this with the ssl_cipher_list option in ircd.conf
  *
- * Charybdis cannot have more than one certificate configured, which means that with
- * the MbedTLS backend, it will ALWAYS be serving EITHER an RSA OR ECDSA certificate.
+ * The format for this option is the same as the macro names below, but
+ * with underscores replaced with hyphens, and without the initial MBEDTLS_
  *
- * This means we can order ciphersuites to place all ECDSA ones ahead of RSA ones,
- * without weird interactions of cipher order, such as inadvertantly preferring an
- * ECDSA ciphersuite with AES128-CBC-SHA over an RSA ciphersuite with
- * AES256-GCM-SHA384.
+ * For example;
+ * ssl_cipher_list = "TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384"
  *
- * We also prefer all AEAD ciphersuites first, even if it results in using a 128-bit
- * AEAD ciphersuite instead of a 256-bit CBC ciphersuite. This is due to the fact that
- * ONLY the AEAD ciphersuites in TLS are cryptographically secure in practice; the ETM
- * extension for CBC ciphersuites has not seen wide adoption. This choice can be
- * revisited in future; please consult me first.  -- amdj
+ * Multiple ciphersuites can be separated by colons (:)
+ *
+ * ************************************************************************
+ *
+ * The ordering of the following list should be intuitive. Within the list;
+ *
+ * * All AEAD forward-secret ciphersuites are located first [1]
+ * * All SHA2 forward-secret ciphersuites are located second
+ * * All remaining forward-secret ciphersuites are located third
+ * * All non-forward-secret ciphersuites are located last, in the same order
+ *
+ *   [1] Because in practice, they are the only secure ciphersuites available;
+ *       the ETM extension for CBC ciphersuites has not seen wide adoption.
+ *
+ * In practice, all clients SHOULD support an AEAD forward-secret cipher,
+ * which the server will then negotiate as they are preferred.
+ *
+ * This choice can be revisited in future; please consult me first.  -- amdj
  */
 static const int rb_mbedtls_ciphersuites[] = {
 
+	// AEAD forward-secret ciphersuites
+
 	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-
 	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
-	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,
 	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384,
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CCM,
-	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
-	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
-	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
 	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256,
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CCM,
+
+	// SHA2 forward-secret ciphersuites
+
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384,
+	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256,
+
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
 	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+
+	// Remaining forward-secret ciphersuites
+
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+	MBEDTLS_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,
+
+	MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+	MBEDTLS_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 	MBEDTLS_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
 	MBEDTLS_TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,
+
+	// Non-forward-secret ciphersuites
 
 	MBEDTLS_TLS_RSA_WITH_AES_256_GCM_SHA384,
 	MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384,
 	MBEDTLS_TLS_RSA_WITH_AES_256_CCM,
+
 	MBEDTLS_TLS_RSA_WITH_AES_128_GCM_SHA256,
 	MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256,
 	MBEDTLS_TLS_RSA_WITH_AES_128_CCM,
+
 	MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA256,
 	MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256,
-	MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA,
-	MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
+
 	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA256,
 	MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256,
+
+	MBEDTLS_TLS_RSA_WITH_AES_256_CBC_SHA,
+	MBEDTLS_TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,
+
 	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
 	MBEDTLS_TLS_RSA_WITH_CAMELLIA_128_CBC_SHA,
 
-	0	// End of list
+	// The end of list sentinel
+	0
 };
 
 /*
