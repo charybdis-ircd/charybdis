@@ -33,7 +33,7 @@ int
 msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 {
 	char *ch;
-	char *parv[MAXPARA];
+	char *parv[MAXPARA + 1];
 	size_t n_para;
 
 	/* skip any leading spaces */
