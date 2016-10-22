@@ -281,7 +281,7 @@ parse_authd_reply(rb_helper * helper)
 	{
 		struct authd_cb *cmd;
 
-		parc = rb_string_to_array(buf, parv, MAXPARA+1);
+		parc = rb_string_to_array(buf, parv, MAXPARA);
 		cmd = &authd_cmd_tab[(unsigned char)*parv[0]];
 		if(cmd->fn != NULL)
 		{
