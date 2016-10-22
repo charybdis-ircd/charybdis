@@ -83,7 +83,7 @@ rb_free_rb_dlink_node(rb_dlink_node *ptr)
  *   Changes a given buffer into an array of parameters.
  *   Taken from ircd-ratbox.
  *
- * inputs	- string to parse, array to put in
+ * inputs	- string to parse, array to put in (size >= maxpara+1)
  * outputs	- number of parameters
  */
 int
