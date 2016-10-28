@@ -379,7 +379,6 @@ static void
 do_modlist(struct Client *source_p, const char *pattern)
 {
 	rb_dlink_node *ptr;
-	int i;
 
 	RB_DLINK_FOREACH(ptr, module_list.head)
 	{

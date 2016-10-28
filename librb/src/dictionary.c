@@ -816,7 +816,7 @@ void rb_dictionary_stats(rb_dictionary *dict, void (*cb)(const char *line, void 
 	{
 		maxdepth = 0;
 		sum = stats_recurse(dict->root, 0, &maxdepth);
-		snprintf(str, sizeof str, "%-30s %-15s %-10d %-10d %-10d %-10d", dict->id, "DICT", dict->count, sum, sum / dict->count, maxdepth);
+		snprintf(str, sizeof str, "%-30s %-15s %-10u %-10d %-10d %-10d", dict->id, "DICT", dict->count, sum, sum / dict->count, maxdepth);
 	}
 	else
 	{

@@ -369,7 +369,6 @@ ws_process_cmd_recv(ws_ctl_t * ctl)
 {
 	rb_dlink_node *ptr, *next;
 	ws_ctl_buf_t *ctl_buf;
-	unsigned long len;
 
 	if(ctl->dead)
 		return;

@@ -103,7 +103,7 @@ do_host_cloak_ip(const char *inbuf, char *outbuf)
 {
 	char *tptr;
 	unsigned int accum = get_string_weighted_entropy(inbuf);
-	char buf[HOSTLEN];
+	char buf[HOSTLEN + 1] = { 0 };
 	int ipv6 = 0;
 
 	strncpy(buf, inbuf, HOSTLEN);
@@ -216,7 +216,7 @@ check_new_user(void *vdata)
 		source_p->umodes &= ~user_modes['h'];
 		return;
 	}
-	source_p->localClient->mangledhost = rb_malloc(HOSTLEN);
+	source_p->localClient->mangledhost = rb_malloc(HOSTLEN + 1);
 	if (!irccmp(source_p->orighost, source_p->sockhost))
 		do_host_cloak_ip(source_p->orighost, source_p->localClient->mangledhost);
 	else

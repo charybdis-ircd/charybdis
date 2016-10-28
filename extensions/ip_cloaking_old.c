@@ -158,7 +158,7 @@ check_new_user(void *vdata)
 		source_p->umodes &= ~user_modes['h'];
 		return;
 	}
-	source_p->localClient->mangledhost = rb_malloc(HOSTLEN);
+	source_p->localClient->mangledhost = rb_malloc(HOSTLEN + 1);
 	if (!irccmp(source_p->orighost, source_p->sockhost))
 		do_host_cloak(source_p->orighost, source_p->localClient->mangledhost, 1);
 	else

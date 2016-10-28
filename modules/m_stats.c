@@ -625,7 +625,7 @@ stats_tklines(struct Client *source_p)
 		get_printable_kline(source_p, aconf, &host, &pass, &user, &oper_reason);
 
 		sendto_one_numeric(source_p, RPL_STATSKLINE,
-				   form_str(RPL_STATSKLINE), aconf->flags & CONF_FLAGS_TEMPORARY ? 'k' : 'K',
+				   form_str(RPL_STATSKLINE), (aconf->flags & CONF_FLAGS_TEMPORARY) ? 'k' : 'K',
 				   host, user, pass, oper_reason ? "|" : "",
 				   oper_reason ? oper_reason : "");
 	}
@@ -724,7 +724,7 @@ stats_klines(struct Client *source_p)
 		get_printable_kline(source_p, aconf, &host, &pass, &user, &oper_reason);
 
 		sendto_one_numeric(source_p, RPL_STATSKLINE, form_str(RPL_STATSKLINE),
-				   aconf->flags & CONF_FLAGS_TEMPORARY ? 'k' : 'K',
+				   (aconf->flags & CONF_FLAGS_TEMPORARY) ? 'k' : 'K',
 				   host, user, pass, oper_reason ? "|" : "",
 				   oper_reason ? oper_reason : "");
 	}
@@ -738,7 +738,6 @@ stats_messages(struct Client *source_p)
 {
 	rb_dictionary_iter iter;
 	struct Message *msg;
-	struct alias_entry *amsg;
 
 	RB_DICTIONARY_FOREACH(msg, &iter, cmd_dict)
 	{

@@ -387,9 +387,6 @@ authd_abort_client(struct Client *client_p)
 static void
 restart_authd_cb(rb_helper * helper)
 {
-	rb_dictionary_iter iter;
-	struct Client *client_p;
-
 	iwarn("authd: restart_authd_cb called, authd died?");
 	sendto_realops_snomask(SNO_GENERAL, L_ALL, "authd: restart_authd_cb called, authd died?");
 

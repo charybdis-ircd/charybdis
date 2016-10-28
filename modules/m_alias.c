@@ -61,7 +61,7 @@ create_aliases(void)
 	RB_DICTIONARY_FOREACH(alias, &iter, alias_dict)
 	{
 		struct Message *message = rb_malloc(sizeof(*message) + strlen(alias->name) + 1);
-		char *cmd = (void*)message + sizeof(*message);
+		char *cmd = (char*)message + sizeof(*message);
 
 		/* copy the alias name as it will be freed early on a rehash */
 		strcpy(cmd, alias->name);

@@ -70,7 +70,7 @@ struct rb_radixtree
 };
 
 #define POINTERS_PER_NODE 16
-#define NIBBLE_VAL(key, nibnum) (((key)[(nibnum) / 2] >> ((nibnum) & 1 ? 0 : 4)) & 0xF)
+#define NIBBLE_VAL(key, nibnum) (((key)[(nibnum) / 2] >> (((nibnum) & 1) ? 0 : 4)) & 0xF)
 
 struct rb_radixtree_node
 {
@@ -1077,7 +1077,7 @@ rb_radixtree_stats(rb_radixtree *dict, void (*cb)(const char *line, void *privda
 	if (dict->count > 0)
 	{
 		sum = stats_recurse(dict->root, 0, &maxdepth);
-		snprintf(str, sizeof str, "%-30s %-15s %-10d %-10d %-10d %-10d", dict->id, "RADIX", dict->count, sum, sum / dict->count, maxdepth);
+		snprintf(str, sizeof str, "%-30s %-15s %-10u %-10d %-10d %-10d", dict->id, "RADIX", dict->count, sum, sum / dict->count, maxdepth);
 	}
 	else
 	{

@@ -348,7 +348,6 @@ int
 register_local_user(struct Client *client_p, struct Client *source_p)
 {
 	struct ConfItem *aconf, *xconf;
-	struct User *user = source_p->user;
 	char tmpstr2[BUFSIZE];
 	char ipaddr[HOSTIPLEN];
 	char myusername[USERLEN+1];
@@ -480,7 +479,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 		}
 	}
 
-	if(IsNeedSasl(aconf) && !*user->suser)
+	if(IsNeedSasl(aconf) && !*source_p->user->suser)
 	{
 		ServerStats.is_ref++;
 		sendto_one_notice(source_p, ":*** Notice -- You need to identify via SASL to use this server");
@@ -665,7 +664,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 
 	free_pre_client(source_p);
 
-	introduce_client(client_p, source_p, user, source_p->name, 1);
+	introduce_client(client_p, source_p, source_p->user, source_p->name, 1);
 	return 0;
 }
 
