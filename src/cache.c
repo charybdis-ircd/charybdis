@@ -220,6 +220,10 @@ free_cachefile(struct cachefile *cacheptr)
 			rb_free(line->data);
 			rb_free(line);
 		}
+		else
+		{
+			rb_free_rb_dlink_node(ptr);
+		}
 	}
 
 	rb_free(cacheptr);
