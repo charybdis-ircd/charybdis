@@ -351,6 +351,7 @@ free_server_conf(struct server_conf *server_p)
 	rb_free(server_p->name);
 	rb_free(server_p->host);
 	rb_free(server_p->class_name);
+	rb_free(server_p->certfp);
 	rb_free(server_p);
 }
 
