@@ -624,7 +624,7 @@ change_local_nick(struct Client *client_p, struct Client *source_p,
 	struct Channel *chptr;
 	char note[NICKLEN + 10];
 	int samenick;
-	hook_data hook_info;
+	hook_cdata hook_info;
 
 	if (dosend)
 	{
@@ -731,7 +731,7 @@ change_remote_nick(struct Client *client_p, struct Client *source_p,
 {
 	struct nd_entry *nd;
 	int samenick = irccmp(source_p->name, nick) ? 0 : 1;
-	hook_data hook_info;
+	hook_cdata hook_info;
 
 	/* client changing their nick - dont reset ts if its same */
 	if(!samenick)

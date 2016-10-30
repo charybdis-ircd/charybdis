@@ -82,7 +82,7 @@ typedef struct
 {
 	struct Client *client;
 	struct Channel *chptr;
-	char *key;
+	const char *key;
 } hook_data_channel_activity;
 
 typedef struct
