@@ -90,6 +90,13 @@ interest. Operating systems are only supported if they are supported by their ve
 
 These are known issues and workarounds for supported platforms.
 
+ * **Mac OS X and macOS **: you must set the LIBTOOLIZE environment
+   variable to point to glibtoolize before running autogen.sh:
+   `$ brew install libtool`
+   `$ LIBTOOLIZE="/opt/local/bin/glibtoolize"`
+   `$ export LIBTOOLIZE`
+   `$ ./autogen.sh`
+
  * **FreeBSD**: if you are compiling with ipv6 you may experience
    problems with ipv4 due to the way the socket code is written.  To
    fix this you must: "sysctl net.inet6.ip6.v6only=0"
