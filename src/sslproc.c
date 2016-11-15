@@ -409,24 +409,50 @@ ssl_process_certfp(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
 {
 	struct Client *client_p;
 	uint32_t fd;
+	uint32_t certfp_method;
 	uint32_t len;
 	uint8_t *certfp;
 	char *certfp_string;
-	int i;
+	const char *method_string;
+	int method_len;
 
-	if(ctl_buf->buflen > 9 + RB_SSL_CERTFP_LEN)
+	if(ctl_buf->buflen > 13 + RB_SSL_CERTFP_LEN)
 		return;		/* bogus message..drop it.. XXX should warn here */
 
 	fd = buf_to_uint32(&ctl_buf->buf[1]);
-	len = buf_to_uint32(&ctl_buf->buf[5]);
-	certfp = (uint8_t *)&ctl_buf->buf[9];
+	certfp_method = buf_to_uint32(&ctl_buf->buf[5]);
+	len = buf_to_uint32(&ctl_buf->buf[9]);
+	certfp = (uint8_t *)&ctl_buf->buf[13];
 	client_p = find_cli_connid_hash(fd);
 	if(client_p == NULL)
 		return;
+
+	switch (certfp_method) {
+	case RB_SSL_CERTFP_METH_CERT_SHA1:
+		method_string = CERTFP_PREFIX_CERT_SHA1;
+		break;
+	case RB_SSL_CERTFP_METH_CERT_SHA256:
+		method_string = CERTFP_PREFIX_CERT_SHA256;
+		break;
+	case RB_SSL_CERTFP_METH_CERT_SHA512:
+		method_string = CERTFP_PREFIX_CERT_SHA512;
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA256:
+		method_string = CERTFP_PREFIX_SPKI_SHA256;
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA512:
+		method_string = CERTFP_PREFIX_SPKI_SHA512;
+		break;
+	default:
+		return;
+	}
+	method_len = strlen(method_string);
+
 	rb_free(client_p->certfp);
-	certfp_string = rb_malloc(len * 2 + 1);
-	for(i = 0; i < len; i++)
-		rb_snprintf(certfp_string + 2 * i, 3, "%02x",
+	certfp_string = rb_malloc(method_len + len * 2 + 1);
+	rb_strlcpy(certfp_string, method_string, method_len + len * 2 + 1);
+	for(uint32_t i = 0; i < len; i++)
+		rb_snprintf(certfp_string + method_len + 2 * i, 3, "%02x",
 				certfp[i]);
 	client_p->certfp = certfp_string;
 }
@@ -674,7 +700,7 @@ send_certfp_method(ssl_ctl_t *ctl, int method)
 }
 
 void
-send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list)
+send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list, const int method)
 {
 	rb_dlink_node *ptr;
 	if(ssl_cert == NULL)
@@ -685,6 +711,7 @@ send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char
 	RB_DLINK_FOREACH(ptr, ssl_daemons.head)
 	{
 		ssl_ctl_t *ctl = ptr->data;
+		send_certfp_method(ctl, method);
 		send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
 	}
 }

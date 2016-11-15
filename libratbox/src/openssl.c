@@ -245,6 +245,59 @@ rb_ssl_read_or_write(const int r_or_w, rb_fde_t *const F, void *const rbuf, cons
 	return ret;
 }
 
+static int
+make_certfp(X509 *const cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
+{
+	unsigned int hashlen = 0;
+	const EVP_MD *md_type = NULL;
+	const ASN1_ITEM *item = NULL;
+	void *data = NULL;
+
+	switch(method)
+	{
+	case RB_SSL_CERTFP_METH_CERT_SHA1:
+		hashlen = RB_SSL_CERTFP_LEN_SHA1;
+		md_type = EVP_sha1();
+		item = ASN1_ITEM_rptr(X509);
+		data = cert;
+		break;
+	case RB_SSL_CERTFP_METH_CERT_SHA256:
+		hashlen = RB_SSL_CERTFP_LEN_SHA256;
+		md_type = EVP_sha256();
+		item = ASN1_ITEM_rptr(X509);
+		data = cert;
+		break;
+	case RB_SSL_CERTFP_METH_CERT_SHA512:
+		hashlen = RB_SSL_CERTFP_LEN_SHA512;
+		md_type = EVP_sha512();
+		item = ASN1_ITEM_rptr(X509);
+		data = cert;
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA256:
+		hashlen = RB_SSL_CERTFP_LEN_SHA256;
+		md_type = EVP_sha256();
+		item = ASN1_ITEM_rptr(X509_PUBKEY);
+		data = X509_get_X509_PUBKEY(cert);
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA512:
+		hashlen = RB_SSL_CERTFP_LEN_SHA512;
+		md_type = EVP_sha512();
+		item = ASN1_ITEM_rptr(X509_PUBKEY);
+		data = X509_get_X509_PUBKEY(cert);
+		break;
+	default:
+		return 0;
+	}
+
+	if(ASN1_item_digest(item, md_type, data, certfp, &hashlen) != 1)
+	{
+		rb_lib_log("%s: ASN1_item_digest: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
+		return 0;
+	}
+
+	return (int) hashlen;
+}
+
 
 
 /*
@@ -470,30 +523,11 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	if(F == NULL || F->ssl == NULL)
 		return 0;
 
-	const EVP_MD *md_type;
-	unsigned int hashlen;
-
-	switch(method)
-	{
-	case RB_SSL_CERTFP_METH_SHA1:
-		md_type = EVP_sha1();
-		hashlen = RB_SSL_CERTFP_LEN_SHA1;
-		break;
-	case RB_SSL_CERTFP_METH_SHA256:
-		md_type = EVP_sha256();
-		hashlen = RB_SSL_CERTFP_LEN_SHA256;
-		break;
-	case RB_SSL_CERTFP_METH_SHA512:
-		md_type = EVP_sha512();
-		hashlen = RB_SSL_CERTFP_LEN_SHA512;
-		break;
-	default:
-		return 0;
-	}
-
 	X509 *const peer_cert = SSL_get_peer_certificate(SSL_P(F));
 	if(peer_cert == NULL)
 		return 0;
+
+	int len = 0;
 
 	switch(SSL_get_verify_result(SSL_P(F)))
 	{
@@ -503,16 +537,11 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
 	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
 	case X509_V_ERR_CERT_UNTRUSTED:
-		break;
+		len = make_certfp(peer_cert, certfp, method);
 	default:
 		X509_free(peer_cert);
-		return 0;
+		return len;
 	}
-
-	X509_digest(peer_cert, md_type, certfp, &hashlen);
-	X509_free(peer_cert);
-
-	return (int) hashlen;
 }
 
 void

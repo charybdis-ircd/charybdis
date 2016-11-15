@@ -103,9 +103,27 @@ void rb_note(rb_fde_t *, const char *);
 #define RB_SSL_CERTFP_LEN	64
 
 /* Methods for certfp */
-#define RB_SSL_CERTFP_METH_SHA1		0
-#define RB_SSL_CERTFP_METH_SHA256	1
-#define RB_SSL_CERTFP_METH_SHA512	2
+/* Digest of full X.509 certificate */
+#define RB_SSL_CERTFP_METH_CERT_SHA1    0x0000
+#define RB_SSL_CERTFP_METH_CERT_SHA256  0x0001
+#define RB_SSL_CERTFP_METH_CERT_SHA512  0x0002
+/* Digest of SubjectPublicKeyInfo (RFC 5280), used by DANE (RFC 6698) */
+#define RB_SSL_CERTFP_METH_SPKI_SHA256  0x1001
+#define RB_SSL_CERTFP_METH_SPKI_SHA512  0x1002
+
+/* Names for certfp */
+#define CERTFP_NAME_CERT_SHA1           "sha1"
+#define CERTFP_PREFIX_CERT_SHA1         ""
+#define CERTFP_NAME_CERT_SHA256         "sha256"
+#define CERTFP_PREFIX_CERT_SHA256       ""
+#define CERTFP_NAME_CERT_SHA512         "sha512"
+#define CERTFP_PREFIX_CERT_SHA512       ""
+/* These prefixes are copied from RFC 7218 */
+#define CERTFP_NAME_SPKI_SHA256         "spki_sha256"
+#define CERTFP_PREFIX_SPKI_SHA256       "SPKI:SHA2-256:"
+#define CERTFP_NAME_SPKI_SHA512         "spki_sha512"
+#define CERTFP_PREFIX_SPKI_SHA512       "SPKI:SHA2-512:"
+
 
 #define RB_SSL_CERTFP_LEN_SHA1		20
 #define RB_SSL_CERTFP_LEN_SHA256	32

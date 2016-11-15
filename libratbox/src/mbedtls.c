@@ -325,6 +325,65 @@ rb_ssl_strerror(const int err)
 	return errbuf;
 }
 
+static int
+rb_make_certfp(const mbedtls_x509_crt *const peer_cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
+{
+	size_t hashlen = 0;
+	mbedtls_md_type_t md_type;
+	int spki = 0;
+
+	switch(method)
+	{
+	case RB_SSL_CERTFP_METH_CERT_SHA1:
+		md_type = MBEDTLS_MD_SHA1;
+		hashlen = RB_SSL_CERTFP_LEN_SHA1;
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA256:
+		spki = 1;
+	case RB_SSL_CERTFP_METH_CERT_SHA256:
+		md_type = MBEDTLS_MD_SHA256;
+		hashlen = RB_SSL_CERTFP_LEN_SHA256;
+		break;
+	case RB_SSL_CERTFP_METH_SPKI_SHA512:
+		spki = 1;
+	case RB_SSL_CERTFP_METH_CERT_SHA512:
+		md_type = MBEDTLS_MD_SHA512;
+		hashlen = RB_SSL_CERTFP_LEN_SHA512;
+		break;
+	default:
+		return 0;
+	}
+
+	const mbedtls_md_info_t *const md_info = mbedtls_md_info_from_type(md_type);
+	if(md_info == NULL)
+		return 0;
+
+	int ret;
+	void* data = peer_cert->raw.p;
+	size_t datalen = peer_cert->raw.len;
+
+	if(spki)
+	{
+		unsigned char der_pubkey[8192];
+		if((ret = mbedtls_pk_write_pubkey_der((mbedtls_pk_context *)&peer_cert->pk,
+		                                       der_pubkey, sizeof der_pubkey)) < 0)
+		{
+			rb_lib_log("%s: pk_write_pubkey_der: %s", __func__, rb_ssl_strerror(ret));
+			return 0;
+		}
+		data = der_pubkey + (sizeof(der_pubkey) - (size_t)ret);
+		datalen = (size_t)ret;
+	}
+
+	if((ret = mbedtls_md(md_info, data, datalen, certfp)) != 0)
+	{
+		rb_lib_log("%s: mbedtls_md: %s", __func__, rb_ssl_strerror(ret));
+		return 0;
+	}
+
+	return (int) hashlen;
+}
+
 
 
 /*
@@ -560,43 +619,12 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	if(F == NULL || F->ssl == NULL)
 		return 0;
 
-	mbedtls_md_type_t md_type;
-	int hashlen;
-
-	switch(method)
-	{
-	case RB_SSL_CERTFP_METH_SHA1:
-		md_type = MBEDTLS_MD_SHA1;
-		hashlen = RB_SSL_CERTFP_LEN_SHA1;
-		break;
-	case RB_SSL_CERTFP_METH_SHA256:
-		md_type = MBEDTLS_MD_SHA256;
-		hashlen = RB_SSL_CERTFP_LEN_SHA256;
-		break;
-	case RB_SSL_CERTFP_METH_SHA512:
-		md_type = MBEDTLS_MD_SHA512;
-		hashlen = RB_SSL_CERTFP_LEN_SHA512;
-		break;
-	default:
-		return 0;
-	}
-
 	const mbedtls_x509_crt *const peer_cert = mbedtls_ssl_get_peer_cert(SSL_P(F));
+
 	if(peer_cert == NULL)
 		return 0;
 
-	const mbedtls_md_info_t *const md_info = mbedtls_md_info_from_type(md_type);
-	if(md_info == NULL)
-		return 0;
-
-	int ret;
-	if((ret = mbedtls_md(md_info, peer_cert->raw.p, peer_cert->raw.len, certfp)) != 0)
-	{
-		rb_lib_log("%s: mbedtls_md: %s", __func__, rb_ssl_strerror(ret));
-		return 0;
-	}
-
-	return hashlen;
+	return rb_make_certfp(peer_cert, certfp, method);
 }
 
 void

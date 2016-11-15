@@ -822,7 +822,7 @@ set_default_conf(void)
 	ServerInfo.default_max_clients = MAXCONNECTIONS;
 
 	ConfigFileEntry.nicklen = NICKLEN;
-	ConfigFileEntry.certfp_method = RB_SSL_CERTFP_METH_SHA1;
+	ConfigFileEntry.certfp_method = RB_SSL_CERTFP_METH_CERT_SHA1;
 
 	if (!alias_dict)
 		alias_dict = irc_dictionary_create(strcasecmp);
@@ -877,7 +877,7 @@ validate_conf(void)
 		ircd_ssl_ok = 0;
 	} else {
 		ircd_ssl_ok = 1;
-		send_new_ssl_certs(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list);
+		send_new_ssl_certs(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list, ConfigFileEntry.certfp_method);
 	}
 
 	if(ServerInfo.ssld_count > get_ssld_count())
