@@ -80,9 +80,6 @@ struct ssl_connect
 static const char *rb_ssl_strerror(int);
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
-static int rb_sock_net_recv(void *, unsigned char *, size_t);
-static int rb_sock_net_xmit(void *, const unsigned char *, size_t);
-
 
 
 /*
@@ -115,6 +112,32 @@ rb_mbedtls_cfg_decref(rb_mbedtls_cfg_context *const cfg)
 	mbedtls_x509_crt_free(&cfg->crt);
 
 	rb_free(cfg);
+}
+
+static int
+rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	const int ret = (int) read(fd, buf, count);
+
+	if(ret < 0 && rb_ignore_errno(errno))
+		return MBEDTLS_ERR_SSL_WANT_READ;
+
+	return ret;
+}
+
+static int
+rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	const int ret = (int) write(fd, buf, count);
+
+	if(ret < 0 && rb_ignore_errno(errno))
+		return MBEDTLS_ERR_SSL_WANT_WRITE;
+
+	return ret;
 }
 
 static void
@@ -707,32 +730,6 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
-}
-
-static int
-rb_sock_net_recv(void *const context_ptr, unsigned char *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	const int ret = (int) read(fd, buf, count);
-
-	if(ret < 0 && rb_ignore_errno(errno))
-		return MBEDTLS_ERR_SSL_WANT_READ;
-
-	return ret;
-}
-
-static int
-rb_sock_net_xmit(void *const context_ptr, const unsigned char *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	const int ret = (int) write(fd, buf, count);
-
-	if(ret < 0 && rb_ignore_errno(errno))
-		return MBEDTLS_ERR_SSL_WANT_WRITE;
-
-	return ret;
 }
 
 

@@ -74,9 +74,6 @@ struct ssl_connect
 static const char *rb_ssl_strerror(int);
 static void rb_ssl_connect_realcb(rb_fde_t *, int, struct ssl_connect *);
 
-static ssize_t rb_sock_net_recv(gnutls_transport_ptr_t, void *, size_t);
-static ssize_t rb_sock_net_xmit(gnutls_transport_ptr_t, const void *, size_t);
-
 
 
 /*
@@ -116,6 +113,22 @@ rb_ssl_cert_auth_cb(gnutls_session_t session,
 	st->deinit_all = 0;
 
 	return 0;
+}
+
+static ssize_t
+rb_sock_net_recv(gnutls_transport_ptr_t context_ptr, void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return recv(fd, buf, count, 0);
+}
+
+static ssize_t
+rb_sock_net_xmit(gnutls_transport_ptr_t context_ptr, const void *const buf, const size_t count)
+{
+	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
+
+	return send(fd, buf, count, 0);
 }
 
 static void
@@ -715,22 +728,6 @@ rb_ssl_tryconn(rb_fde_t *const F, const int status, void *const data)
 	rb_settimeout(F, sconn->timeout, rb_ssl_tryconn_timeout_cb, sconn);
 	rb_ssl_init_fd(F, RB_FD_TLS_DIRECTION_OUT);
 	rb_ssl_connect_common(F, sconn);
-}
-
-static ssize_t
-rb_sock_net_recv(gnutls_transport_ptr_t context_ptr, void *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	return recv(fd, buf, count, 0);
-}
-
-static ssize_t
-rb_sock_net_xmit(gnutls_transport_ptr_t context_ptr, const void *const buf, const size_t count)
-{
-	const int fd = rb_get_fd((rb_fde_t *)context_ptr);
-
-	return send(fd, buf, count, 0);
 }
 
 
