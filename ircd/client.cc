@@ -325,7 +325,7 @@ free_local_client(struct Client *client_p)
 	client_p->localClient = NULL;
 }
 
-void
+static void
 free_client(struct Client *client_p)
 {
 	s_assert(NULL != client_p);
