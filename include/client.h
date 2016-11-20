@@ -581,7 +581,6 @@ extern int is_remote_connect(struct Client *);
 extern void init_client(void);
 extern struct Client *make_client(struct Client *from);
 extern void free_pre_client(struct Client *client);
-extern void free_client(struct Client *client);
 
 extern int exit_client(struct Client *, struct Client *, struct Client *, const char *);
 
