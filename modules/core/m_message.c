@@ -776,6 +776,9 @@ msg_client(enum message_type msgtype,
 		if (do_floodcount &&
 				flood_attack_client(msgtype, source_p, target_p))
 			return;
+
+		if (IsCapable(source_p, CLICAP_ECHO_MESSAGE) && target_p != source_p)
+			sendto_anywhere_echo(target_p, source_p, cmdname[msgtype], ":%s", text);
 	}
 	else if(source_p->from == target_p->from)
 	{

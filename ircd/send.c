@@ -30,6 +30,7 @@
 #include "match.h"
 #include "ircd.h"
 #include "numeric.h"
+#include "s_assert.h"
 #include "s_serv.h"
 #include "s_conf.h"
 #include "s_newconf.h"
@@ -1176,15 +1177,16 @@ sendto_monitor(struct monitor *monptr, const char *pattern, ...)
 	rb_linebuf_donebuf(&linebuf);
 }
 
-/* sendto_anywhere()
+/* _sendto_anywhere()
  *
- * inputs	- target, source, va_args
+ * inputs	- real_target, target, source, va_args
  * outputs	-
- * side effects - client is sent message with correct prefix.
+ * side effects - client is sent message/own message with correct prefix.
  */
-void
-sendto_anywhere(struct Client *target_p, struct Client *source_p,
-		const char *command, const char *pattern, ...)
+static void
+_sendto_anywhere(struct Client *dest_p, struct Client *target_p,
+		struct Client *source_p, const char *command,
+		const char *pattern, ...)
 {
 	va_list args;
 	buf_head_t linebuf;
@@ -1193,7 +1195,7 @@ sendto_anywhere(struct Client *target_p, struct Client *source_p,
 
 	va_start(args, pattern);
 
-	if(MyClient(target_p))
+	if(MyClient(dest_p))
 	{
 		if(IsServer(source_p))
 			rb_linebuf_putmsg(&linebuf, pattern, &args, ":%s %s %s ",
@@ -1206,7 +1208,7 @@ sendto_anywhere(struct Client *target_p, struct Client *source_p,
 			build_msgbuf_from(&msgbuf, source_p, command);
 			msgbuf.target = target_p->name;
 
-			linebuf_put_msgvbuf(&msgbuf, &linebuf, target_p->localClient->caps, pattern, &args);
+			linebuf_put_msgvbuf(&msgbuf, &linebuf, dest_p->localClient->caps, pattern, &args);
 		}
 	}
 	else
@@ -1215,12 +1217,41 @@ sendto_anywhere(struct Client *target_p, struct Client *source_p,
 			       get_id(target_p, target_p));
 	va_end(args);
 
-	if(MyClient(target_p))
-		_send_linebuf(target_p, &linebuf);
+	if(MyClient(dest_p))
+		_send_linebuf(dest_p, &linebuf);
 	else
-		send_linebuf_remote(target_p, source_p, &linebuf);
+		send_linebuf_remote(dest_p, source_p, &linebuf);
 
 	rb_linebuf_donebuf(&linebuf);
+}
+
+/* sendto_anywhere()
+ *
+ * inputs	- target, source, va_args
+ * outputs	-
+ * side effects - client is sent message with correct prefix.
+ */
+void
+sendto_anywhere(struct Client *target_p, struct Client *source_p,
+		const char *command, const char *pattern, ...)
+{
+	_sendto_anywhere(target_p, target_p, source_p, command, pattern);
+}
+
+/* sendto_anywhere_echo()
+ *
+ * inputs	- target, source, va_args
+ * outputs	-
+ * side effects - client is sent own message with correct prefix.
+ */
+void
+sendto_anywhere_echo(struct Client *target_p, struct Client *source_p,
+		const char *command, const char *pattern, ...)
+{
+	s_assert(MyClient(source_p));
+	s_assert(!IsServer(source_p));
+
+	_sendto_anywhere(source_p, target_p, source_p, command, pattern);
 }
 
 /* sendto_realops_snomask()
