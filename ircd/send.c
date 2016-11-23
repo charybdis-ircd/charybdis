@@ -528,7 +528,7 @@ sendto_channel_flags(struct Client *one, int type, struct Client *source_p,
 		if(!MyClient(source_p) && (IsIOError(target_p->from) || target_p->from == one))
 			continue;
 
-		if(MyClient(source_p) && !IsCapable(source_p, CLICAP_ECHO_MESSAGE) && target_p == one)
+		if(MyClient(source_p) && target_p == one)
 			continue;
 
 		if(type && ((msptr->flags & type) == 0))
@@ -566,6 +566,25 @@ sendto_channel_flags(struct Client *one, int type, struct Client *source_p,
 
 			_send_linebuf(target_p, &rb_linebuf_local);
 		}
+	}
+
+	/* source client may not be on the channel, send echo separately */
+	if(MyClient(source_p) && IsCapable(source_p, CLICAP_ECHO_MESSAGE))
+	{
+		target_p = one;
+
+		if (target_p->localClient->caps != current_capmask)
+		{
+			/* reset the linebuf */
+			rb_linebuf_donebuf(&rb_linebuf_local);
+			rb_linebuf_newbuf(&rb_linebuf_local);
+
+			/* render the new linebuf and attach it */
+			linebuf_put_msgbuf(&msgbuf, &rb_linebuf_local, target_p->localClient->caps, "%s", buf);
+			current_capmask = target_p->localClient->caps;
+		}
+
+		_send_linebuf(target_p, &rb_linebuf_local);
 	}
 
 	rb_linebuf_donebuf(&rb_linebuf_local);
@@ -628,7 +647,7 @@ sendto_channel_opmod(struct Client *one, struct Client *source_p,
 		if(!MyClient(source_p) && (IsIOError(target_p->from) || target_p->from == one))
 			continue;
 
-		if(MyClient(source_p) && !IsCapable(source_p, CLICAP_ECHO_MESSAGE) && target_p == one)
+		if(MyClient(source_p) && target_p == one)
 			continue;
 
 		if((msptr->flags & CHFL_CHANOP) == 0)
@@ -656,6 +675,14 @@ sendto_channel_opmod(struct Client *one, struct Client *source_p,
 		}
 		else
 			_send_linebuf(target_p, &rb_linebuf_local);
+	}
+
+	/* source client may not be on the channel, send echo separately */
+	if(MyClient(source_p) && IsCapable(source_p, CLICAP_ECHO_MESSAGE))
+	{
+		target_p = one;
+
+		_send_linebuf(target_p, &rb_linebuf_local);
 	}
 
 	rb_linebuf_donebuf(&rb_linebuf_local);
