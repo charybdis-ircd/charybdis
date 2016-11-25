@@ -115,33 +115,22 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 	return 0;
 }
 
-static int
-msgbuf_has_matching_tags(struct MsgBuf *msgbuf, unsigned int capmask)
-{
-	for (size_t i = 0; i < msgbuf->n_tags; i++)
-	{
-		if ((msgbuf->tags[i].capmask & capmask) != 0)
-			return 1;
-	}
-
-	return 0;
-}
-
 static void
 msgbuf_unparse_tags(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask)
 {
-	if (!msgbuf_has_matching_tags(msgbuf, capmask))
-		return;
-
-	*buf = '@';
+	bool has_tags = false;
 
 	for (size_t i = 0; i < msgbuf->n_tags; i++)
 	{
 		if ((msgbuf->tags[i].capmask & capmask) == 0)
 			continue;
 
-		if (i != 0)
+		if (has_tags) {
 			rb_strlcat(buf, ";", buflen);
+		} else {
+			*buf = '@';
+			has_tags = true;
+		}
 
 		rb_strlcat(buf, msgbuf->tags[i].key, buflen);
 
@@ -153,7 +142,8 @@ msgbuf_unparse_tags(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned in
 		}
 	}
 
-	rb_strlcat(buf, " ", buflen);
+	if (has_tags)
+		rb_strlcat(buf, " ", buflen);
 }
 
 void
