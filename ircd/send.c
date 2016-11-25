@@ -1186,19 +1186,16 @@ sendto_monitor(struct monitor *monptr, const char *pattern, ...)
 static void
 _sendto_anywhere(struct Client *dest_p, struct Client *target_p,
 		struct Client *source_p, const char *command,
-		const char *pattern, ...)
+		const char *pattern, va_list *args)
 {
-	va_list args;
 	buf_head_t linebuf;
 
 	rb_linebuf_newbuf(&linebuf);
 
-	va_start(args, pattern);
-
 	if(MyClient(dest_p))
 	{
 		if(IsServer(source_p))
-			rb_linebuf_putmsg(&linebuf, pattern, &args, ":%s %s %s ",
+			rb_linebuf_putmsg(&linebuf, pattern, args, ":%s %s %s ",
 				       source_p->name, command,
 				       target_p->name);
 		else
@@ -1208,14 +1205,13 @@ _sendto_anywhere(struct Client *dest_p, struct Client *target_p,
 			build_msgbuf_from(&msgbuf, source_p, command);
 			msgbuf.target = target_p->name;
 
-			linebuf_put_msgvbuf(&msgbuf, &linebuf, dest_p->localClient->caps, pattern, &args);
+			linebuf_put_msgvbuf(&msgbuf, &linebuf, dest_p->localClient->caps, pattern, args);
 		}
 	}
 	else
-		rb_linebuf_putmsg(&linebuf, pattern, &args, ":%s %s %s ",
+		rb_linebuf_putmsg(&linebuf, pattern, args, ":%s %s %s ",
 			       get_id(source_p, target_p), command,
 			       get_id(target_p, target_p));
-	va_end(args);
 
 	if(MyClient(dest_p))
 		_send_linebuf(dest_p, &linebuf);
@@ -1235,7 +1231,11 @@ void
 sendto_anywhere(struct Client *target_p, struct Client *source_p,
 		const char *command, const char *pattern, ...)
 {
-	_sendto_anywhere(target_p, target_p, source_p, command, pattern);
+	va_list args;
+
+	va_start(args, pattern);
+	_sendto_anywhere(target_p, target_p, source_p, command, pattern, &args);
+	va_end(args);
 }
 
 /* sendto_anywhere_echo()
@@ -1248,10 +1248,14 @@ void
 sendto_anywhere_echo(struct Client *target_p, struct Client *source_p,
 		const char *command, const char *pattern, ...)
 {
+	va_list args;
+
 	s_assert(MyClient(source_p));
 	s_assert(!IsServer(source_p));
 
-	_sendto_anywhere(source_p, target_p, source_p, command, pattern);
+	va_start(args, pattern);
+	_sendto_anywhere(source_p, target_p, source_p, command, pattern, &args);
+	va_end(args);
 }
 
 /* sendto_realops_snomask()
