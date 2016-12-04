@@ -89,6 +89,13 @@ rehash_dns(struct Client *source_p)
 static void
 rehash_ssld(struct Client *source_p)
 {
+	if (!IsOperAdmin(source_p))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "admin");
+		return;
+	}
+
 	sendto_realops_snomask(SNO_GENERAL, L_ALL, "%s is restarting ssld",
 				get_oper_name(source_p));
 
