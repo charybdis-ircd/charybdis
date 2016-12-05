@@ -58,11 +58,11 @@ AC_PROG_LIBTOOL
 LIBTOOL="$LIBTOOL --silent"
 
 case "$host_os" in
-*cygwin*)
+*cygwin* | *msys*)
      AC_DEFINE_UNQUOTED(CYGWIN,1,[This is a Cygwin system])
      AC_DEFINE_UNQUOTED(WINDOWS,1,[This is a Windows system])
      ;;
-*mingw* | *msys*)
+*mingw*)
      AC_DEFINE_UNQUOTED(MINGW,1,[This is a MinGW system])
      AC_DEFINE_UNQUOTED(WINDOWS,1,[This is a Windows system])
      AC_CHECK_HEADER(windows.h, , [AC_MSG_ERROR([** MinGW and no windows.h.  I give up.])])

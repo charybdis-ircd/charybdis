@@ -247,7 +247,7 @@ error_cb(rb_helper *helper)
 	exit(1);
 }
 
-#ifndef WINDOWS
+#ifndef _WIN32
 static void
 dummy_handler(int sig)
 {
