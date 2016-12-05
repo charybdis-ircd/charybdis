@@ -53,6 +53,7 @@ auto_load_mod_LTLIBRARIES = \
   m_rehash.la \
   m_restart.la \
   m_resv.la \
+  m_sajoin.la \
   m_sasl.la \
   m_scan.la \
   m_services.la \
