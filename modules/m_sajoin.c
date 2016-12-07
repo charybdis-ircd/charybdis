@@ -78,9 +78,6 @@ DECLARE_MODULE_AV2
 
 /* Soft join is where SAJOIN peruses as the user itself attempting
  * to join the channel and is susceptible to bans etc.
- *
- * parv[1] = user to join to channel
- * parv[2] = name of channel
  */
 static void
 join_soft(struct Client *const client,
@@ -96,9 +93,6 @@ join_soft(struct Client *const client,
 
 /* Hard join forces the target user into the channel manually,
  * with as few checks as possible to bypass any bans etc.
- *
- * parv[1] = user to join to channel
- * parv[2] = name of channel
  *
  *  !! NOT YET IMPLEMENTED !!
  */
