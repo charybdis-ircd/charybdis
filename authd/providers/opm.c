@@ -812,7 +812,8 @@ create_opm_scanner(const char *key __unused, int parc __unused, const char **par
 	if(find_proxy_scanner(proxy->proto, proxy->port) != NULL)
 	{
 		warn_opers(L_CRIT, "OPM: got a duplicate scanner: %s (port %hu)", parv[0], proxy->port);
-		exit(EX_PROVIDER_ERROR);
+		rb_free(proxy);
+		return;
 	}
 
 	rb_dlinkAdd(proxy, &proxy->node, &proxy_scanners);
