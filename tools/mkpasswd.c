@@ -98,7 +98,7 @@ main(int argc, char *argv[])
 	int c;
 	char *saltpara = NULL;
 	char *salt;
-	char *hashed;
+	char *hashed, *hashed2;
 	int flag = 0;
 	int length = 0;		/* Not Set */
 	int rounds = 0;		/* Not set, since extended DES needs 25 and blowfish needs
@@ -249,10 +249,24 @@ main(int argc, char *argv[])
 	}
 	else
 	{
-		hashed = strdup(rb_crypt(getpass("plaintext: "), salt));
-		plaintext = getpass("again: ");
+		plaintext = getpass("plaintext: ");
+		hashed = rb_crypt(plaintext, salt);
+		if (!hashed)
+		{
+			fprintf(stderr, "rb_crypt() failed\n");
+			return 1;
+		}
+		hashed = strdup(hashed);
 
-		if (strcmp(rb_crypt(plaintext, salt), hashed) != 0)
+		plaintext = getpass("again: ");
+		hashed2 = rb_crypt(plaintext, salt);
+		if (!hashed2)
+		{
+			fprintf(stderr, "rb_crypt() failed\n");
+			return 1;
+		}
+
+		if (strcmp(hashed, hashed2) != 0)
 		{
 			fprintf(stderr, "Passwords do not match\n");
 			return 1;
