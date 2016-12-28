@@ -440,10 +440,9 @@ blacklist {
  * WARNING:
  * These settings are considered experimental. Only the most common proxy types
  * are checked for (Charybdis is immune from POST and GET proxies). If you are
- * not comfortable with experimental code, remove or comment out the *entire*
- * block below to disable the proxy scanner.
+ * not comfortable with experimental code, do not use this feature.
  */
-opm {
+#opm {
 	/* IPv4 address to listen on. This must be a publicly facing IP address
 	 * to be effective.
 	 * If omitted, it defaults to serverinfo::vhost.
@@ -469,37 +468,37 @@ opm {
 	/* You can also set the listen_port directive which will set both the
 	 * IPv4 and IPv6 ports at once.
 	 */
-	listen_port = 32000;
+	#listen_port = 32000;
 
 	/* This sets the timeout in seconds before ending open proxy scans.
 	 * Values less than 1 or greater than 60 are ignored.
 	 * It is advisable to keep it as short as feasible, so clients do not
 	 * get held up by excessively long scan times.
 	 */
-	timeout = 5;
+	#timeout = 5;
 
 	/* These are the ports to scan for SOCKS4 proxies on. They may overlap
 	 * with other scan types. Sensible defaults are given below.
 	 */
-	socks4_ports = 1080, 10800, 443, 80, 8080, 8000;
+	#socks4_ports = 1080, 10800, 443, 80, 8080, 8000;
 
 	/* These are the ports to scan for SOCKS5 proxies on. They may overlap
 	 * with other scan types. Sensible defaults are given below.
 	 */
-	socks5_ports = 1080, 10800, 443, 80, 8080, 8000;
+	#socks5_ports = 1080, 10800, 443, 80, 8080, 8000;
 
 	/* These are the ports to scan for HTTP connect proxies on (plaintext).
 	 * They may overlap with other scan types. Sensible defaults are given
 	 * below.
 	 */
-	httpconnect_ports = 80, 8080, 8000;
+	#httpconnect_ports = 80, 8080, 8000;
 
 	/* These are the ports to scan for HTTPS CONNECT proxies on (SSL).
 	 * They may overlap with other scan types. Sensible defaults are given
 	 * below.
 	 */
-	httpsconnect_ports = 443, 4443;
-};
+	#httpsconnect_ports = 443, 4443;
+#};
 
 alias "NickServ" {
 	target = "NickServ";
