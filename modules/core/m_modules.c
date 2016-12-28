@@ -54,6 +54,8 @@ static void do_modreload(struct Client *, const char *);
 static void do_modlist(struct Client *, const char *);
 static void do_modrestart(struct Client *);
 
+extern void modules_do_restart(void *); /* end of ircd/modules.c */
+
 struct Message modload_msgtab = {
 	"MODLOAD", 0, 0, 0, 0,
 	{mg_unreg, mg_not_oper, mg_ignore, mg_ignore, {me_modload, 2}, {mo_modload, 2}}
@@ -341,38 +343,19 @@ do_modreload(struct Client *source_p, const char *module)
 static void
 do_modrestart(struct Client *source_p)
 {
-	unsigned int modnum = 0;
-	rb_dlink_node *ptr, *nptr;
-
 	sendto_one_notice(source_p, ":Reloading all modules");
 
-	RB_DLINK_FOREACH_SAFE(ptr, nptr, module_list.head)
-	{
-		struct module *mod = ptr->data;
-		if(!unload_one_module(mod->name, false))
-		{
-			ilog(L_MAIN, "Module Restart: %s was not unloaded %s",
-			     mod->name,
-			     mod->core? "(core module)" : "");
-
-			if(!mod->core)
-				sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
-				                       "Module Restart: %s failed to unload",
-				                       mod->name);
-			continue;
-		}
-
-		modnum++;
-	}
-
-	load_all_modules(false);
-	load_core_modules(false);
-	rehash(false);
-
-	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
-			     "Module Restart: %u modules unloaded, %lu modules loaded",
-			     modnum, rb_dlink_list_length(&module_list));
-	ilog(L_MAIN, "Module Restart: %u modules unloaded, %lu modules loaded", modnum, rb_dlink_list_length(&module_list));
+	/*
+	 * If a remote MODRESTART is received, m_encap.so will be reloaded,
+	 * but ms_encap is in the call stack (it indirectly calls this
+	 * function). Also, this function is itself in a module.
+	 *
+	 * This will go horribly wrong if either module is reloaded to a
+	 * different address.
+	 *
+	 * So, defer the restart to the event loop and return now.
+	 */
+	rb_event_addonce("modules_do_restart", modules_do_restart, NULL, 1);
 }
 
 static void

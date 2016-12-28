@@ -668,3 +668,38 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	rb_free(mod_displayname);
 	return true;
 }
+
+void
+modules_do_restart(void *unused)
+{
+	unsigned int modnum = 0;
+	rb_dlink_node *ptr, *nptr;
+
+	RB_DLINK_FOREACH_SAFE(ptr, nptr, module_list.head)
+	{
+		struct module *mod = ptr->data;
+		if(!unload_one_module(mod->name, false))
+		{
+			ilog(L_MAIN, "Module Restart: %s was not unloaded %s",
+			     mod->name,
+			     mod->core? "(core module)" : "");
+
+			if(!mod->core)
+				sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+				                       "Module Restart: %s failed to unload",
+				                       mod->name);
+			continue;
+		}
+
+		modnum++;
+	}
+
+	load_all_modules(false);
+	load_core_modules(false);
+	rehash(false);
+
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+			     "Module Restart: %u modules unloaded, %lu modules loaded",
+			     modnum, rb_dlink_list_length(&module_list));
+	ilog(L_MAIN, "Module Restart: %u modules unloaded, %lu modules loaded", modnum, rb_dlink_list_length(&module_list));
+}
