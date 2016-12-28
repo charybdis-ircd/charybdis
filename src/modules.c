@@ -463,21 +463,10 @@ mo_modlist(struct Client *client_p, struct Client *source_p, int parc, const cha
 }
 
 /* unload and reload all modules */
-static int
-mo_modrestart(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
+static void
+modules_do_restart(void *unused)
 {
-	int modnum;
-
-	if(!IsOperAdmin(source_p))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "admin");
-		return 0;
-	}
-
-	sendto_one_notice(source_p, ":Reloading all modules");
-
-	modnum = num_mods;
+	int modnum = num_mods;
 	while (num_mods)
 		unload_one_module(modlist[0]->name, 0);
 
@@ -489,6 +478,29 @@ mo_modrestart(struct Client *client_p, struct Client *source_p, int parc, const 
 			     "Module Restart: %d modules unloaded, %d modules loaded",
 			     modnum, num_mods);
 	ilog(L_MAIN, "Module Restart: %d modules unloaded, %d modules loaded", modnum, num_mods);
+}
+
+static int
+mo_modrestart(struct Client *client_p, struct Client *source_p, int parc, const char **parv)
+{
+	if(!IsOperAdmin(source_p))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "admin");
+		return 0;
+	}
+
+	sendto_one_notice(source_p, ":Reloading all modules");
+
+	/*
+	 * If a remote MODRESTART is received, m_encap.so will be reloaded,
+	 * but ms_encap is in the call stack (it indirectly calls this
+	 * function). This will go horribly wrong if m_encap is reloaded to
+	 * a different address.
+	 *
+	 * So, defer the restart to the event loop (above) and return now.
+	 */
+	rb_event_addonce("modules_do_restart", modules_do_restart, NULL, 1);
 	return 0;
 }
 
