@@ -1,5 +1,5 @@
 /*
- * Channel extban type: matches users who are in a certain public channel
+ * Channel extban type: matches users who are in a certain channel
  * -- jilles
  */
 
@@ -46,9 +46,6 @@ static int eb_channel(const char *data, struct Client *client_p,
 		return EXTBAN_INVALID;
 	/* require consistent target */
 	if (chptr->chname[0] == '#' && data[0] == '&')
-		return EXTBAN_INVALID;
-	/* privacy! don't allow +s/+p channels to influence another channel */
-	if (!PubChannel(chptr2) && chptr2 != chptr)
 		return EXTBAN_INVALID;
 	return IsMember(client_p, chptr2) ? EXTBAN_MATCH : EXTBAN_NOMATCH;
 }
