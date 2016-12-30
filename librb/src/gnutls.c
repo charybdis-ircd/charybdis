@@ -32,6 +32,7 @@
 #include <stdbool.h>
 
 #include <gnutls/gnutls.h>
+
 #include <gnutls/abstract.h>
 #include <gnutls/x509.h>
 
@@ -40,6 +41,8 @@
 #else
 # include <gnutls/crypto.h>
 #endif
+
+#include "gnutls_ratbox.h"
 
 typedef enum
 {
@@ -158,14 +161,15 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 	}
 
 	gnutls_init((gnutls_session_t *) F->ssl, init_flags);
-	gnutls_set_default_priority(SSL_P(F));
 	gnutls_credentials_set(SSL_P(F), GNUTLS_CRD_CERTIFICATE, server_cert_key);
 	gnutls_dh_set_prime_bits(SSL_P(F), 2048);
-	gnutls_priority_set(SSL_P(F), default_priority);
 
 	gnutls_transport_set_ptr(SSL_P(F), (gnutls_transport_ptr_t) F);
 	gnutls_transport_set_pull_function(SSL_P(F), rb_sock_net_recv);
 	gnutls_transport_set_push_function(SSL_P(F), rb_sock_net_xmit);
+
+	if (gnutls_priority_set(SSL_P(F), default_priority) != GNUTLS_E_SUCCESS)
+		gnutls_set_default_priority(SSL_P(F));
 
 	if(dir == RB_FD_TLS_DIRECTION_IN)
 		gnutls_certificate_server_set_request(SSL_P(F), GNUTLS_CERT_REQUEST);
@@ -483,7 +487,7 @@ rb_init_ssl(void)
 
 int
 rb_setup_ssl_server(const char *const certfile, const char *keyfile,
-                    const char *const dhfile, const char *const cipherlist)
+                    const char *const dhfile, const char *cipherlist)
 {
 	if(certfile == NULL)
 	{
@@ -493,6 +497,9 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 
 	if(keyfile == NULL)
 		keyfile = certfile;
+
+	if(cipherlist == NULL)
+		cipherlist = rb_gnutls_default_priority_str;
 
 
 	gnutls_datum_t *const d_cert = rb_load_file_into_datum_t(certfile);
