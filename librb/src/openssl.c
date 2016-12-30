@@ -290,7 +290,10 @@ make_certfp(X509 *const cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int
 	}
 
 	if(ASN1_item_digest(item, md_type, data, certfp, &hashlen) != 1)
+	{
+		rb_lib_log("%s: ASN1_item_digest: %s", __func__, rb_ssl_strerror(rb_ssl_last_err()));
 		return 0;
+	}
 
 	return (int) hashlen;
 }
@@ -428,6 +431,10 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 	#endif
 
+	#ifdef SSL_OP_NO_TLSv1
+	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_TLSv1);
+	#endif
+
 	#ifdef SSL_OP_NO_TICKET
 	(void) SSL_CTX_set_options(ssl_ctx_new, SSL_OP_NO_TICKET);
 	#endif
@@ -517,7 +524,7 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
-	if(F->ssl == NULL)
+	if(F == NULL || F->ssl == NULL)
 		return 0;
 
 	X509 *const peer_cert = SSL_get_peer_certificate(SSL_P(F));
