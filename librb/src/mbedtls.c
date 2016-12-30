@@ -153,7 +153,7 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 		return;
 	}
 
-	mbedtls_ssl_config *mbed_config;
+	mbedtls_ssl_config *mbed_config = NULL;
 
 	switch(dir)
 	{
@@ -232,6 +232,9 @@ rb_mbedtls_cfg_new(void)
 
 	mbedtls_ssl_conf_authmode(&cfg->server_cfg, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_authmode(&cfg->client_cfg, MBEDTLS_SSL_VERIFY_NONE);
+
+	mbedtls_ssl_conf_min_version(&cfg->server_cfg, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_2);
+	mbedtls_ssl_conf_min_version(&cfg->client_cfg, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_2);
 
 	#ifdef MBEDTLS_SSL_LEGACY_BREAK_HANDSHAKE
 	mbedtls_ssl_conf_legacy_renegotiation(&cfg->client_cfg, MBEDTLS_SSL_LEGACY_BREAK_HANDSHAKE);
