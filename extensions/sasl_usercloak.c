@@ -105,6 +105,4 @@ check_new_user(void *vdata)
 	if (0 == irccmp(source_p->host, source_p->orighost))
 		change_nick_user_host(source_p, source_p->name, source_p->username, buf, 0, "Changing host");
 	strncpy(source_p->orighost, buf, HOSTLEN);
-
-	check_client(source_p, source_p, source_p->username);
 }
