@@ -3,6 +3,22 @@
 This is charybdis 3.5.3, Copyright (c) 2005-2016 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
+## charybdis-3.5.4
+
+### security
+- Disable TLSv1.0 in all backends
+- Fix possible NULL dereference in mkpasswd
+- Backport SubjectPublicKeyInfo certificate digest methods from version 4
+- Backport REHASH SSLD functionality from version 4
+  - This allows new ssld processes to be started (to inherit a new or upgraded TLS backend
+    library) without dropping any existing clients or active server links
+
+### misc
+- Various memory leak fixes in newconf, sslproc, zlib
+- Fix crash bug when performing /whois on someone half-way through a CHALLENGE
+- Fix crash bug when performing remote MODRESTART command
+- Allow extban matching presence in secret (+s) channels
+
 ## charybdis-3.5.3
 
 ### security
