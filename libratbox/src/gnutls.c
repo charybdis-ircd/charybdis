@@ -540,6 +540,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		rb_free_datum_t(d_key);
 		return 0;
 	}
+	client_cert_count = MAX_CERTS;
 	if((ret = gnutls_x509_crt_list_import(client_cert, &client_cert_count, d_cert, GNUTLS_X509_FMT_PEM,
 	                                      GNUTLS_X509_CRT_LIST_IMPORT_FAIL_IF_EXCEED)) < 1)
 	{
