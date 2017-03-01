@@ -3,6 +3,15 @@
 This is charybdis 3.5.3, Copyright (c) 2005-2016 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
+## charybdis-3.5.5
+
+This is a minor bugfix release only
+
+### misc
+- GNUTLS: Initialise a variable before trying to load server certificates
+- GNUTLS: Log why certificate fingerprint generation fails
+- GNUTLS: Avoid using new tokens in the default priority string
+
 ## charybdis-3.5.4
 
 ### security
