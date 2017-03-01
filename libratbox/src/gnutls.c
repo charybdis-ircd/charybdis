@@ -375,6 +375,7 @@ rb_load_file_into_datum_t(const char *const file)
 static int
 make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
+	int ret;
 	int hashlen;
 	gnutls_digest_algorithm_t md_type;
 
@@ -399,6 +400,7 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], con
 		md_type = GNUTLS_DIG_SHA512;
 		break;
 	default:
+		rb_lib_log("%s: invalid method %d", __func__, method);
 		return 0;
 	}
 
@@ -406,19 +408,26 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], con
 	{
 		size_t digest_size = (size_t) hashlen;
 
-		if(gnutls_x509_crt_get_fingerprint(cert, md_type, certfp, &digest_size) != 0)
+		if((ret = gnutls_x509_crt_get_fingerprint(cert, md_type, certfp, &digest_size)) != 0)
+		{
+			rb_lib_log("%s: gnutls_x509_crt_get_fingerprint: %d", __func__, ret);
 			return 0;
+		}
 
 		return hashlen;
 	}
 
 	gnutls_pubkey_t pubkey;
 
-	if(gnutls_pubkey_init(&pubkey) != 0)
-		return 0;
-
-	if(gnutls_pubkey_import_x509(pubkey, cert, 0) != 0)
+	if((ret = gnutls_pubkey_init(&pubkey)) != 0)
 	{
+		rb_lib_log("%s: gnutls_pubkey_init: %d", __func__, ret);
+		return 0;
+	}
+
+	if((ret = gnutls_pubkey_import_x509(pubkey, cert, 0)) != 0)
+	{
+		rb_lib_log("%s: gnutls_pubkey_import_x509: %d", __func__, ret);
 		gnutls_pubkey_deinit(pubkey);
 		return 0;
 	}
@@ -426,16 +435,20 @@ make_certfp(gnutls_x509_crt_t cert, uint8_t certfp[const RB_SSL_CERTFP_LEN], con
 	unsigned char derkey[262144];	// Should be big enough to hold any SubjectPublicKeyInfo structure
 	size_t derkey_len = sizeof derkey;
 
-	if(gnutls_pubkey_export(pubkey, GNUTLS_X509_FMT_DER, derkey, &derkey_len) != 0)
+	if((ret = gnutls_pubkey_export(pubkey, GNUTLS_X509_FMT_DER, derkey, &derkey_len)) != 0)
 	{
+		rb_lib_log("%s: gnutls_pubkey_export: %d", __func__, ret);
 		gnutls_pubkey_deinit(pubkey);
 		return 0;
 	}
 
 	gnutls_pubkey_deinit(pubkey);
 
-	if(gnutls_hash_fast(md_type, derkey, derkey_len, certfp) != 0)
+	if((ret = gnutls_hash_fast(md_type, derkey, derkey_len, certfp)) != 0)
+	{
+		rb_lib_log("%s: gnutls_hash_fast: %d", __func__, ret);
 		return 0;
+	}
 
 	return hashlen;
 }
@@ -662,23 +675,38 @@ rb_get_ssl_strerror(rb_fde_t *const F)
 int
 rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], const int method)
 {
+	int ret;
+
 	if(F == NULL || F->ssl == NULL)
+	{
+		rb_lib_log("%s: no GNUTLS context", __func__);
 		return 0;
+	}
 
 	if(gnutls_certificate_type_get(SSL_P(F)) != GNUTLS_CRT_X509)
+	{
+		rb_lib_log("%s: not an X.509 certificate", __func__);
 		return 0;
+	}
 
 	unsigned int cert_list_size = 0;
 	const gnutls_datum_t *const cert_list = gnutls_certificate_get_peers(SSL_P(F), &cert_list_size);
 	if(cert_list == NULL || cert_list_size < 1)
+	{
+		rb_lib_log("%s: no peer certificate chain returned", __func__);
 		return 0;
+	}
 
 	gnutls_x509_crt_t peer_cert;
-	if(gnutls_x509_crt_init(&peer_cert) != 0)
-		return 0;
-
-	if(gnutls_x509_crt_import(peer_cert, &cert_list[0], GNUTLS_X509_FMT_DER) < 0)
+	if((ret = gnutls_x509_crt_init(&peer_cert)) != 0)
 	{
+		rb_lib_log("%s: gnutls_x509_crt_init: %d", __func__, ret);
+		return 0;
+	}
+
+	if((ret = gnutls_x509_crt_import(peer_cert, &cert_list[0], GNUTLS_X509_FMT_DER)) < 0)
+	{
+		rb_lib_log("%s: gnutls_x509_crt_import: %d", __func__, ret);
 		gnutls_x509_crt_deinit(peer_cert);
 		return 0;
 	}
