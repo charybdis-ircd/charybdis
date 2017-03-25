@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charybdis operator guide'
-copyright = u'2017, Jilles Tjoelker'
+copyright = u'2009, Jilles Tjoelker'
 author = u'Jilles Tjoelker'
 
 # The version info for the project you're documenting, acts as replacement for
