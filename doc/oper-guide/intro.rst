@@ -1,10 +1,3 @@
-.. contents::
-   :depth: 3
-..
-
-Introduction
-============
-
 Scope of this document
 ======================
 

@@ -1,11 +1,4 @@
-.. contents::
-   :depth: 3
-..
-
 User Commands
-=============
-
-User commands
 =============
 
 Standard IRC commands are not listed here. Several of the commands in

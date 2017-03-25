@@ -1,12 +1,5 @@
-.. contents::
-   :depth: 3
-..
-
-Cmodes
-======
-
-Meanings of channel modes
-=========================
+Channel modes
+=============
 
 +b, channel ban
 ---------------

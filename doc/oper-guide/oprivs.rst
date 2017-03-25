@@ -1,12 +1,5 @@
-.. contents::
-   :depth: 3
-..
-
 Oper privileges
 ===============
-
-Meanings of oper privileges
-===========================
 
 These are specified in privset{}.
 
