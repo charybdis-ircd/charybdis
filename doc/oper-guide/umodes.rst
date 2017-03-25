@@ -48,16 +48,16 @@ the umode, otherwise ``+g``.
 .. note:: This is a user umode, which anybody can set. It is not
           specific to operators.
 
-Invisible users do not show up in WHO and NAMES unless you can see them.
+Invisible users do not show up in ``WHO`` and ``NAMES`` unless you can see them.
 
 ``+l``, receive locops
 ----------------------
 
-LOCOPS is a version of OPERWALL that is sent to opers on a single server
+``LOCOPS`` is a version of ``OPERWALL`` that is sent to opers on a single server
 only. With cluster{} and shared{} blocks they can optionally be
 propagated further.
 
-Unlike OPERWALL, any oper can send and receive LOCOPS.
+Unlike ``OPERWALL``, any oper can send and receive ``LOCOPS``.
 
 ``+o``, operator
 ----------------
@@ -102,8 +102,8 @@ umode.
 
 This umode grants various features useful for services. For example,
 clients with this umode cannot be kicked or deopped on channels, can
-send to any channel, do not show channels in WHOIS, can be the target of
-services aliases and do not appear in /stats p. No server notices are
+send to any channel, do not show channels in ``WHOIS``, can be the target of
+services aliases and do not appear in ``/stats p``. No server notices are
 sent for hostname changes by services clients; server notices about
 kills are sent to snomask ``+k`` instead of ``+s``.
 
@@ -116,16 +116,16 @@ actual charybdis server can set it.
 .. note:: This is a user umode, which anybody can set. It is not
           specific to operators.
 
-Users with the ``+w`` umode set will receive WALLOPS messages sent by opers.
-Opers with ``+w`` additionally receive WALLOPS sent by servers (e.g. remote
-CONNECT, remote SQUIT, various severe misconfigurations, many services
+Users with the ``+w`` umode set will receive ``WALLOPS`` messages sent by opers.
+Opers with ``+w`` additionally receive ``WALLOPS`` sent by servers (e.g. remote
+``CONNECT``, remote ``SQUIT``, various severe misconfigurations, many services
 packages).
 
 ``+z``, receive operwall
 ------------------------
 
-OPERWALL differs from WALLOPS in that the ability to receive such
-messages is restricted. Opers with ``+z`` set will receive OPERWALL
+``OPERWALL`` differs from ``WALLOPS`` in that the ability to receive such
+messages is restricted. Opers with ``+z`` set will receive ``OPERWALL``
 messages.
 
 ``+Z``, SSL user
@@ -137,17 +137,16 @@ unset after initial connection.
 Snomask usage
 ~~~~~~~~~~~~~
 
-Usage is as follows:
+Usage is as follows::
 
-MODE
-nick
-``+s``
-+/-flags
+  MODE nick +s +/-flags
+
 To set snomasks.
 
-MODE
-nick
--s
+::
+
+   MODE nick -s
+
 To clear all snomasks.
 
 Umode ``+s`` will be set if at least one snomask is set.
@@ -176,7 +175,7 @@ clients attach to the local server.
 Opers who have the ``+C`` snomask set will receive server notices when
 clients attach to the local server. Unlike the ``+c`` snomask, the
 information is displayed in a format intended to be parsed by scripts,
-and includes the two unused fields of the USER command.
+and includes the two unused fields of the ``USER`` command.
 
 ``+d``, debug
 -------------
@@ -193,7 +192,7 @@ will change without notice in later revisions.
 Opers with the ``+f`` snomask set will receive notices when a user
 connection is denied because a connection limit is exceeded (one of the
 limits in a class{} block, or the total per-server limit settable with
-/quote set max).
+``/quote set max``).
 
 ``+F``, far client connection notices
 -------------------------------------
@@ -250,7 +249,7 @@ have an available auth{} block.
 .. note:: This snomask is only available if the ``sno_whois.so``
           extension is loaded.
 
-Opers with ``+W`` receive notices when a WHOIS is executed on them on their
+Opers with ``+W`` receive notices when a ``WHOIS`` is executed on them on their
 server (showing idle time).
 
 ``+x``, extra routing notices
@@ -264,7 +263,7 @@ but is useful for keeping track of all linked servers.
 ``+y``, spy
 -----------
 
-Opers with ``+y`` receive notices when users try to join RESV'ed (“juped”)
+Opers with ``+y`` receive notices when users try to join ``RESV``'ed (“juped”)
 channels. Additionally, if certain extension modules are loaded, they
 will receive notices when special commands are used.
 
