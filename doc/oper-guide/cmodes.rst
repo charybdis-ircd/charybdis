@@ -5,25 +5,26 @@ Channel modes
 -------------------
 
 Bans take one parameter which can take several forms. The most common
-form is ``+b nick!user@host``. The wildcards ``*`` and ``?`` are allowed, matching
-zero-or-more, and exactly-one characters respectively. The masks will be
-trimmed to fit the maximum allowable length for the relevant element.
-Bans are also checked against the IP address, even if it resolved or is
-spoofed. CIDR is supported, like ``*!*@10.0.0.0/8``. This is most useful
-with IPv6. Bans are not checked against the real hostname behind any
-kind of spoof, except if host mangling is in use (e.g.
-``extensions/ip_cloaking.so``): if the user's host is mangled, their
-real hostname is checked additionally, and if a user has no spoof but
-could enable mangling, the mangled form of their hostname is checked
-additionally. Hence, it is not possible to evade bans by toggling host
-mangling.
+form is ``+b nick!user@host``. The wildcards ``*`` and ``?`` are
+allowed, matching zero-or-more, and exactly-one characters
+respectively. The masks will be trimmed to fit the maximum allowable
+length for the relevant element.  Bans are also checked against the IP
+address, even if it resolved or is spoofed. CIDR is supported, like
+``*!*@10.0.0.0/8``. This is most useful with IPv6. Bans are not
+checked against the real hostname behind any kind of spoof, except if
+host mangling is in use (e.g.  ``extensions/ip_cloaking.so``): if the
+user's host is mangled, their real hostname is checked additionally,
+and if a user has no spoof but could enable mangling, the mangled form
+of their hostname is checked additionally. Hence, it is not possible
+to evade bans by toggling host mangling.
 
-The second form (extban) is ``+b $type`` or ``+b $type:data``. type is a single
-character (case insensitive) indicating the type of match, optionally
-preceded by a tilde (``~``) to negate the comparison. data depends on type.
-Each type is loaded as a module. The available types (if any) are listed
-in the EXTBAN token of the 005 (``RPL_ISUPPORT``) numeric. See
-``doc/extban.txt`` in the source distribution for more information.
+The second form (extban) is ``+b $type`` or ``+b $type:data``. type is
+a single character (case insensitive) indicating the type of match,
+optionally preceded by a tilde (``~``) to negate the comparison. data
+depends on type.  Each type is loaded as a module. The available types
+(if any) are listed in the ``EXTBAN`` token of the 005
+(``RPL_ISUPPORT``) numeric. See ``doc/extban.txt`` in the source
+distribution for more information.
 
 If no parameter is given, the list of bans is returned. All users can
 use this form. The plus sign should also be omitted.
@@ -48,19 +49,21 @@ This mode takes one parameter of the same form as bans, which overrides
 
 This can be useful if it is necessary to ban an entire ISP due to
 persistent abuse, but some users from that ISP should still be allowed
-in. For example: ``/mode #channel +be *!*@*.example.com *!*someuser@host3.example.com``
+in. For example::
+
+  /mode #channel +be *!*@*.example.com *!*someuser@host3.example.com
 
 Only channel operators can see ``+e`` changes or request the list.
 
 ``+f``, channel forwarding
 --------------------------
 
-This mode takes one parameter, the name of a channel (``+f #channel``). If
-the channel also has the ``+i`` cmode set, and somebody attempts to join
-without either being expliticly invited, or having an invex (``+I``), then
-they will instead join the channel named in the mode parameter. The
-client will also be sent a 470 numeric giving the original and target
-channels.
+This mode takes one parameter, the name of a channel (``+f
+#channel``). If the channel also has the ``+i`` cmode set, and
+somebody attempts to join without either being expliticly invited, or
+having an invex (``+I``), then they will instead join the channel
+named in the mode parameter. The client will also be sent a 470
+numeric giving the original and target channels.
 
 Users are similarly forwarded if the ``+j`` cmode is set and their attempt
 to join is throttled, if ``+l`` is set and there are already too many users
@@ -82,8 +85,8 @@ channel.
 ``+g``, allow anybody to invite
 -------------------------------
 
-When this mode is set, anybody may use the INVITE command on the channel
-in question. When it is unset, only channel operators may use the INVITE
+When this mode is set, anybody may use the ``INVITE`` command on the channel
+in question. When it is unset, only channel operators may use the ``INVITE``
 command.
 
 When this mode is set together with ``+i``, ``+j``, ``+l`` or ``+r``, all channel
@@ -93,14 +96,14 @@ members can influence who can join.
 -------------------
 
 When this cmode is set, no client can join the channel unless they have
-an invex (``+I``) or are invited with the INVITE command.
+an invex (``+I``) or are invited with the ``INVITE`` command.
 
 ``+I``, invite exception (invex)
 --------------------------------
 
 This mode takes one parameter of the same form as bans. Matching clients
 do not need to be invited to join the channel when it is invite-only
-(``+i``). Unlike the INVITE command, this does not override ``+j``, ``+l`` and ``+r``.
+(``+i``). Unlike the ``INVITE`` command, this does not override ``+j``, ``+l`` and ``+r``.
 
 Only channel operators can see ``+I`` changes or request the list.
 
@@ -119,7 +122,7 @@ join (by racing for the last slot on each server).
 ------------------------------
 
 Taking one parameter, when set, this mode requires a user to supply the
-key in order to join the channel: /JOIN #channel key.
+key in order to join the channel: ``/JOIN #channel key``.
 
 ``+l``, channel member limit
 ----------------------------
@@ -174,8 +177,8 @@ manage the channel.
 ``+p``, paranoid channel
 ------------------------
 
-When set, the KNOCK command cannot be used on the channel to request an
-invite, and users will not be shown the channel in WHOIS replies unless
+When set, the ``KNOCK`` command cannot be used on the channel to request an
+invite, and users will not be shown the channel in ``WHOIS`` replies unless
 they are on it. Unlike in traditional IRC, ``+p`` and ``+s`` can be set
 together.
 
@@ -217,8 +220,8 @@ users can still join.
 ----------------------
 
 When set, this mode prevents the channel from appearing in the output of
-the LIST, WHO and WHOIS command by users who are not on it. Also, the
-server will refuse to answer WHO, NAMES, TOPIC and LIST queries from
+the ``LIST``, ``WHO`` and ``WHOIS`` command by users who are not on it. Also, the
+server will refuse to answer ``WHO``, ``NAMES``, ``TOPIC`` and ``LIST`` queries from
 users not on the channel.
 
 ``+t``, topic limit
