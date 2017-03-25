@@ -4,7 +4,7 @@ User Commands
 Standard IRC commands are not listed here. Several of the commands in
 the operator commands chapter can also be used by normal users.
 
-``ACCEPT``
+ACCEPT
 ------
 
 ::
