@@ -50,6 +50,7 @@ CPRIVMSG
 --------
 
 ::
+
    CPRIVMSG nick channel :text
 
 Providing you are opped (+o) or voiced (+v) in channel, and nick is a
@@ -69,6 +70,7 @@ FINDFORWARDS
 ------------
 
 ::
+
    FINDFORWARDS channel
 
 .. note:: This command is only available if the ``m_findforwards.so``
@@ -84,6 +86,7 @@ HELP
 ----
 
 ::
+
    HELP [topic]
 
 Displays help information. topic can be ``INDEX``, ``CREDITS``, ``UMODE``, ``CMODE``,
@@ -96,6 +99,7 @@ IDENTIFY
 --------
 
 ::
+
    IDENTIFY parameters...
 
 .. note:: This command is only available if the ``m_identify.so``
@@ -114,6 +118,7 @@ KNOCK
 -----
 
 ::
+
    KNOCK channel
 
 Requests an invite to the given channel. The channel must be locked
@@ -144,29 +149,34 @@ More details can be found in ``doc/monitor.txt`` in the source
 distribution.
 
 ::
+
    MONITOR + nick, ...
 
 Adds nicks to your monitor list. You will receive 730 and 731 numerics
 for the nicks.
 
 ::
+
    MONITOR - nick, ...
 
 Removes nicks from your monitor list. No output is generated for this
 command.
 
 ::
+
    MONITOR C
 
 Clears your monitor list. No output is generated for this command.
 
 ::
+
    MONITOR L
 
 Lists all nicks on your monitor list, using 732 numerics and ending with
 a 733 numeric.
 
 ::
+
    MONITOR S
 
 Shows status for all nicks on your monitor list, using 730 and 731
