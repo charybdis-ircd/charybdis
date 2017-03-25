@@ -135,7 +135,7 @@ This umode is set on clients connected via SSL/TLS. It cannot be set or
 unset after initial connection.
 
 Snomask usage
-~~~~~~~~~~~~~
+=============
 
 Usage is as follows::
 
@@ -155,7 +155,7 @@ Umode ``+s`` is oper only by default, but even if you allow nonopers to set
 it, they will not get any server notices.
 
 Meanings of server notice masks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===============================
 
 ``+b``, bot warnings
 --------------------
