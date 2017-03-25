@@ -61,8 +61,7 @@ serverinfo {} block
 The serverinfo {} block defines the core operational parameters of the
 IRC server.
 
-serverinfo {} variables
-~~~~~~~~~~~~~~~~~~~~~~~
+**serverinfo {} variables**
 
 name
     The name of the IRC server that you are configuring. This must
@@ -149,8 +148,7 @@ connect{}). They must be defined before they are used.
 Classes are used both for client and server connections, but most
 variables are different.
 
-class {} variables: client classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**class {} variables: client classes**
 
 ping\_time
     The amount of time between checking pings for clients, e.g.: 2
@@ -191,8 +189,7 @@ sendq
     The maximum size of the queue of data to be sent to a client before
     it is dropped.
 
-class {} variables: server classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**class {} variables: server classes**
 
 ping\_time
     The amount of time between checking pings for servers, e.g.: 2
@@ -330,8 +327,7 @@ throttling. Multiple addresses can be specified in one block. Clients
 coming from these addresses can still be ``K/G/X:lined`` or banned by a DNS
 blacklist unless they also have appropriate flags in their auth{} block.
 
-exempt {} variables
-~~~~~~~~~~~~~~~~~~~
+**exempt {} variables**
 
 ip
     The IP address or CIDR range to exempt.
@@ -348,8 +344,7 @@ privset {} block
 
 A privset (privilege set) block specifies a set of operator privileges.
 
-privset {} variables
-~~~~~~~~~~~~~~~~~~~~
+**privset {} variables**
 
 extends
     An optional privset to inherit. The new privset will have all
@@ -376,8 +371,7 @@ operator {} block
 Operator blocks define who may use the ``OPER`` command to gain extended
 privileges.
 
-operator {} variables
-~~~~~~~~~~~~~~~~~~~~~
+**operator {} variables**
 
 user
     A hostmask that users trying to use this operator {} block must
@@ -415,8 +409,7 @@ flags
     A list of flags to apply to this operator{} block. They are listed
     below.
 
-operator {} flags
-~~~~~~~~~~~~~~~~~
+**operator {} flags**
 
 encrypted
     The password used has been encrypted. This is enabled by default,
@@ -444,8 +437,7 @@ connect {} block
 
 Connect blocks define what servers may connect or be connected to.
 
-connect {} variables
-~~~~~~~~~~~~~~~~~~~~
+**connect {} variables**
 
 host
     The hostname or IP to connect to.
@@ -485,8 +477,7 @@ aftype
     ipv6. This defaults to neither, allowing connection using either
     address family.
 
-connect {} flags
-~~~~~~~~~~~~~~~~
+**connect {} flags**
 
 encrypted
     The value for accept\_password has been encrypted.
@@ -520,8 +511,7 @@ listen {} block
 
 A listen block specifies what ports a server should listen on.
 
-listen {} variables
-~~~~~~~~~~~~~~~~~~~
+**listen {} variables**
 
 host
     An optional host to bind to. Otherwise, the ircd will listen on all
@@ -544,8 +534,7 @@ modules {} block
 
 The modules block specifies information for loadable modules.
 
-modules {} variables
-~~~~~~~~~~~~~~~~~~~~
+**modules {} variables**
 
 path
     Specifies a path to search for loadable modules.
@@ -608,8 +597,7 @@ these.
 Multiple blacklists can be specified, in pairs with first host then
 reject\_reason.
 
-blacklist {} variables
-~~~~~~~~~~~~~~~~~~~~~~
+**blacklist {} variables**
 
 host
     The DNSBL to use.
@@ -630,8 +618,7 @@ Alias blocks allow the definition of custom commands. These commands
 send ``PRIVMSG`` to the given target. A real command takes precedence above
 an alias.
 
-alias {} variables
-~~~~~~~~~~~~~~~~~~
+**alias {} variables**
 
 target
     The target nick (must be a network service (umode ``+S``)) or
@@ -660,8 +647,7 @@ removals.
 
 The letters in parentheses denote the flags in ``/stats`` U.
 
-cluster {} variables
-~~~~~~~~~~~~~~~~~~~~
+**cluster {} variables**
 
 name
     The server name to share with, this may contain wildcards and may be
@@ -672,8 +658,7 @@ flags
     another flags entry) will receive these flags. They are listed
     below.
 
-cluster {} flags
-~~~~~~~~~~~~~~~~
+**cluster {} flags**
 
 kline (K)
     Permanent ``K:lines``
@@ -726,8 +711,7 @@ be silently ignored.
 
 The letters in parentheses denote the flags in ``/stats U``.
 
-shared {} variables
-~~~~~~~~~~~~~~~~~~~
+**shared {} variables**
 
 oper
     The user@host the oper must have, and the server they must be on.
@@ -741,8 +725,7 @@ flags
     .. note:: While they have the same names, the flags have subtly
               different meanings from those in the cluster{} block.
 
-shared {} flags
-~~~~~~~~~~~~~~~
+**shared {} flags**
 
 kline (K)
     Permanent and temporary ``K:lines``
@@ -816,8 +799,7 @@ Do not place normal servers here.
 Multiple names may be specified but there may be only one service{}
 block.
 
-service {} variables
-~~~~~~~~~~~~~~~~~~~~
+**service {} variables**
 
 name
     The server name to grant special privileges. This may not contain
