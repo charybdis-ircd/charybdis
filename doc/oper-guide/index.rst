@@ -10,7 +10,8 @@ Operators guide for the charybdis IRC server
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+
    intro
    umodes
    cmodes

@@ -1,12 +1,8 @@
-.. contents::
-   :depth: 3
-..
-
 Server config file format
 =========================
 
 General format
-==============
+~~~~~~~~~~~~~~
 
 The config file consists of a series of BIND-style blocks. Each block
 consists of a series of values inside it which pertain to configuration
@@ -25,7 +21,7 @@ Anything from a # to the end of a line is a comment. Blank lines are
 ignored. C-style comments are also supported.
 
 Specific blocks and directives
-==============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Not all configuration blocks and directives are listed here, only the
 most common ones. More blocks and directives will be documented in later
@@ -771,7 +767,7 @@ name
     wildcards.
 
 Hostname resolution (DNS)
-=========================
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Charybdis uses solely DNS for all hostname/address lookups (no
 ``/etc/hosts`` or anything else). The DNS servers are taken from
