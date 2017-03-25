@@ -287,14 +287,12 @@ jupe\_exempt
 resv\_exempt
     Users in this auth{} block may use reserved nicknames and channels.
 
-        **Note**
-
-        The initial nickname may still not be reserved.
-
-flood\_exempt (\|)
-    Users in this auth{} block may send arbitrary amounts of commands
-    per time unit to the server. This does not exempt them from any
-    other flood limits. You should use this setting with caution.
+.. note:: The initial nickname may still not be reserved.
+          
+flood\_exempt (\|) Users in this auth{} block may send arbitrary
+    amounts of commands per time unit to the server. This does not
+    exempt them from any other flood limits. You should use this
+    setting with caution.
 
 no\_tilde (-)
     Users in this auth{} block will not have a tilde added to their
@@ -437,11 +435,9 @@ Connect blocks define what servers may connect or be connected to.
 host
     The hostname or IP to connect to.
 
-        **Note**
-
-        Furthermore, if a hostname is used, it must have an A or AAAA
-        record (no CNAME) and it must be the primary hostname for
-        inbound connections to work.
+.. note:: Furthermore, if a hostname is used, it must have an ``A`` or
+          ``AAAA`` record (no ``CNAME``) and it must be the primary hostname
+          for inbound connections to work.
 
 send\_password
     The password to send to the other server.
@@ -685,10 +681,8 @@ flags
     another flags entry) will receive these flags. They are listed
     below.
 
-    **Note**
-
-    While they have the same names, the flags have subtly different
-    meanings from those in the cluster{} block.
+.. note:: While they have the same names, the flags have subtly
+          different meanings from those in the cluster{} block.
 
 kline (K)
     Permanent and temporary K:lines

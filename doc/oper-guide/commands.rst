@@ -4,11 +4,9 @@ Operator Commands
 Network management commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    **Note**
-
-    All commands and names are case insensitive. Parameters consisting
-    of one or more separate letters, such as in MODE, STATS and WHO, are
-    case sensitive.
+.. note:: All commands and names are case insensitive. Parameters
+          consisting of one or more separate letters, such as in MODE,
+          STATS and WHO, are case sensitive.
 
 CONNECT
 -------
@@ -95,10 +93,8 @@ scratch as if it had just been executed.
 This reexecutes the ircd using the compiled-in path, visible as SPATH in
 INFO.
 
-    **Note**
-
-    This command cannot be used remotely. The server name is used only
-    as a safety measure.
+.. note:: This command cannot be used remotely. The server name is
+          used only as a safety measure.
 
 DIE
 ---
@@ -108,10 +104,8 @@ server
 Immediately terminate the IRC server, after sending notices to all
 connected clients and servers
 
-    **Note**
-
-    This command cannot be used remotely. The server name is used only
-    as a safety measure.
+.. note:: This command cannot be used remotely. The server name is
+          used only as a safety measure.
 
 SET
 ---
@@ -513,7 +507,7 @@ H.S.
     A server we have established a TCP connection to, but is not yet
     registered.
 
-????
+\?\?\?\?
     An incoming connection that has not yet registered as a user or a
     server (“unknown”). Shows the username, hostname, IP address and the
     time the connection has been open. It is possible that the ident or

@@ -74,10 +74,9 @@ FINDFORWARDS
 
 FINDFORWARDS
 channel
-    **Note**
 
-    This command is only available if the ``m_findforwards.so``
-    extension is loaded.
+.. note:: This command is only available if the ``m_findforwards.so``
+          extension is loaded.
 
 Displays which channels forward to the given channel (via cmode +f). If
 there are very many channels the list will be truncated.
@@ -101,10 +100,9 @@ IDENTIFY
 
 IDENTIFY
 parameters...
-    **Note**
 
-    This command is only available if the ``m_identify.so`` extension is
-    loaded.
+.. note:: This command is only available if the ``m_identify.so``
+          extension is loaded.
 
 Sends an identify command to either NickServ or ChanServ. If the first
 parameter starts with #, the command is sent to ChanServ, otherwise to
