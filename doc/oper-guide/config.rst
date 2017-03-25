@@ -9,15 +9,18 @@ consists of a series of values inside it which pertain to configuration
 settings that apply to the given block.
 
 Several values take lists of values and have defaults preset inside
-them. Prefix a keyword with a tilde (~) to override the default and
+them. Prefix a keyword with a tilde (``~``) to override the default and
 disable it.
 
-A line may also be a .include directive, which is of the form .include
-"file" and causes file to be read in at that point, before the rest of
-the current file is processed. Relative paths are first tried relative
-to PREFIX and then relative to ETCPATH (normally PREFIX/etc).
+A line may also be a .include directive, which is of the form::
 
-Anything from a # to the end of a line is a comment. Blank lines are
+  .include "file"
+
+and causes file to be read in at that point, before the rest of
+the current file is processed. Relative paths are first tried relative
+to ``PREFIX`` and then relative to ``ETCPATH`` (normally ``PREFIX``/etc).
+
+Anything from a ``#`` to the end of a line is a comment. Blank lines are
 ignored. C-style comments are also supported.
 
 Specific blocks and directives
@@ -30,9 +33,10 @@ revisions of this manual.
 loadmodule directive
 --------------------
 
-loadmodule "
-text
-";
+::
+
+   loadmodule "text";
+
 Loads a module into the IRCd. In charybdis 1.1, most modules are
 automatically loaded in. In future versions, it is intended to remove
 this behaviour as to allow for easy customization of the IRCd's
@@ -41,23 +45,24 @@ featureset.
 serverinfo {} block
 -------------------
 
-serverinfo { name = "
-text
-"; sid = "
-text
-"; description = "
-text
-"; network\_name = "
-text
-"; hub =
-boolean
-; vhost = "
-text
-"; vhost6 = "
-text
-"; };
+::
+
+   serverinfo {
+        name = "text";
+        sid = "text";
+        description = "text";
+        network_name = "text";
+        network_desc = "text";
+        hub = boolean;
+        vhost = "text";
+        vhost6 = "text";
+   };
+
 The serverinfo {} block defines the core operational parameters of the
 IRC server.
+
+serverinfo {} variables
+~~~~~~~~~~~~~~~~~~~~~~~
 
 name
     The name of the IRC server that you are configuring. This must
@@ -70,13 +75,13 @@ sid
 
 description
     A user-defined field of text which describes the IRC server. This
-    information is used in /links and /whois requests. Geographical
+    information is used in ``/links`` and ``/whois`` requests. Geographical
     location information could be a useful use of this field, but most
     administrators put a witty saying inside it instead.
 
 network\_name
     The name of the IRC network that this server will be a member of.
-    This is used in the welcome message and NETWORK= in 005.
+    This is used in the welcome message and ``NETWORK=`` in 005.
 
 hub
     A boolean which defines whether or not this IRC server will be
@@ -93,14 +98,15 @@ vhost6
 admin {} block
 --------------
 
-admin { name = "
-text
-"; description = "
-text
-"; email = "
-text
-"; };
-This block provides the information which is returned by the ADMIN
+::
+
+   admin {
+       name = "text";
+	   description = "text";
+	   email = "text";
+   };
+
+This block provides the information which is returned by the ``ADMIN``
 command.
 
 name
@@ -115,44 +121,36 @@ email
 class {} block
 --------------
 
-class "
-name
-" { ping\_time =
-duration
-; number\_per\_ident =
-number
-; number\_per\_ip =
-number
-; number\_per\_ip\_global =
-number
-; cidr\_ipv4\_bitlen =
-number
-; cidr\_ipv6\_bitlen =
-number
-; number\_per\_cidr =
-number
-; max\_number =
-number
-; sendq =
-size
-; };
-class "
-name
-" { ping\_time =
-duration
-; connectfreq =
-duration
-; max\_number =
-number
-; sendq =
-size
-; };
+::
+
+    class "name" {
+            ping_time = duration;
+            number_per_ident = number;
+            number_per_ip = number;
+            number_per_ip_global = number;
+            cidr_ipv4_bitlen = number;
+            cidr_ipv6_bitlen = number;
+            number_per_cidr = number;
+            max_number = number;
+            sendq = size;
+    };
+    
+    class "name" {
+            ping_time = duration;
+            connectfreq = duration;
+            max_number = number;
+            sendq = size;
+    };    
+   
 Class blocks define classes of connections for later use. The class name
 is used to connect them to other blocks in the config file (auth{} and
 connect{}). They must be defined before they are used.
 
 Classes are used both for client and server connections, but most
 variables are different.
+
+class {} variables: client classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ping\_time
     The amount of time between checking pings for clients, e.g.: 2
@@ -193,6 +191,9 @@ sendq
     The maximum size of the queue of data to be sent to a client before
     it is dropped.
 
+class {} variables: server classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ping\_time
     The amount of time between checking pings for servers, e.g.: 2
     minutes
@@ -213,25 +214,27 @@ sendq
 auth {} block
 -------------
 
-auth { user = "
-hostmask
-"; password = "
-text
-"; spoof = "
-text
-"; flags =
-list
-; class = "
-text
-"; };
+::
+
+    auth {
+    	user = "hostmask";
+    	password = "text";
+    	spoof = "text";
+    	flags = list;
+    	class = "text";
+    };
+
 auth {} blocks allow client connections to the server, and set various
 properties concerning those connections.
 
 Auth blocks are evaluated from top to bottom in priority, so put special
 blocks first.
 
+auth {} variables
+~~~~~~~~~~~~~~~~~
+
 user
-    A hostmask (user@host) that the auth {} block applies to. It is
+    A hostmask (``user@host``) that the auth {} block applies to. It is
     matched against the hostname and IP address (using :: shortening for
     IPv6 and prepending a 0 if it starts with a colon) and can also use
     CIDR masks. You can have multiple user entries.
@@ -242,18 +245,21 @@ password
     (will not fall back on another auth{} block).
 
 spoof
-    An optional fake hostname (or user@host) to apply to users
-    authenticated to this auth{} block. In STATS i and TESTLINE, an
-    equals sign (=) appears before the user@host and the spoof is shown.
+    An optional fake hostname (or ``user@host``) to apply to users
+    authenticated to this auth{} block. In ``STATS i`` and ``TESTLINE``, an
+    equals sign (=) appears before the ``user@host`` and the spoof is shown.
 
 flags
-    A list of flags to apply to this auth{} block. They are listed
+    A list of flags to apply to this ``auth{}`` block. They are listed
     below. Some of the flags appear as a special character,
-    parenthesized in the list, before the user@host in STATS i and
-    TESTLINE.
+    parenthesized in the list, before the ``user@host`` in ``STATS i`` and
+    ``TESTLINE``.
 
 class
     A name of a class to put users matching this auth{} block into.
+
+auth {} flags
+~~~~~~~~~~~~~
 
 encrypted
     The password used has been encrypted.
@@ -287,7 +293,7 @@ jupe\_exempt
 resv\_exempt
     Users in this auth{} block may use reserved nicknames and channels.
 
-.. note:: The initial nickname may still not be reserved.
+    .. note:: The initial nickname may still not be reserved.
           
 flood\_exempt (\|) Users in this auth{} block may send arbitrary
     amounts of commands per time unit to the server. This does not
@@ -313,13 +319,19 @@ need\_sasl
 exempt {} block
 ---------------
 
-exempt { ip = "
-ip
-"; };
-An exempt block specifies IP addresses which are exempt from D:lines and
+::
+
+    exempt {
+    	ip = "ip";
+    };
+
+An exempt block specifies IP addresses which are exempt from ``D:lines`` and
 throttling. Multiple addresses can be specified in one block. Clients
-coming from these addresses can still be K/G/X:lined or banned by a DNS
+coming from these addresses can still be ``K/G/X:lined`` or banned by a DNS
 blacklist unless they also have appropriate flags in their auth{} block.
+
+exempt {} variables
+~~~~~~~~~~~~~~~~~~~
 
 ip
     The IP address or CIDR range to exempt.
@@ -327,12 +339,17 @@ ip
 privset {} block
 ----------------
 
-privset { extends = "
-name
-"; privs =
-list
-; };
+::
+   
+    privset {
+    	extends = "name";
+    	privs = list;
+    };
+
 A privset (privilege set) block specifies a set of operator privileges.
+
+privset {} variables
+~~~~~~~~~~~~~~~~~~~~
 
 extends
     An optional privset to inherit. The new privset will have all
@@ -345,23 +362,22 @@ privs
 operator {} block
 -----------------
 
-operator "
-name
-" { user = "
-hostmask
-"; password = "
-text
-"; rsa\_public\_key\_file = "
-text
-"; umodes =
-list
-; snomask = "
-text
-"; flags =
-list
-; };
-Operator blocks define who may use the OPER command to gain extended
+::
+
+   operator "name" {
+    	user = "hostmask";
+    	password = "text";
+    	rsa_public_key_file = "text";
+    	umodes = list;
+    	snomask = "text";
+    	flags = list;
+   };
+
+Operator blocks define who may use the ``OPER`` command to gain extended
 privileges.
+
+operator {} variables
+~~~~~~~~~~~~~~~~~~~~~
 
 user
     A hostmask that users trying to use this operator {} block must
@@ -375,15 +391,15 @@ user
     spoofs worked in operator {} blocks.
 
 password
-    A password used with the OPER command to use this operator {} block.
+    A password used with the ``OPER`` command to use this operator {} block.
     Passwords are encrypted by default, but may be unencrypted if
     ~encrypted is present in the flags list.
 
 rsa\_public\_key\_file
     An optional path to a RSA public key file associated with the
-    operator {} block. This information is used by the CHALLENGE
+    operator {} block. This information is used by the ``CHALLENGE``
     command, which is an alternative authentication scheme to the
-    traditional OPER command.
+    traditional ``OPER`` command.
 
 umodes
     A list of usermodes to apply to successfully opered clients.
@@ -399,6 +415,9 @@ flags
     A list of flags to apply to this operator{} block. They are listed
     below.
 
+operator {} flags
+~~~~~~~~~~~~~~~~~
+
 encrypted
     The password used has been encrypted. This is enabled by default,
     use ~encrypted to disable it.
@@ -409,35 +428,31 @@ need\_ssl
 connect {} block
 ----------------
 
-connect "
-name
-" { host = "
-text
-"; send\_password = "
-text
-"; accept\_password = "
-text
-"; port =
-number
-; hub\_mask = "
-mask
-"; leaf\_mask = "
-mask
-"; class = "
-text
-"; flags =
-list
-; aftype =
-protocol
-; };
+::
+       
+    connect "name" {
+    	host = "text";
+    	send_password = "text";
+    	accept_password = "text";
+    	port = number;
+    	hub_mask = "mask";
+    	leaf_mask = "mask";
+    	class = "text";
+    	flags = list;
+    	aftype = protocol;
+    };
+
 Connect blocks define what servers may connect or be connected to.
+
+connect {} variables
+~~~~~~~~~~~~~~~~~~~~
 
 host
     The hostname or IP to connect to.
 
-.. note:: Furthermore, if a hostname is used, it must have an ``A`` or
-          ``AAAA`` record (no ``CNAME``) and it must be the primary hostname
-          for inbound connections to work.
+    .. note:: Furthermore, if a hostname is used, it must have an
+              ``A`` or ``AAAA`` record (no ``CNAME``) and it must be
+              the primary hostname for inbound connections to work.
 
           IPv6 addresses must be in ``::`` shortened form; addresses which
           then start with a colon must be prepended with a zero, for
@@ -473,6 +488,9 @@ aftype
     The protocol that should be used to connect with, either ipv4 or
     ipv6. This defaults to ipv4 unless host is a numeric IPv6 address.
 
+connect {} flags
+~~~~~~~~~~~~~~~~
+
 encrypted
     The value for accept\_password has been encrypted.
 
@@ -496,12 +514,17 @@ topicburst
 listen {} block
 ---------------
 
-listen { host = "
-text
-"; port =
-number
-; };
+::
+
+   listen {
+    	host = "text";
+    	port = number;
+   };
+
 A listen block specifies what ports a server should listen on.
+
+listen {} variables
+~~~~~~~~~~~~~~~~~~~
 
 host
     An optional host to bind to. Otherwise, the ircd will listen on all
@@ -515,12 +538,17 @@ port
 modules {} block
 ----------------
 
-modules { path = "
-text
-"; module =
-text
-; };
+::
+   
+    modules {
+    	path = "text";
+    	module = text;
+    };
+
 The modules block specifies information for loadable modules.
+
+modules {} variables
+~~~~~~~~~~~~~~~~~~~~
 
 path
     Specifies a path to search for loadable modules.
@@ -531,9 +559,12 @@ module
 general {} block
 ----------------
 
-modules {
-values
-};
+::
+
+    modules {
+    	values
+    };
+
 The general block specifies a variety of options, many of which were in
 ``config.h`` in older daemons. The options are documented in
 ``reference.conf``.
@@ -541,9 +572,12 @@ The general block specifies a variety of options, many of which were in
 channel {} block
 ----------------
 
-modules {
-values
-};
+::
+
+    modules {
+    	values
+    };
+
 The channel block specifies a variety of channel-related options, many
 of which were in ``config.h`` in older daemons. The options are
 documented in ``reference.conf``.
@@ -551,26 +585,34 @@ documented in ``reference.conf``.
 serverhide {} block
 -------------------
 
-modules {
-values
-};
+::
+
+    modules {
+    	values
+    };
+
 The serverhide block specifies options related to server hiding. The
 options are documented in ``reference.conf``.
 
 blacklist {} block
 ------------------
 
-blacklist { host = "
-text
-"; reject\_reason = "
-text
-"; };
+::
+
+    blacklist {
+    	host = "text";
+    	reject_reason = "text";
+    };
+
 The blacklist block specifies DNS blacklists to check. Listed clients
 will not be allowed to connect. IPv6 clients are not checked against
 these.
 
 Multiple blacklists can be specified, in pairs with first host then
 reject\_reason.
+
+blacklist {} variables
+~~~~~~~~~~~~~~~~~~~~~~
 
 host
     The DNSBL to use.
@@ -581,17 +623,21 @@ reject\_reason
 alias {} block
 --------------
 
-alias "
-name
-" { target = "
-text
-"; };
+::
+
+    alias "name" {
+    	target = "text";
+    };
+
 Alias blocks allow the definition of custom commands. These commands
-send PRIVMSG to the given target. A real command takes precedence above
+send ``PRIVMSG`` to the given target. A real command takes precedence above
 an alias.
 
+alias {} variables
+~~~~~~~~~~~~~~~~~~
+
 target
-    The target nick (must be a network service (umode +S)) or
+    The target nick (must be a network service (umode ``+S``)) or
     user@server. In the latter case, the server cannot be this server,
     only opers can use user starting with "opers" reliably and the user
     is interpreted on the target server only so you may need to use
@@ -600,11 +646,13 @@ target
 cluster {} block
 ----------------
 
-cluster { name = "
-text
-"; flags =
-list
-; };
+::
+   
+    cluster {
+    	name = "text";
+    	flags = list;
+    };
+    
 The cluster block specifies servers we propagate things to
 automatically. This does not allow them to set bans, you need a separate
 shared{} block for that.
@@ -613,7 +661,10 @@ Having overlapping cluster{} items will cause the command to be executed
 twice on the target servers. This is particularly undesirable for ban
 removals.
 
-The letters in parentheses denote the flags in /stats U.
+The letters in parentheses denote the flags in ``/stats`` U.
+
+cluster {} variables
+~~~~~~~~~~~~~~~~~~~~
 
 name
     The server name to share with, this may contain wildcards and may be
@@ -624,23 +675,26 @@ flags
     another flags entry) will receive these flags. They are listed
     below.
 
+cluster {} flags
+~~~~~~~~~~~~~~~~
+
 kline (K)
-    Permanent K:lines
+    Permanent ``K:lines``
 
 tkline (k)
-    Temporary K:lines
+    Temporary ``K:lines``
 
 unkline (U)
-    K:line removals
+    ``K:line`` removals
 
 xline (X)
-    Permanent X:lines
+    Permanent ``X:lines``
 
 txline (x)
-    Temporary X:lines
+    Temporary ``X:lines``
 
 unxline (Y)
-    X:line removals
+    ``X:line`` removals
 
 resv (Q)
     Permanently reserved nicks/channels
@@ -649,11 +703,11 @@ tresv (q)
     Temporarily reserved nicks/channels
 
 unresv (R)
-    RESV removals
+    ``RESV`` removals
 
 locops (L)
-    LOCOPS messages (sharing this with \* makes LOCOPS rather similar to
-    OPERWALL which is not useful)
+    ``LOCOPS`` messages (sharing this with \* makes ``LOCOPS`` rather similar to
+    ``OPERWALL`` which is not useful)
 
 all
     All of the above
@@ -661,19 +715,22 @@ all
 shared {} block
 ---------------
 
-shared { oper = "
-user@host
-", "
-server
-"; flags =
-list
-; };
+::
+   
+    shared {
+    	oper = "user@host", "server";
+    	flags = list;
+    };
+
 The shared block specifies opers allowed to perform certain actions on
 our server remotely. These are ordered top down. The first one matching
 will determine the oper's access. If access is denied, the command will
 be silently ignored.
 
-The letters in parentheses denote the flags in /stats U.
+The letters in parentheses denote the flags in ``/stats U``.
+
+shared {} variables
+~~~~~~~~~~~~~~~~~~~
 
 oper
     The user@host the oper must have, and the server they must be on.
@@ -684,26 +741,29 @@ flags
     another flags entry) will receive these flags. They are listed
     below.
 
-.. note:: While they have the same names, the flags have subtly
-          different meanings from those in the cluster{} block.
+    .. note:: While they have the same names, the flags have subtly
+              different meanings from those in the cluster{} block.
+
+shared {} flags
+~~~~~~~~~~~~~~~
 
 kline (K)
-    Permanent and temporary K:lines
+    Permanent and temporary ``K:lines``
 
 tkline (k)
-    Temporary K:lines
+    Temporary ``K:lines``
 
 unkline (U)
-    K:line removals
+    ``K:line`` removals
 
 xline (X)
-    Permanent and temporary X:lines
+    Permanent and temporary ``X:lines``
 
 txline (x)
-    Temporary X:lines
+    Temporary ``X:lines``
 
 unxline (Y)
-    X:line removals
+    ``X:line`` removals
 
 resv (Q)
     Permanently and temporarily reserved nicks/channels
@@ -712,29 +772,29 @@ tresv (q)
     Temporarily reserved nicks/channels
 
 unresv (R)
-    RESV removals
+    ``RESV`` removals
 
 all
     All of the above; this does not include locops, rehash, dline,
     tdline or undline.
 
 locops (L)
-    LOCOPS messages (accepting this from \* makes LOCOPS rather similar
-    to OPERWALL which is not useful); unlike the other flags, this can
+    ``LOCOPS`` messages (accepting this from \* makes ``LOCOPS`` rather similar
+    to ``OPERWALL`` which is not useful); unlike the other flags, this can
     only be accepted from \*@\* although it can be restricted based on
     source server.
 
 rehash (H)
-    REHASH commands; all options can be used
+    ``REHASH`` commands; all options can be used
 
 dline (D)
-    Permanent and temporary D:lines
+    Permanent and temporary ``D:lines``
 
 tdline (d)
-    Temporary D:lines
+    Temporary ``D:lines``
 
 undline (E)
-    D:line removals
+    ``D:line`` removals
 
 none
     Allow nothing to be done
@@ -742,12 +802,15 @@ none
 service {} block
 ----------------
 
-service { name = "
-text
-"; };
+::
+
+    service {
+    	name = "text";
+    };
+
 The service block specifies privileged servers (services). These servers
 have extra privileges such as setting login names on users and
-introducing clients with umode +S (unkickable, hide channels, etc). This
+introducing clients with umode ``+S`` (unkickable, hide channels, etc). This
 does not allow them to set bans, you need a separate shared{} block for
 that.
 
@@ -755,6 +818,9 @@ Do not place normal servers here.
 
 Multiple names may be specified but there may be only one service{}
 block.
+
+service {} variables
+~~~~~~~~~~~~~~~~~~~~
 
 name
     The server name to grant special privileges. This may not contain
@@ -766,7 +832,7 @@ Hostname resolution (DNS)
 Charybdis uses solely DNS for all hostname/address lookups (no
 ``/etc/hosts`` or anything else). The DNS servers are taken from
 ``/etc/resolv.conf``. If this file does not exist or no valid IP
-addresses are listed in it, the local host (127.0.0.1) is used. (Note
+addresses are listed in it, the local host (``127.0.0.1``) is used. (Note
 that the latter part did not work in older versions of Charybdis.)
 
 IPv4 as well as IPv6 DNS servers are supported, but it is not possible
@@ -774,4 +840,4 @@ to use both IPv4 and IPv6 in ``/etc/resolv.conf``.
 
 For both security and performance reasons, it is recommended that a
 caching nameserver such as BIND be run on the same machine as Charybdis
-and that ``/etc/resolv.conf`` only list 127.0.0.1.
+and that ``/etc/resolv.conf`` only list ``127.0.0.1``.
