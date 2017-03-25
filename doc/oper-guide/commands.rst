@@ -1,12 +1,8 @@
-.. contents::
-   :depth: 3
-..
-
 Operator Commands
 =================
 
 Network management commands
-===========================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     **Note**
 
@@ -210,7 +206,7 @@ SPLITNUM
     splitmode. Only servers that have finished bursting count for this.
 
 User management commands
-========================
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 KILL
 ----
@@ -633,7 +629,7 @@ this session. This command is disabled by default because of the abuse
 potential and little practical use.
 
 Miscellaneous commands
-======================
+~~~~~~~~~~~~~~~~~~~~~~
 
 ADMIN
 -----
