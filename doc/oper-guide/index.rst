@@ -3,15 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Charybdis operator guide's documentation!
-====================================================
+============================================
+Operators guide for the charybdis IRC server
+============================================
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
-
-
+   intro
+   umodes
+   cmodes
+   ucommands
+   commands
+   oprivs
+   config
 
 Indices and tables
 ==================
