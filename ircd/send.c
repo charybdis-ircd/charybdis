@@ -601,18 +601,18 @@ sendto_channel_opmod(struct Client *one, struct Client *source_p,
 
 	if(IsServer(source_p)) {
 		msgbuf_cache_initf(&msgbuf_cache, &msgbuf, &strings,
-			       ":%s %s %s :",
+			       ":%s %s @%s :",
 			       source_p->name, command, chptr->chname);
 	} else {
 		msgbuf_cache_initf(&msgbuf_cache, &msgbuf, &strings,
-			       ":%s!%s@%s %s %s :",
+			       ":%s!%s@%s %s @%s :",
 			       source_p->name, source_p->username,
 			       source_p->host, command, chptr->chname);
 	}
 
 	if (chptr->mode.mode & MODE_MODERATED) {
 		linebuf_put_msgf(&rb_linebuf_old, &strings,
-			       ":%s %s %s :",
+			       ":%s %s @%s :",
 			       use_id(source_p), command, chptr->chname, text);
 	} else {
 		linebuf_put_msgf(&rb_linebuf_old, &strings,
