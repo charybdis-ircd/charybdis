@@ -28,4 +28,5 @@ Unless noted below, all types can be used with +b, +q, +e and +I.
               channel
   $x:<mask> - Bans all users with matching nick!user@host#gecos
      $z     - Matches all SSL users
+  $z:<data> - Matches all SSL users with a fingerprint matching the data
 
