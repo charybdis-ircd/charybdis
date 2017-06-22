@@ -152,8 +152,8 @@ static const int rb_mbedtls_ciphersuites[] = {
  *
  * BEFORE YOU THROW YOUR ARMS UP IN A PANIC ABOUT A BACKDOOR, READ THIS TEXT!
  *
- * ARM mbedTLS requires a CA certificate to be set in its configuration before it will
- * request a client certificate from peers. Since we want to do that, and not all
+ * ARM mbedTLS required a CA certificate to be set in its configuration before it will
+ * process a client certificate from peers. Since we want to do that, and not all
  * installations will have a CA certificate to hand, we have this.
  *
  * Its key was securely destroyed after being generated, but even if it wasn't, that
@@ -163,8 +163,14 @@ static const int rb_mbedtls_ciphersuites[] = {
  * After all, it only cares about certificates in as far as to generate a fingerprint
  * for them.
  *
- * Yes, this is a massive hack, but there is no alternative.
+ * Yes, this is a massive hack, but there is no alternative for older versions.
+ *
+ * This issue was fixed in commit 39ae8cd2077d on the MbedTLS 2.5 development branch,
+ * released in version 2.5.1 on 19 June 2017. This certificate will not be used if
+ * that version (or greater) is installed.
  */
+
+#if (MBEDTLS_VERSION_NUMBER < 0x02050100)
 
 static const unsigned char rb_mbedtls_dummy_ca_certificate[825] = {
 	0x30, 0x82, 0x03, 0x35, 0x30, 0x82, 0x02, 0x1D, 0xA0, 0x03, 0x02, 0x01, 0x02, 0x02, 0x09, 0x00,
@@ -220,5 +226,7 @@ static const unsigned char rb_mbedtls_dummy_ca_certificate[825] = {
 	0x0E, 0x48, 0x83, 0x35, 0xA9, 0x74, 0xBF, 0x45, 0x07, 0xC8, 0x5A, 0x12, 0xA2, 0x4D, 0x16, 0xDB,
 	0xB3, 0x1F, 0x72, 0xDE, 0x2A, 0x28, 0xFE, 0x7C, 0x2D
 };
+
+#endif /* MBEDTLS_VERSION_NUMBER */
 
 #endif /* RB_MBEDTLS_EMBEDDED_DATA_H */

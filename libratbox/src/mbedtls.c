@@ -65,8 +65,11 @@ typedef struct
 static mbedtls_ctr_drbg_context ctr_drbg_ctx;
 static mbedtls_entropy_context entropy_ctx;
 
-static mbedtls_x509_crt dummy_ca_ctx;
 static rb_mbedtls_cfg_context *rb_mbedtls_cfg = NULL;
+
+#if (MBEDTLS_VERSION_NUMBER < 0x02050100)
+static mbedtls_x509_crt dummy_ca_ctx;
+#endif
 
 
 
@@ -226,8 +229,10 @@ rb_mbedtls_cfg_new(void)
 	mbedtls_ssl_conf_rng(&cfg->server_cfg, mbedtls_ctr_drbg_random, &ctr_drbg_ctx);
 	mbedtls_ssl_conf_rng(&cfg->client_cfg, mbedtls_ctr_drbg_random, &ctr_drbg_ctx);
 
+#if (MBEDTLS_VERSION_NUMBER < 0x02050100)
 	mbedtls_ssl_conf_ca_chain(&cfg->server_cfg, &dummy_ca_ctx, NULL);
 	mbedtls_ssl_conf_ca_chain(&cfg->client_cfg, &dummy_ca_ctx, NULL);
+#endif
 
 	mbedtls_ssl_conf_authmode(&cfg->server_cfg, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_authmode(&cfg->client_cfg, MBEDTLS_SSL_VERIFY_NONE);
@@ -429,12 +434,14 @@ rb_init_ssl(void)
 		return 0;
 	}
 
+#if (MBEDTLS_VERSION_NUMBER < 0x02050100)
 	if((ret = mbedtls_x509_crt_parse_der(&dummy_ca_ctx, rb_mbedtls_dummy_ca_certificate,
 	                                     sizeof(rb_mbedtls_dummy_ca_certificate))) != 0)
 	{
 		rb_lib_log("%s: x509_crt_parse_der (Dummy CA): %s", __func__, rb_ssl_strerror(ret));
 		return 0;
 	}
+#endif
 
 	rb_lib_log("%s: MbedTLS backend initialised", __func__);
 	return 1;
