@@ -243,7 +243,6 @@ AS_IF([test "x$enable_fhs_paths" = "xyes"],
 pkglibdir='${libdir}/${PACKAGE_TARNAME}'
 AC_SUBST([pkglibdir])
 AC_SUBST([rundir])
-AC_SUBST([pkgrundir])
 AC_SUBST([pkglocalstatedir])
 AC_DEFINE_DIR([PKGLOCALSTATEDIR], [pkglocalstatedir], [[Directory in which to store state, such as ban database]])
 AC_SUBST([pkglibexecdir])
@@ -684,20 +683,39 @@ AC_ARG_WITH(moduledir,
 AC_DEFINE_DIR(MODULE_DIR, moduledir, [Prefix where modules are installed.])
 AC_SUBST_DIR([moduledir])
 
+dnl **********************************************************************
 dnl Check for --with-rundir
+dnl **********************************************************************
 
-AC_MSG_CHECKING([whether or modify rundir])
+AC_MSG_CHECKING([whether to modify rundir])
 AC_ARG_WITH([rundir],
 	[AC_HELP_STRING([--with-rundir=DIR],
-		[Directory in which to store pidfile.])],
+		[Directory to use as prefix for pidfile.])],
 	[AC_MSG_RESULT([yes])
 	rundir=`echo $withval | sed 's/\/$//'`],
 	[AC_MSG_RESULT([no])
 	AS_IF([test "x$enable_fhs_paths" = "xyes"],
 		[rundir='${prefix}/run'],
 		[rundir='${sysconfdir}'])])
-AC_SUBST([rundir])
+
+dnl **********************************************************************
+dnl Check for --with-pkgrundir
+dnl **********************************************************************
+
+AC_MSG_CHECKING([whether to modify pkgrundir])
+AC_ARG_WITH([pkgrundir],
+	[AC_HELP_STRING([--with-pkgrundir=DIR],
+		[Directory in which to store pidfile.])],
+	[AC_MSG_RESULT([yes])
+	pkgrundir=`echo $withval | sed 's/\/$//'`],
+	[AC_MSG_RESULT([no])])
+
+AC_SUBST([pkgrundir])
 AC_DEFINE_DIR([PKGRUNDIR], [pkgrundir], [Directory to store pidfile in.])
+
+dnl **********************************************************************
+dnl Check for --with-program-prefix
+dnl **********************************************************************
 
 dnl Installed utility program prefixes (does not affect binaries
 dnl installed into pkglibexecdir)

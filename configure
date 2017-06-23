@@ -635,6 +635,7 @@ MODULES_LIBS
 SELECT_TYPE
 PROGRAM_PREFIX
 PKGRUNDIR
+pkgrundir
 moduledir
 MODULE_DIR
 helpdir
@@ -659,7 +660,6 @@ PKGLIBEXECDIR
 pkglibexecdir
 PKGLOCALSTATEDIR
 pkglocalstatedir
-pkgrundir
 rundir
 pkglibdir
 LEXLIB
@@ -751,6 +751,7 @@ with_logdir
 with_helpdir
 with_moduledir
 with_rundir
+with_pkgrundir
 with_program_prefix
 with_custom_branding
 with_custom_version
@@ -1416,7 +1417,8 @@ Optional Packages:
   --with-logdir=DIR       Directory where to write logfiles.
   --with-helpdir=DIR      Directory to install help files.
   --with-moduledir=DIR    Directory to install modules.
-  --with-rundir=DIR       Directory in which to store pidfile.
+  --with-rundir=DIR       Directory to use as prefix for pidfile.
+  --with-pkgrundir=DIR    Directory in which to store pidfile.
   --with-program-prefix=  If set, programs installed into PATH will be
                           installed with names prefixed by this prefix.
   --with-custom-branding=NAME
@@ -5438,7 +5440,6 @@ pkglibdir='${libdir}/${PACKAGE_TARNAME}'
 
 
 
-
   test "x$prefix" = xNONE && prefix="$ac_default_prefix"
   test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
   last_ac_define_dir=`eval echo $pkglocalstatedir`
@@ -7732,8 +7733,8 @@ _ACEOF
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether or modify rundir" >&5
-$as_echo_n "checking whether or modify rundir... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to modify rundir" >&5
+$as_echo_n "checking whether to modify rundir... " >&6; }
 
 # Check whether --with-rundir was given.
 if test "${with_rundir+set}" = set; then :
@@ -7749,6 +7750,22 @@ else
   rundir='${sysconfdir}'
 fi
 fi
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to modify pkgrundir" >&5
+$as_echo_n "checking whether to modify pkgrundir... " >&6; }
+
+# Check whether --with-pkgrundir was given.
+if test "${with_pkgrundir+set}" = set; then :
+  withval=$with_pkgrundir; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	pkgrundir=`echo $withval | sed 's/\/$//'`
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
 
 
 
@@ -7772,6 +7789,7 @@ fi
 cat >>confdefs.h <<_ACEOF
 #define PKGRUNDIR "$ac_define_dir"
 _ACEOF
+
 
 
 
