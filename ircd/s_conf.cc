@@ -1591,15 +1591,15 @@ conf_add_d_conf(struct ConfItem *aconf)
 	}
 }
 
-static char *
-strip_tabs(char *dest, const char *src, size_t len)
+static void
+strip_tabs(char *dest, const char *src, size_t size)
 {
 	char *d = dest;
 
 	if(dest == NULL || src == NULL)
-		return NULL;
+		return;
 
-	rb_strlcpy(dest, src, len);
+	rb_strlcpy(dest, src, size);
 
 	while(*d)
 	{
@@ -1607,7 +1607,6 @@ strip_tabs(char *dest, const char *src, size_t len)
 			*d = ' ';
 		d++;
 	}
-	return dest;
 }
 
 /*
@@ -1622,7 +1621,7 @@ yyerror(const char *msg)
 {
 	char newlinebuf[BUFSIZE];
 
-	strip_tabs(newlinebuf, yy_linebuf, strlen(yy_linebuf));
+	strip_tabs(newlinebuf, yy_linebuf, sizeof(newlinebuf));
 
 	ierror("\"%s\", line %d: %s at '%s'", conffilebuf, lineno + 1, msg, newlinebuf);
 	sendto_realops_snomask(SNO_GENERAL, L_ALL, "\"%s\", line %d: %s at '%s'",
