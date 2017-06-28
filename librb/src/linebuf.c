@@ -204,7 +204,7 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 	/* If its full or terminated, ignore it */
 
 	bufline->raw = 0;
-	lrb_assert(bufline->len < BUF_DATA_SIZE);
+	lrb_assert(bufline->len <= LINEBUF_DATA_SIZE);
 	if(bufline->terminated == 1)
 		return 0;
 
@@ -213,12 +213,12 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 		return -1;
 
 	/* This is the ~overflow case..This doesn't happen often.. */
-	if(cpylen > (BUF_DATA_SIZE - bufline->len - 1))
+	if(cpylen > (LINEBUF_DATA_SIZE - bufline->len))
 	{
-		cpylen = BUF_DATA_SIZE - bufline->len - 1;
+		cpylen = LINEBUF_DATA_SIZE - bufline->len;
 		memcpy(bufch, ch, cpylen);
-		bufline->buf[BUF_DATA_SIZE - 1] = '\0';
-		bufch = bufline->buf + BUF_DATA_SIZE - 2;
+		bufline->buf[LINEBUF_DATA_SIZE] = '\0';
+		bufch = bufline->buf + LINEBUF_DATA_SIZE - 1;
 		while(cpylen && (*bufch == '\r' || *bufch == '\n'))
 		{
 			*bufch = '\0';
@@ -226,8 +226,8 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 			bufch--;
 		}
 		bufline->terminated = 1;
-		bufline->len = BUF_DATA_SIZE - 1;
-		bufhead->len += BUF_DATA_SIZE - 1;
+		bufline->len = LINEBUF_DATA_SIZE;
+		bufhead->len += LINEBUF_DATA_SIZE;
 		return clen;
 	}
 
@@ -278,7 +278,7 @@ rb_linebuf_copy_raw(buf_head_t * bufhead, buf_line_t * bufline, char *data, int 
 	/* If its full or terminated, ignore it */
 
 	bufline->raw = 1;
-	lrb_assert(bufline->len < BUF_DATA_SIZE);
+	lrb_assert(bufline->len <= LINEBUF_DATA_SIZE);
 	if(bufline->terminated == 1)
 		return 0;
 
@@ -287,14 +287,14 @@ rb_linebuf_copy_raw(buf_head_t * bufhead, buf_line_t * bufline, char *data, int 
 		return -1;
 
 	/* This is the overflow case..This doesn't happen often.. */
-	if(cpylen > (BUF_DATA_SIZE - bufline->len - 1))
+	if(cpylen > (LINEBUF_DATA_SIZE - bufline->len))
 	{
-		clen = BUF_DATA_SIZE - bufline->len - 1;
+		clen = LINEBUF_DATA_SIZE - bufline->len;
 		memcpy(bufch, ch, clen);
-		bufline->buf[BUF_DATA_SIZE - 1] = '\0';
+		bufline->buf[LINEBUF_DATA_SIZE] = '\0';
 		bufline->terminated = 1;
-		bufline->len = BUF_DATA_SIZE - 1;
-		bufhead->len += BUF_DATA_SIZE - 1;
+		bufline->len = LINEBUF_DATA_SIZE;
+		bufhead->len += LINEBUF_DATA_SIZE;
 		return clen;
 	}
 
@@ -501,38 +501,37 @@ rb_linebuf_putmsg(buf_head_t * bufhead, const char *format, va_list * va_args,
 	va_list prefix_args;
 
 	/* make sure the previous line is terminated */
-#ifndef NDEBUG
 	if(bufhead->list.tail)
 	{
 		bufline = bufhead->list.tail->data;
 		lrb_assert(bufline->terminated);
 	}
-#endif
+
 	/* Create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
 	if(prefixfmt != NULL)
 	{
 		va_start(prefix_args, prefixfmt);
-		len = vsnprintf(bufline->buf, BUF_DATA_SIZE, prefixfmt, prefix_args);
+		len = vsnprintf(bufline->buf, LINEBUF_DATA_SIZE + 1, prefixfmt, prefix_args);
 		va_end(prefix_args);
 	}
 
 	if(va_args != NULL)
 	{
-		len += vsnprintf((bufline->buf + len), (BUF_DATA_SIZE - len), format, *va_args);
+		len += vsnprintf((bufline->buf + len), (LINEBUF_DATA_SIZE - len) + 1, format, *va_args);
 	}
 
 	bufline->terminated = 1;
 
 	/* Truncate the data if required */
-	if(rb_unlikely(len > 510))
+	if(len > LINEBUF_DATA_SIZE)
 	{
-		len = 510;
+		len = LINEBUF_DATA_SIZE;
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
 	}
-	else if(rb_unlikely(len == 0))
+	else if(len == 0)
 	{
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
@@ -571,34 +570,33 @@ rb_linebuf_putprefix(buf_head_t * bufhead, const char *format, va_list * va_args
 	int len = 0;
 
 	/* make sure the previous line is terminated */
-#ifndef NDEBUG
 	if(bufhead->list.tail)
 	{
 		bufline = bufhead->list.tail->data;
 		lrb_assert(bufline->terminated);
 	}
-#endif
+
 	/* Create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
 	if(prefix != NULL)
-		len = rb_strlcpy(bufline->buf, prefix, BUF_DATA_SIZE);
+		len = rb_strlcpy(bufline->buf, prefix, LINEBUF_DATA_SIZE + 1);
 
 	if(va_args != NULL)
 	{
-		len += vsnprintf((bufline->buf + len), (BUF_DATA_SIZE - len), format, *va_args);
+		len += vsnprintf((bufline->buf + len), (LINEBUF_DATA_SIZE - len) + 1, format, *va_args);
 	}
 
 	bufline->terminated = 1;
 
 	/* Truncate the data if required */
-	if(rb_unlikely(len > 510))
+	if(len > LINEBUF_DATA_SIZE)
 	{
-		len = 510;
+		len = LINEBUF_DATA_SIZE;
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
 	}
-	else if(rb_unlikely(len == 0))
+	else if(len == 0)
 	{
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
@@ -629,29 +627,28 @@ rb_linebuf_putbuf(buf_head_t * bufhead, const char *buffer)
 	int len = 0;
 
 	/* make sure the previous line is terminated */
-#ifndef NDEBUG
 	if(bufhead->list.tail)
 	{
 		bufline = bufhead->list.tail->data;
 		lrb_assert(bufline->terminated);
 	}
-#endif
+
 	/* Create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
-	if(rb_unlikely(buffer != NULL))
-		len = rb_strlcpy(bufline->buf, buffer, BUF_DATA_SIZE);
+	if(buffer != NULL)
+		len = rb_strlcpy(bufline->buf, buffer, LINEBUF_DATA_SIZE + 1);
 
 	bufline->terminated = 1;
 
 	/* Truncate the data if required */
-	if(rb_unlikely(len > 510))
+	if(len > LINEBUF_DATA_SIZE)
 	{
-		len = 510;
+		len = LINEBUF_DATA_SIZE;
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
 	}
-	else if(rb_unlikely(len == 0))
+	else if(len == 0)
 	{
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
@@ -685,33 +682,32 @@ rb_linebuf_put(buf_head_t * bufhead, const char *format, ...)
 	va_list args;
 
 	/* make sure the previous line is terminated */
-#ifndef NDEBUG
 	if(bufhead->list.tail)
 	{
 		bufline = bufhead->list.tail->data;
 		lrb_assert(bufline->terminated);
 	}
-#endif
+
 	/* Create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
-	if(rb_unlikely(format != NULL))
+	if(format != NULL)
 	{
 		va_start(args, format);
-		len = vsnprintf(bufline->buf, BUF_DATA_SIZE, format, args);
+		len = vsnprintf(bufline->buf, LINEBUF_DATA_SIZE + 1, format, args);
 		va_end(args);
 	}
 
 	bufline->terminated = 1;
 
 	/* Truncate the data if required */
-	if(rb_unlikely(len > 510))
+	if(len > LINEBUF_DATA_SIZE)
 	{
-		len = 510;
+		len = LINEBUF_DATA_SIZE;
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';
 	}
-	else if(rb_unlikely(len == 0))
+	else if(len == 0)
 	{
 		bufline->buf[len++] = '\r';
 		bufline->buf[len++] = '\n';

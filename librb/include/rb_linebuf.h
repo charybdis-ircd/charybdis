@@ -38,12 +38,13 @@
 struct _buf_line;
 struct _buf_head;
 
-/* How big we want a buffer - 510 data bytes, plus space for a '\0' */
-#define BUF_DATA_SIZE		511
+/* IRCv3 tags (512 bytes) + RFC1459 message (510 bytes) */
+#define LINEBUF_DATA_SIZE	(512 + 510)
+#define CRLF_LEN		2
 
 typedef struct _buf_line
 {
-	char buf[BUF_DATA_SIZE + 2];
+	char buf[LINEBUF_DATA_SIZE + CRLF_LEN + 1];
 	uint8_t terminated;	/* Whether we've terminated the buffer */
 	uint8_t raw;		/* Whether this linebuf may hold 8-bit data */
 	int len;		/* How much data we've got */
