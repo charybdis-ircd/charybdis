@@ -89,7 +89,10 @@
 
 /* 23+1 for \0 */
 #define KEYLEN          24
+#define TAGSLEN         512	/* IRCv3 message tags */
+#define DATALEN         510	/* RFC1459 message data */
 #define BUFSIZE         512	/* WARNING: *DONT* CHANGE THIS!!!! */
+#define EXT_BUFSIZE     (TAGSLEN + DATALEN + 1)
 #define OPERNICKLEN     (NICKLEN*2)	/* Length of OPERNICKs. */
 
 #define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)

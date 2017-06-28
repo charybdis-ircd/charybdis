@@ -218,10 +218,11 @@ send_queued_write(rb_fde_t *F, void *data)
 static void
 linebuf_put_msgvbuf(struct MsgBuf *msgbuf, buf_head_t *linebuf, unsigned int capmask, const char *pattern, va_list *va)
 {
-	char buf[BUFSIZE];
+	char buf[EXT_BUFSIZE];
+	size_t buflen = sizeof(buf);
 
 	rb_linebuf_newbuf(linebuf);
-	msgbuf_unparse_prefix(buf, sizeof buf, msgbuf, capmask);
+	msgbuf_unparse_prefix(buf, &buflen, msgbuf, capmask);
 	rb_linebuf_putprefix(linebuf, pattern, va, buf);
 }
 

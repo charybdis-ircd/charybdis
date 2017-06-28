@@ -43,7 +43,6 @@ struct Blacklist;
 #define HOSTIPLEN	53	/* sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255.ipv6") */
 #define PASSWDLEN	128
 #define CIPHERKEYLEN	64	/* 512bit */
-#define CLIENT_BUFSIZE	512	/* must be at least 512 bytes */
 
 #define IDLEN		10
 

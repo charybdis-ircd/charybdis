@@ -55,7 +55,7 @@ int msgbuf_parse(struct MsgBuf *msgbuf, char *line);
  * cmd may not be NULL.
  * returns 0 on success, 1 on error.
  */
-int msgbuf_unparse(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask);
+int msgbuf_unparse(char *buf, size_t buflen, const struct MsgBuf *msgbuf, unsigned int capmask);
 
 /*
  * unparse a MsgBuf header plus payload into a buffer.
@@ -63,10 +63,10 @@ int msgbuf_unparse(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int
  * cmd may not be NULL.
  * returns 0 on success, 1 on error.
  */
-int msgbuf_unparse_fmt(char *buf, size_t buflen, struct MsgBuf *head, unsigned int capmask, const char *fmt, ...) AFP(5, 6);
-int msgbuf_vunparse_fmt(char *buf, size_t buflen, struct MsgBuf *head, unsigned int capmask, const char *fmt, va_list va);
+int msgbuf_unparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, ...) AFP(5, 6);
+int msgbuf_vunparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, va_list va);
 
-void msgbuf_unparse_prefix(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask);
+void msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, unsigned int capmask);
 
 static inline void
 msgbuf_init(struct MsgBuf *msgbuf)
@@ -82,15 +82,6 @@ msgbuf_append_tag(struct MsgBuf *msgbuf, const char *key, const char *value, uns
 		msgbuf->tags[msgbuf->n_tags].value = value;
 		msgbuf->tags[msgbuf->n_tags].capmask = capmask;
 		msgbuf->n_tags++;
-	}
-}
-
-static inline void
-msgbuf_append_para(struct MsgBuf *msgbuf, const char *para)
-{
-	if (msgbuf->n_para < MAXPARA) {
-		msgbuf->para[msgbuf->n_para] = para;
-		msgbuf->n_para++;
 	}
 }
 

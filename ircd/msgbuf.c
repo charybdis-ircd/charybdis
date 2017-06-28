@@ -25,6 +25,60 @@
 #include "client.h"
 #include "ircd.h"
 
+static const char tag_escape_table[256] = {
+	/*        x0   x1   x2   x3   x4   x5   x6   x7   x8   x9   xA   xB   xC   xD   xE   xF */
+	/* 0x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 'n',   0,   0, 'r',   0,   0,
+	/* 1x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 2x */ 's',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 3x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, ':',   0,   0,   0,   0,
+	/* 4x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 5x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,'\\',   0,   0,   0,
+};
+
+static const char tag_unescape_table[256] = {
+	/*        x0   x1   x2   x3   x4   x5   x6   x7   x8   x9   xA   xB   xC   xD   xE   xF */
+	/* 0x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 1x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 2x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 3x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, ';',   0,   0,   0,   0,   0,
+	/* 4x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	/* 5x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,'\\',   0,   0,   0,
+	/* 6x */   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,'\n',   0,
+	/* 7x */   0,   0,'\r', ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+};
+
+static void
+msgbuf_unescape_value(char *value)
+{
+	char *in = value;
+	char *out = value;
+
+	if (value == NULL)
+		return;
+
+	while (*in != '\0') {
+		if (*in == '\\') {
+			const char unescape = tag_unescape_table[(unsigned char)*++in];
+
+			/* "\\\0" is unescaped to the character itself, "\0" */
+			if (*in == '\0')
+				break;
+
+			if (unescape) {
+				*out++ = unescape;
+				*in++;
+			} else {
+				*out++ = *in++;
+			}
+		} else {
+			*out++ = *in++;
+		}
+	}
+
+	/* copy final '\0' */
+	*out = *in;
+}
+
 /*
  * parse a message into a MsgBuf.
  * returns 0 on success, 1 on error.
@@ -32,29 +86,29 @@
 int
 msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 {
-	char *ch;
-	char *parv[MAXPARA];
-
-	/* skip any leading spaces */
-	for (ch = line; *ch && *ch == ' '; ch++)
-		;
+	char *ch = line;
 
 	msgbuf_init(msgbuf);
 
-	if (*ch == '@')
-	{
+	if (*ch == '@') {
 		char *t = ch + 1;
 
 		ch = strchr(ch, ' ');
-		if (ch != NULL)
-		{
-			while (1)
-			{
+
+		/* truncate tags if they're too long */
+		if ((ch != NULL && (ch - line) + 1 > TAGSLEN) || (ch == NULL && strlen(line) >= TAGSLEN)) {
+			ch = &line[TAGSLEN - 1];
+		}
+
+		if (ch != NULL) {
+			/* NULL terminate the tags string */
+			*ch++ = '\0';
+
+			while (1) {
 				char *next = strchr(t, ';');
 				char *eq = strchr(t, '=');
 
-				if (next != NULL)
-				{
+				if (next != NULL) {
 					*next = '\0';
 
 					if (eq > next)
@@ -64,123 +118,189 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 				if (eq != NULL)
 					*eq++ = '\0';
 
-				if (*t && *t != ' ')
+				if (*t != '\0') {
+					msgbuf_unescape_value(eq);
 					msgbuf_append_tag(msgbuf, t, eq, 0);
-				else
-					break;
+				}
 
-				if (next != NULL)
+				if (next != NULL) {
 					t = next + 1;
-				else
+				} else {
 					break;
+				}
 			}
-
-			*ch++ = '\0';
+		} else {
+			return 1;
 		}
-		else
-			ch = t;
 	}
 
-	/* skip any whitespace between tags and origin */
-	for (; *ch && *ch == ' '; ch++)
-		;
+	/* truncate message if it's too long */
+	if (strlen(ch) > DATALEN) {
+		ch[DATALEN] = '\0';
+	}
 
-	if (*ch == ':')
-	{
+	if (*ch == ':') {
 		ch++;
 		msgbuf->origin = ch;
 
 		char *end = strchr(ch, ' ');
 		if (end == NULL)
-			return 1;
+			return 4;
 
 		*end = '\0';
-
-		for (ch = end + 1; *ch && *ch == ' '; ch++)
-			;
+		ch = end + 1;
 	}
 
 	if (*ch == '\0')
-		return 1;
+		return 2;
 
 	msgbuf->n_para = rb_string_to_array(ch, (char **)msgbuf->para, MAXPARA);
 	if (msgbuf->n_para == 0)
-		return 1;
+		return 3;
 
 	msgbuf->cmd = msgbuf->para[0];
 	return 0;
 }
 
-static void
-msgbuf_unparse_tags(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask)
+/*
+ * Unparse msgbuf tags into a buffer
+ * returns the length of the tags written
+ */
+static size_t
+msgbuf_unparse_tags(char *buf, size_t buflen, const struct MsgBuf *msgbuf, unsigned int capmask)
 {
 	bool has_tags = false;
+	char *commit = buf;
+	char *output = buf;
+	const char * const end = &buf[buflen - 2]; /* this is where the final ' ' goes */
 
-	for (size_t i = 0; i < msgbuf->n_tags; i++)
-	{
+	for (size_t i = 0; i < msgbuf->n_tags; i++) {
+		size_t len;
+
 		if ((msgbuf->tags[i].capmask & capmask) == 0)
 			continue;
 
 		if (has_tags) {
-			rb_strlcat(buf, ";", buflen);
+			if (output >= end)
+				break;
+			*output++ = ';';
 		} else {
-			*buf = '@';
-			has_tags = true;
+			if (output >= end)
+				break;
+			*output++ = '@';
 		}
 
-		rb_strlcat(buf, msgbuf->tags[i].key, buflen);
+		if (msgbuf->tags[i].key == NULL)
+			continue;
 
-		/* XXX properly handle escaping */
-		if (msgbuf->tags[i].value)
-		{
-			rb_strlcat(buf, "=", buflen);
-			rb_strlcat(buf, msgbuf->tags[i].value, buflen);
+		len = strlen(msgbuf->tags[i].key);
+		if (len == 0)
+			continue;
+
+		if (output + len > end)
+			break;
+		strcat(output, msgbuf->tags[i].key);
+		output += len;
+
+		if (msgbuf->tags[i].value != NULL) {
+			if (output >= end)
+				break;
+			*output++ = '=';
+
+			len = strlen(msgbuf->tags[i].value);
+			/* this only checks the unescaped length,
+			 * but the escaped length could be longer
+			 */
+			if (output + len > end)
+				break;
+
+			for (size_t n = 0; n < len; n++) {
+				const unsigned char c = msgbuf->tags[i].value[n];
+				const char escape = tag_escape_table[c];
+
+				if (escape) {
+					if (output + 2 > end)
+						break;
+
+					*output++ = '\\';
+					*output++ = escape;
+				} else {
+					if (output >= end)
+						break;
+
+					*output++ = c;
+				}
+			}
 		}
+
+		has_tags = true;
+		commit = output;
 	}
 
 	if (has_tags)
-		rb_strlcat(buf, " ", buflen);
+		*commit++ = ' ';
+
+	*commit = 0;
+	return commit - buf;
 }
 
+/*
+ * unparse a MsgBuf and message prefix into a buffer
+ * if origin is NULL, me.name will be used.
+ * cmd should not be NULL.
+ * updates buflen to correctly allow remaining message data to be added
+ */
 void
-msgbuf_unparse_prefix(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask)
+msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, unsigned int capmask)
 {
-	memset(buf, 0, buflen);
+	size_t tags_buflen;
+	size_t tags_used = 0;
+
+	memset(buf, 0, *buflen);
+
+	tags_buflen = *buflen;
+	if (tags_buflen > TAGSLEN + 1)
+		tags_buflen = TAGSLEN + 1;
 
 	if (msgbuf->n_tags > 0)
-		msgbuf_unparse_tags(buf, buflen, msgbuf, capmask);
+		tags_used = msgbuf_unparse_tags(buf, tags_buflen, msgbuf, capmask);
 
-	rb_snprintf_append(buf, buflen, ":%s ", msgbuf->origin != NULL ? msgbuf->origin : me.name);
+	const size_t data_bufmax = (tags_used + DATALEN + 1);
+	if (*buflen > data_bufmax)
+		*buflen = data_bufmax;
+
+	rb_snprintf_append(buf, *buflen, ":%s ", msgbuf->origin != NULL ? msgbuf->origin : me.name);
 
 	if (msgbuf->cmd != NULL)
-		rb_snprintf_append(buf, buflen, "%s ", msgbuf->cmd);
+		rb_snprintf_append(buf, *buflen, "%s ", msgbuf->cmd);
 
 	if (msgbuf->target != NULL)
-		rb_snprintf_append(buf, buflen, "%s ", msgbuf->target);
+		rb_snprintf_append(buf, *buflen, "%s ", msgbuf->target);
 }
 
 /*
  * unparse a pure MsgBuf into a buffer.
  * if origin is NULL, me.name will be used.
- * cmd may not be NULL.
+ * cmd should not be NULL.
  * returns 0 on success, 1 on error.
  */
 int
-msgbuf_unparse(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int capmask)
+msgbuf_unparse(char *buf, size_t buflen, const struct MsgBuf *msgbuf, unsigned int capmask)
 {
-	msgbuf_unparse_prefix(buf, buflen, msgbuf, capmask);
+	size_t buflen_copy = buflen;
 
-	for (size_t i = msgbuf->cmd != NULL ? 0 : 1; i < msgbuf->n_para; i++)
-	{
-		if (i == (msgbuf->n_para - 1))
-		{
-			if (strchr(msgbuf->para[i], ' ') != NULL)
-				rb_snprintf_append(buf, buflen, ":%s", msgbuf->para[i]);
-			else
-				rb_strlcat(buf, msgbuf->para[i], buflen);
+	msgbuf_unparse_prefix(buf, &buflen_copy, msgbuf, capmask);
+
+	for (size_t i = 0; i < msgbuf->n_para; i++) {
+		const char *fmt;
+
+		if (i == (msgbuf->n_para - 1) && strchr(msgbuf->para[i], ' ') != NULL) {
+			fmt = (i == 0) ? ":%s" : " :%s";
+		} else {
+			fmt = (i == 0) ? "%s" : " %s";
 		}
-		else
-			rb_strlcat(buf, msgbuf->para[i], buflen);
+
+		rb_snprintf_append(buf, buflen_copy, fmt, msgbuf->para[i]);
 	}
 
 	return 0;
@@ -193,16 +313,17 @@ msgbuf_unparse(char *buf, size_t buflen, struct MsgBuf *msgbuf, unsigned int cap
  * returns 0 on success, 1 on error.
  */
 int
-msgbuf_vunparse_fmt(char *buf, size_t buflen, struct MsgBuf *head, unsigned int capmask, const char *fmt, va_list va)
+msgbuf_vunparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, va_list va)
 {
+	size_t buflen_copy = buflen;
 	char *ws;
 	size_t prefixlen;
 
-	msgbuf_unparse_prefix(buf, buflen, head, capmask);
+	msgbuf_unparse_prefix(buf, &buflen_copy, head, capmask);
 	prefixlen = strlen(buf);
 
 	ws = buf + prefixlen;
-	vsnprintf(ws, buflen - prefixlen, fmt, va);
+	vsnprintf(ws, buflen_copy - prefixlen, fmt, va);
 
 	return 0;
 }
@@ -214,7 +335,7 @@ msgbuf_vunparse_fmt(char *buf, size_t buflen, struct MsgBuf *head, unsigned int 
  * returns 0 on success, 1 on error.
  */
 int
-msgbuf_unparse_fmt(char *buf, size_t buflen, struct MsgBuf *head, unsigned int capmask, const char *fmt, ...)
+msgbuf_unparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, ...)
 {
 	va_list va;
 	int res;
