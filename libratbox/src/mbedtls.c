@@ -49,8 +49,8 @@ typedef struct
 	mbedtls_dhm_context	 dhp;
 	mbedtls_ssl_config	 server_cfg;
 	mbedtls_ssl_config	 client_cfg;
-	int			 suites[RB_MAX_CIPHERSUITES + 1];
 	size_t			 refcount;
+	int			 suites[RB_MAX_CIPHERSUITES + 1];
 } rb_mbedtls_cfg_context;
 
 typedef struct
@@ -259,6 +259,8 @@ rb_ssl_accept_common(rb_fde_t *const F, void *const data)
 	lrb_assert(F->accept->callback != NULL);
 	lrb_assert(F->ssl != NULL);
 
+	(void) data;
+
 	const int ret = mbedtls_ssl_handshake(SSL_P(F));
 
 	switch(ret)
@@ -318,16 +320,19 @@ rb_ssl_connect_common(rb_fde_t *const F, void *const data)
 }
 
 static const char *
-rb_ssl_strerror(const int err)
+rb_ssl_strerror(int err)
 {
 	static char errbuf[512];
+
+	if (err < 0)
+		err = -err;
 
 #ifdef MBEDTLS_ERROR_C
 	char mbed_errbuf[512];
 	mbedtls_strerror(err, mbed_errbuf, sizeof mbed_errbuf);
-	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%x: %s", -err, mbed_errbuf);
+	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%X: %s", (unsigned int) err, mbed_errbuf);
 #else
-	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%x", -err);
+	(void) rb_snprintf(errbuf, sizeof errbuf, "-0x%X", (unsigned int) err);
 #endif
 
 	return errbuf;
@@ -372,6 +377,9 @@ rb_make_certfp(const mbedtls_x509_crt *const peer_cert, uint8_t certfp[const RB_
 
 	if(spki)
 	{
+		// Compiler may complain about dropping const qualifier on the cast below
+		// See <https://github.com/ARMmbed/mbedtls/issues/396> -- this is okay
+
 		unsigned char der_pubkey[8192];
 		if((ret = mbedtls_pk_write_pubkey_der((mbedtls_pk_context *)&peer_cert->pk,
 		                                       der_pubkey, sizeof der_pubkey)) < 0)
@@ -598,6 +606,9 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 int
 rb_init_prng(const char *const path, prng_seed_t seed_type)
 {
+	(void) path;
+	(void) seed_type;
+
 	rb_lib_log("%s: Skipping PRNG initialisation; not required by MbedTLS backend", __func__);
 	return 1;
 }
@@ -620,7 +631,7 @@ const char *
 rb_get_ssl_strerror(rb_fde_t *const F)
 {
 	const int err = (int) F->ssl_errno;
-	return rb_ssl_strerror(-err);
+	return rb_ssl_strerror(err);
 }
 
 int
@@ -738,6 +749,8 @@ rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *c
 static void
 rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
 {
+	(void) data;
+
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);
 
