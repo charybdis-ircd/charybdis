@@ -667,6 +667,7 @@ int
 is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
 	  const char *s, const char *s2, const char **forward)
 {
+#if 0
 	if (chptr->last_checked_client != NULL &&
 		who == chptr->last_checked_client &&
 		chptr->last_checked_type == CHFL_BAN &&
@@ -679,6 +680,9 @@ is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
 	chptr->last_checked_ts = rb_current_time();
 
 	return chptr->last_checked_result;
+#else
+	return is_banned_list(chptr, &chptr->banlist, who, msptr, s, s2, forward);
+#endif
 }
 
 /* is_quieted()
@@ -692,6 +696,7 @@ int
 is_quieted(struct Channel *chptr, struct Client *who, struct membership *msptr,
 	   const char *s, const char *s2)
 {
+#if 0
 	if (chptr->last_checked_client != NULL &&
 		who == chptr->last_checked_client &&
 		chptr->last_checked_type == CHFL_QUIET &&
@@ -704,6 +709,9 @@ is_quieted(struct Channel *chptr, struct Client *who, struct membership *msptr,
 	chptr->last_checked_ts = rb_current_time();
 
 	return chptr->last_checked_result;
+#else
+	return is_banned_list(chptr, &chptr->quietlist, who, msptr, s, s2, NULL);
+#endif
 }
 
 /* can_join()
