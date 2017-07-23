@@ -209,6 +209,15 @@ mr_server(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 		}
 
 		return;
+	case -7:
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		     "Connection from servername %s rejected, no more connections allowed in class",
+		     name);
+		ilog(L_SERVER, "Access denied, no more connections allowed in class for %s",
+		     log_client_name(client_p, SHOW_IP));
+
+		exit_client(client_p, client_p, client_p, "Access denied, no more connections allowed in class");
+		return;
 	default:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 		     "Connection from servername %s rejected, unknown error %d",

@@ -437,6 +437,11 @@ check_server(const char *name, struct Client *client_p)
 		return -5;
 	}
 
+	if (client_p->localClient->att_sconf && client_p->localClient->att_sconf->class == server_p->class) {
+		/* this is an outgoing connection that is already attached to the correct class */
+	} else if (CurrUsers(server_p->class) >= MaxUsers(server_p->class)) {
+		return -7;
+	}
 	attach_server_conf(client_p, server_p);
 
 	/* clear ZIP/TB if they support but we dont want them */
