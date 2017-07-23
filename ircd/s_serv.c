@@ -1090,6 +1090,16 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 		return 0;
 	}
 
+	if (CurrUsers(server_p->class) >= MaxUsers(server_p->class)) {
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+				     "No more connections allowed in class \"%s\" for server %s",
+				     server_p->class->class_name, server_p->name);
+		if(by && IsPerson(by) && !MyClient(by))
+			sendto_one_notice(by, ":No more connections allowed in class \"%s\" for server %s",
+				     server_p->class->class_name, server_p->name);
+		return 0;
+	}
+
 	/* create a socket for the server connection */
 	if(GET_SS_FAMILY(&sa_connect) == AF_UNSPEC)
 	{
