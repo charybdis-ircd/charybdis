@@ -12,6 +12,7 @@ SUBDIRS += ircd \
            wsockd \
            authd \
            bandb \
+           tests \
            tools \
            modules \
            extensions \
