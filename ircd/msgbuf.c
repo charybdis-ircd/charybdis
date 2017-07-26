@@ -66,7 +66,7 @@ msgbuf_unescape_value(char *value)
 
 			if (unescape) {
 				*out++ = unescape;
-				*in++;
+				in++;
 			} else {
 				*out++ = *in++;
 			}

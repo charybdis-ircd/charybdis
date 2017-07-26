@@ -1,4 +1,5 @@
-check_PROGRAMS = runtests
+check_PROGRAMS = runtests \
+	msgbuf_parse1
 AM_CFLAGS=$(WARNFLAGS)
 AM_CPPFLAGS = $(DEFAULT_INCLUDES) -I../librb/include -I..
 AM_LDFLAGS = -no-install
@@ -12,6 +13,8 @@ runtests_CPPFLAGS = -DC_TAP_SOURCE='"$(abs_top_srcdir)/tests"' \
 check_LIBRARIES = tap/libtap.a
 tap_libtap_a_SOURCES = tap/basic.c tap/basic.h \
 	tap/float.c tap/float.h tap/macros.h
+
+msgbuf_parse1_SOURCES = msgbuf_parse1.c
 
 check-local: $(check_PROGRAMS)
 	./runtests -l $(abs_top_srcdir)/tests/TESTS
