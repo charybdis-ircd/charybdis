@@ -19,8 +19,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "s_assert.h"
-
 #ifndef CHARYBDIS__MSGBUF_H
 #define CHARYBDIS__MSGBUF_H
 
@@ -80,21 +78,21 @@ msgbuf_init(struct MsgBuf *msgbuf)
 static inline void
 msgbuf_append_tag(struct MsgBuf *msgbuf, const char *key, const char *value, unsigned int capmask)
 {
-	s_assert(msgbuf->n_tags < MAXPARA);
-
-	msgbuf->tags[msgbuf->n_tags].key = key;
-	msgbuf->tags[msgbuf->n_tags].value = value;
-	msgbuf->tags[msgbuf->n_tags].capmask = capmask;
-	msgbuf->n_tags++;
+	if (msgbuf->n_tags < MAXPARA) {
+		msgbuf->tags[msgbuf->n_tags].key = key;
+		msgbuf->tags[msgbuf->n_tags].value = value;
+		msgbuf->tags[msgbuf->n_tags].capmask = capmask;
+		msgbuf->n_tags++;
+	}
 }
 
 static inline void
 msgbuf_append_para(struct MsgBuf *msgbuf, const char *para)
 {
-	s_assert(msgbuf->n_para < MAXPARA);
-
-	msgbuf->para[msgbuf->n_para] = para;
-	msgbuf->n_para++;
+	if (msgbuf->n_para < MAXPARA) {
+		msgbuf->para[msgbuf->n_para] = para;
+		msgbuf->n_para++;
+	}
 }
 
 #endif

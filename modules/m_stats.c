@@ -46,6 +46,7 @@
 #include "whowas.h"
 #include "rb_radixtree.h"
 #include "sslproc.h"
+#include "s_assert.h"
 
 static const char stats_desc[] =
 	"Provides the STATS command to inspect various server/network information";

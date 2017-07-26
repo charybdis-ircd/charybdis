@@ -31,6 +31,7 @@
 #include "numeric.h"
 #include "send.h"
 #include "packet.h"
+#include "s_assert.h"
 
 static const char alias_desc[] = "Provides the system for services aliases";
 

@@ -36,6 +36,7 @@
 #include "numeric.h"
 #include "msg.h"
 #include "hash.h"
+#include "s_assert.h"
 
 #define DNS_HOST_IPV4		((char)'4')
 #define DNS_HOST_IPV6		((char)'6')
@@ -82,7 +83,7 @@ handle_dns_failure(uint32_t xid)
 	struct dnsreq *req = rb_dictionary_retrieve(query_dict, RB_UINT_TO_POINTER(xid));
 	s_assert(req);
 
-	if(req->callback == NULL)
+	if(req == NULL || req->callback == NULL)
 		return;
 
 	req->callback("FAILED", 0, 0, req->data);
@@ -96,7 +97,7 @@ handle_dns_stat_failure(uint32_t xid)
 	struct dnsstatreq *req = rb_dictionary_retrieve(stat_dict, RB_UINT_TO_POINTER(xid));
 	s_assert(req);
 
-	if(req->callback == NULL)
+	if(req == NULL || req->callback == NULL)
 		return;
 
 	req->callback(1, NULL, 2, req->data);
@@ -110,6 +111,10 @@ cancel_lookup(uint32_t xid)
 {
 	struct dnsreq *req = rb_dictionary_retrieve(query_dict, RB_UINT_TO_POINTER(xid));
 	s_assert(req);
+
+	if (req == NULL)
+		return;
+
 	req->callback = NULL;
 	req->data = NULL;
 }
@@ -119,6 +124,10 @@ cancel_dns_stats(uint32_t xid)
 {
 	struct dnsstatreq *req = rb_dictionary_retrieve(stat_dict, RB_UINT_TO_POINTER(xid));
 	s_assert(req);
+
+	if (req == NULL)
+		return;
+
 	req->callback = NULL;
 	req->data = NULL;
 }
@@ -245,6 +254,8 @@ dns_stats_results_callback(const char *callid, const char *status, int resc, con
 	req = rb_dictionary_retrieve(stat_dict, RB_UINT_TO_POINTER(qid));
 
 	s_assert(req);
+	if (req == NULL)
+		return;
 
 	if(req->callback == NULL)
 	{
