@@ -144,8 +144,6 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
 			ServerStats.is_unco++;
 			return;
 		}
-
-		mptr->bytes += msgbuf.parselen;
 	}
 
 	if(mptr == NULL)
