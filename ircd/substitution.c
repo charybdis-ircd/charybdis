@@ -116,7 +116,13 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 			/* break out ${var} */
 			for (pptr = ptr + 2; *pptr != '\0'; pptr++)
 			{
-				if (*pptr != '}')
+				if (*pptr == '$')
+				{
+					*vptr++ = '\0';
+					pptr--;
+					break;
+				}
+				else if (*pptr != '}')
 					*vptr++ = *pptr;
 				else
 				{
@@ -124,9 +130,6 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 					break;
 				}
 			}
-
-			s_assert(*varname != '\0');
-			s_assert(*pptr != '\0');
 
 			/* advance ptr by length of variable */
 			ptr += (pptr - ptr);
@@ -142,6 +145,10 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 					break;
 				}
 			}
+
+			/* don't increment ptr into a following string if the '}' is missing */
+			if (*ptr == '\0')
+				break;
 		}
 
 	*bptr = '\0';
