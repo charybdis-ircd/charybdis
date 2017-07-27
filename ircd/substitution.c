@@ -140,8 +140,11 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 
 				if (!rb_strcasecmp(varname, val->name))
 				{
-					rb_strlcpy(bptr, val->value, BUFSIZE - (bptr - buf));
+					rb_strlcpy(bptr, val->value, sizeof(buf) - (bptr - buf));
 					bptr += strlen(val->value);
+					if (bptr >= &buf[sizeof(buf)]) {
+						bptr = &buf[sizeof(buf) - 1];
+					}
 					break;
 				}
 			}
