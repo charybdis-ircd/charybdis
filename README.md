@@ -1,16 +1,11 @@
 # charybdis [![POSIX Build Status](https://travis-ci.org/charybdis-ircd/charybdis.svg?branch=master)](https://travis-ci.org/charybdis-ircd/charybdis) [![Windows Build Status](https://ci.appveyor.com/api/projects/status/is0obsml8xyq2qk7/branch/master?svg=true)](https://ci.appveyor.com/project/kaniini/charybdis/branch/master)
 
-Charybdis was an IRCv3 server designed to be highly scalable.  It implemented IRCv3.1 and some parts of IRCv3.2.
+Charybdis is an IRCv3 server designed to be highly scalable.  It implements IRCv3.1 and some parts of IRCv3.2.
 
-It is not meant to be used at all, but if you feel the need to do so, you should use it with an IRCv3-capable services
-implementation such as [Atheme][atheme] or [Anope][anope].
+It is meant to be used with an IRCv3-capable services implementation such as [Atheme][atheme] or [Anope][anope].
 
    [atheme]: http://www.atheme.net/
    [anope]: http://www.anope.org/
-
-For various reasons, this project is deprecated and replaced with [ircd-seven](http://github.com/freenode/ircd-seven).
-Please direct all questions about this change to [Christel Dahlskjaer](mailto:christel@freenode.net) and
-[Stephen Bennett](mailto:spb@freenode.net) of freenode.
 
 # necessary requirements
 
