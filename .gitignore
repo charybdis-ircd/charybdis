@@ -57,6 +57,7 @@ ircd/version.c.last
 ssld/ssld
 wsockd/wsockd
 tests/msgbuf_parse1
+tests/substitution1
 tests/runtests
 testsuite/ircd.pid.*
 tools/charybdis-mkpasswd
