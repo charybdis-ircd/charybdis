@@ -356,7 +356,11 @@ ssl_process_zipstats(ssl_ctl_t * ctl, ssl_ctl_buf_t * ctl_buf)
 	struct Client *server;
 	struct ZipStats *zips;
 	char *parv[7];
-	(void) rb_string_to_array(ctl_buf->buf, parv, 6);
+	int parc = rb_string_to_array(ctl_buf->buf, parv, sizeof(parv) - 1);
+
+	if (parc < 6)
+		return;
+
 	server = find_server(NULL, parv[1]);
 	if(server == NULL || server->localClient == NULL || !IsCapable(server, CAP_ZIP))
 		return;
