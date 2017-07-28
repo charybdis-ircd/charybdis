@@ -275,13 +275,13 @@ parse_authd_reply(rb_helper * helper)
 	ssize_t len;
 	int parc;
 	char buf[READBUF_SIZE];
-	char *parv[MAXPARA + 1];
+	char *parv[MAXPARA];
 
 	while((len = rb_helper_read(helper, buf, sizeof(buf))) > 0)
 	{
 		struct authd_cb *cmd;
 
-		parc = rb_string_to_array(buf, parv, MAXPARA);
+		parc = rb_string_to_array(buf, parv, sizeof(parv));
 		cmd = &authd_cmd_tab[(unsigned char)*parv[0]];
 		if(cmd->fn != NULL)
 		{

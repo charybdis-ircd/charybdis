@@ -303,7 +303,7 @@ stats_results_callback(int resc, const char *resv[], int status, void *data)
 	}
 	else
 	{
-		const char *error = resc ? resv[resc] : "Unknown error";
+		const char *error = resc ? resv[resc - 1] : "Unknown error";
 		iwarn("Error getting DNS servers: %s", error);
 	}
 }

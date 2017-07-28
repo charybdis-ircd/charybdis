@@ -33,8 +33,7 @@ int
 msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 {
 	char *ch;
-	char *parv[MAXPARA + 1];
-	size_t n_para;
+	char *parv[MAXPARA];
 
 	/* skip any leading spaces */
 	for (ch = line; *ch && *ch == ' '; ch++)
@@ -104,14 +103,11 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 	if (*ch == '\0')
 		return 1;
 
-	n_para = rb_string_to_array(ch, parv, MAXPARA);
-	if (n_para == 0)
+	msgbuf->n_para = rb_string_to_array(ch, (char **)msgbuf->para, MAXPARA);
+	if (msgbuf->n_para == 0)
 		return 1;
 
-	msgbuf->cmd = parv[0];
-	for (size_t i = 0; i < n_para; i++)
-		msgbuf_append_para(msgbuf, parv[i]);
-
+	msgbuf->cmd = msgbuf->para[0];
 	return 0;
 }
 
