@@ -218,7 +218,7 @@ send_queued_write(rb_fde_t *F, void *data)
 static void
 linebuf_put_msgvbuf(struct MsgBuf *msgbuf, buf_head_t *linebuf, unsigned int capmask, const char *pattern, va_list *va)
 {
-	char buf[EXT_BUFSIZE];
+	static char buf[EXT_BUFSIZE];
 	size_t buflen = sizeof(buf);
 
 	rb_linebuf_newbuf(linebuf);
@@ -479,7 +479,7 @@ void
 sendto_channel_flags(struct Client *one, int type, struct Client *source_p,
 		     struct Channel *chptr, const char *pattern, ...)
 {
-	char buf[BUFSIZE];
+	static char buf[BUFSIZE];
 	va_list args;
 	buf_head_t rb_linebuf_local;
 	buf_head_t rb_linebuf_id;
