@@ -310,8 +310,6 @@ end:
 static void
 socks4_connected(struct opm_scan *scan)
 {
-	struct auth_client *auth = scan->auth;
-	struct opm_lookup *lookup = get_provider_data(auth, SELF_PID);
 	uint8_t sendbuf[9]; /* Size we're building */
 	uint8_t *c = sendbuf;
 
@@ -333,12 +331,8 @@ static void
 socks5_connected(struct opm_scan *scan)
 {
 	struct auth_client *auth = scan->auth;
-	struct opm_lookup *lookup = get_provider_data(auth, SELF_PID);
 	uint8_t sendbuf[25]; /* Size we're building */
 	uint8_t *c = sendbuf;
-
-	auth = scan->auth;
-	lookup = get_provider_data(auth, SELF_PID);
 
 	/* Build the version header and socks request
 	 * version header (3 bytes): version, number of auth methods, auth type (0 for none)
@@ -377,7 +371,6 @@ static void
 http_connect_connected(struct opm_scan *scan)
 {
 	struct auth_client *auth = scan->auth;
-	struct opm_lookup *lookup = get_provider_data(auth, SELF_PID);
 	char sendbuf[128]; /* A bit bigger than we need but better safe than sorry */
 	char *c = sendbuf;
 
