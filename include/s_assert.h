@@ -28,37 +28,37 @@
 
 #include "defaults.h"
 
-#ifdef SOFT_ASSERT
-
 #include "logger.h"
 #include "send.h"
 #include "snomask.h"
 
 #ifdef __GNUC__
-#define s_assert(expr)	do								\
-			if(!(expr)) {							\
+#define ss_assert(expr)	(								\
+			((expr)) || (							\
 				ilog(L_MAIN,						\
 				"file: %s line: %d (%s): Assertion failed: (%s)",	\
-				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr);	\
+				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr), 0) || (\
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,		\
 				"file: %s line: %d (%s): Assertion failed: (%s)",	\
-				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr);	\
-			}								\
-			while(0)
+				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr), 0)	\
+			)
 #else
-#define s_assert(expr)	do								\
-			if(!(expr)) {							\
+#define ss_assert(expr)	(								\
+			((expr)) || (							\
 				ilog(L_MAIN,						\
 				"file: %s line: %d: Assertion failed: (%s)",		\
-				__FILE__, __LINE__, #expr);				\
+				__FILE__, __LINE__, #expr), 0) || (			\
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,		\
 				"file: %s line: %d: Assertion failed: (%s)"		\
-				__FILE__, __LINE__, #expr);				\
-			}								\
-			while(0)
+				__FILE__, __LINE__, #expr), 0)				\
+			)
 #endif
+
+/* evaluates to true if assertion fails */
+#ifdef SOFT_ASSERT
+#define s_assert(expr)	(!ss_assert(expr))
 #else
-#define s_assert(expr)	assert(expr)
+#define s_assert(expr)	(assert(ss_assert(expr)), 0)
 #endif
 
 #endif /* INCLUDED_s_assert_h */

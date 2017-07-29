@@ -128,27 +128,26 @@ char *rb_strerror(int error);
 #endif
 
 #ifdef __GNUC__
-#define slrb_assert(expr)	do								\
-			if(rb_unlikely(!(expr))) {							\
+#define slrb_assert(expr)	(							\
+			rb_likely((expr)) || (						\
 				rb_lib_log( 						\
 				"file: %s line: %d (%s): Assertion failed: (%s)",	\
-				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr); 	\
-			}								\
-			while(0)
+				__FILE__, __LINE__, __PRETTY_FUNCTION__, #expr), 0) 	\
+			)
 #else
-#define slrb_assert(expr)	do								\
-			if(rb_unlikely(!(expr))) {							\
+#define slrb_assert(expr)	(							\
+			rb_likely((expr)) || (						\
 				rb_lib_log( 						\
 				"file: %s line: %d: Assertion failed: (%s)",		\
-				__FILE__, __LINE__, #expr); 				\
-			}								\
-			while(0)
+				__FILE__, __LINE__, #expr), 0) 				\
+			)
 #endif
 
+/* evaluates to true if assertion fails */
 #ifdef SOFT_ASSERT
-#define lrb_assert(expr) 	slrb_assert(expr)
+#define lrb_assert(expr) 	(!slrb_assert(expr))
 #else
-#define lrb_assert(expr)	do { slrb_assert(expr); assert(expr); } while(0)
+#define lrb_assert(expr)	(assert(slrb_assert(expr)), 0)
 #endif
 
 #ifdef RB_SOCKADDR_HAS_SA_LEN
