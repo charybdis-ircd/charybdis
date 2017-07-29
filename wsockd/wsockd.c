@@ -106,6 +106,8 @@ typedef struct {
 	uint8_t payload_length_mask; // payload_length: 7, mask: 1
 } ws_frame_hdr_t;
 
+#define WEBSOCKET_FRAME_HDR_INIT ((ws_frame_hdr_t) { 0, 0 })
+
 typedef struct {
 	ws_frame_hdr_t header;
 	uint8_t payload_data[WEBSOCKET_MAX_UNEXTENDED_PAYLOAD_DATA_LENGTH];
@@ -119,6 +121,8 @@ typedef struct {
 	ws_frame_hdr_t header;
 	uint16_t payload_length_extended;
 } ws_frame_ext_t;
+
+#define WEBSOCKET_FRAME_EXT_INIT ((ws_frame_ext_t) { WEBSOCKET_FRAME_HDR_INIT, 0 })
 
 typedef struct {
 	ws_frame_hdr_t header;
@@ -327,7 +331,7 @@ conn_mod_write(conn_t * conn, void *data, size_t len)
 static void
 conn_mod_write_short_frame(conn_t * conn, void *data, int len)
 {
-	ws_frame_hdr_t hdr;
+	ws_frame_hdr_t hdr = WEBSOCKET_FRAME_HDR_INIT;
 
 	ws_frame_set_opcode(&hdr, WEBSOCKET_OPCODE_TEXT_FRAME);
 	ws_frame_set_fin(&hdr, 1);
@@ -341,7 +345,7 @@ conn_mod_write_short_frame(conn_t * conn, void *data, int len)
 static void
 conn_mod_write_long_frame(conn_t * conn, void *data, int len)
 {
-	ws_frame_ext_t hdr;
+	ws_frame_ext_t hdr = WEBSOCKET_FRAME_EXT_INIT;
 
 	ws_frame_set_opcode(&hdr.header, WEBSOCKET_OPCODE_TEXT_FRAME);
 	ws_frame_set_fin(&hdr.header, 1);
