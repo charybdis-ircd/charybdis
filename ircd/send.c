@@ -312,15 +312,9 @@ void
 sendto_one_prefix(struct Client *target_p, struct Client *source_p,
 		  const char *command, const char *pattern, ...)
 {
-	struct Client *dest_p;
+	struct Client *dest_p = target_p->from;
 	va_list args;
 	buf_head_t linebuf;
-
-	/* send remote if to->from non NULL */
-	if(target_p->from != NULL)
-		dest_p = target_p->from;
-	else
-		dest_p = target_p;
 
 	if(IsIOError(dest_p))
 		return;
