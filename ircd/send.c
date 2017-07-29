@@ -223,7 +223,7 @@ linebuf_put_msgvbuf(struct MsgBuf *msgbuf, buf_head_t *linebuf, unsigned int cap
 
 	rb_linebuf_newbuf(linebuf);
 	msgbuf_unparse_prefix(buf, &buflen, msgbuf, capmask);
-	rb_linebuf_putprefix(linebuf, pattern, va, buf);
+	rb_linebuf_putprefix(linebuf, pattern, va, buf, buflen);
 }
 
 /* linebuf_put_msgbuf

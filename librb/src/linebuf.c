@@ -561,10 +561,11 @@ rb_linebuf_putmsg(buf_head_t * bufhead, const char *format, va_list * va_args,
  * Similar to rb_linebuf_put, but designed for use by send.c.
  *
  * prefix is inserted first, then format/va_args is appended to the buffer.
+ * prefix_buflen is the maximum size of the buffer that can be used so that the RFC1459 message is not too long
  */
 void
 rb_linebuf_putprefix(buf_head_t * bufhead, const char *format, va_list * va_args,
-		  const char *prefix)
+		  const char *prefix, size_t prefix_buflen)
 {
 	buf_line_t *bufline;
 	int len = 0;
@@ -584,7 +585,9 @@ rb_linebuf_putprefix(buf_head_t * bufhead, const char *format, va_list * va_args
 
 	if(va_args != NULL)
 	{
-		len += vsnprintf((bufline->buf + len), (LINEBUF_DATA_SIZE - len) + 1, format, *va_args);
+		if (prefix_buflen > LINEBUF_DATA_SIZE + 1)
+			prefix_buflen = LINEBUF_DATA_SIZE + 1;
+		len += vsnprintf((bufline->buf + len), prefix_buflen - len, format, *va_args);
 	}
 
 	bufline->terminated = 1;
