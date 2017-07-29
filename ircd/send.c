@@ -387,16 +387,10 @@ sendto_one_notice(struct Client *target_p, const char *pattern, ...)
 void
 sendto_one_numeric(struct Client *target_p, int numeric, const char *pattern, ...)
 {
-	struct Client *dest_p;
+	struct Client *dest_p = target_p->from;
 	va_list args;
 	buf_head_t linebuf;
 	char *to;
-
-	/* send remote if to->from non NULL */
-	if(target_p->from != NULL)
-		dest_p = target_p->from;
-	else
-		dest_p = target_p;
 
 	if(IsIOError(dest_p))
 		return;
