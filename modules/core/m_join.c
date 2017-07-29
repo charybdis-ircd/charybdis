@@ -80,7 +80,6 @@ static void remove_our_modes(struct Channel *chptr, struct Client *source_p);
 static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
 			    rb_dlink_list * list, char c, int mems);
 
-static char modebuf[MODEBUFLEN];
 static char parabuf[MODEBUFLEN];
 
 /* Check what we will forward to, without sending any notices to the user
@@ -396,6 +395,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 static void
 ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
+	static char modebuf[MODEBUFLEN];
 	struct Channel *chptr;
 	static struct Mode mode;
 	time_t oldts;
@@ -506,6 +506,7 @@ ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 static void
 ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
+	static char modebuf[MODEBUFLEN];
 	static char buf_uid[BUFSIZE];
 	static const char empty_modes[] = "0";
 	struct Channel *chptr;
