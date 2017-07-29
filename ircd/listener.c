@@ -592,8 +592,11 @@ accept_precallback(rb_fde_t *F, struct sockaddr *addr, rb_socklen_t addrlen, voi
 		return 0;
 	}
 
-	if(check_reject(F, addr))
+	if(check_reject(F, addr)) {
+		/* Reject the connection without closing the socket
+		 * because it is now on the delay_exit list. */
 		return 0;
+	}
 
 	if(throttle_add(addr))
 	{
