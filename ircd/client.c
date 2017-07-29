@@ -1412,13 +1412,9 @@ exit_remote_server(struct Client *client_p, struct Client *source_p, struct Clie
 		snprintf(newcomment, sizeof(newcomment), "by %s: %s",
 				from->name, comment);
 
-	if(source_p->serv != NULL)
-		remove_dependents(client_p, source_p, from, IsPerson(from) ? newcomment : comment, comment1);
+	remove_dependents(client_p, source_p, from, IsPerson(from) ? newcomment : comment, comment1);
 
-	if(source_p->servptr && source_p->servptr->serv)
-		rb_dlinkDelete(&source_p->lnode, &source_p->servptr->serv->servers);
-	else
-		s_assert(0);
+	rb_dlinkDelete(&source_p->lnode, &source_p->servptr->serv->servers);
 
 	rb_dlinkFindDestroy(source_p, &global_serv_list);
 	target_p = source_p->from;
@@ -1436,6 +1432,7 @@ exit_remote_server(struct Client *client_p, struct Client *source_p, struct Clie
 
 	del_from_client_hash(source_p->name, source_p);
 	remove_client_from_list(source_p);
+
 	scache_split(source_p->serv->nameinfo);
 
 	SetDead(source_p);

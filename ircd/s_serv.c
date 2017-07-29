@@ -860,8 +860,6 @@ server_estab(struct Client *client_p)
 
 	sendto_one(client_p, "SVINFO %d %d 0 :%ld", TS_CURRENT, TS_MIN, (long int)rb_current_time());
 
-	SetServer(client_p);
-
 	rb_dlinkAdd(client_p, &client_p->lnode, &me.serv->servers);
 	rb_dlinkMoveNode(&client_p->localClient->tnode, &unknown_list, &serv_list);
 	rb_dlinkAddTailAlloc(client_p, &global_serv_list);
@@ -872,6 +870,7 @@ server_estab(struct Client *client_p)
 	add_to_client_hash(client_p->name, client_p);
 	/* doesnt duplicate client_p->serv if allocated this struct already */
 	make_server(client_p);
+	SetServer(client_p);
 
 	client_p->serv->caps = client_p->localClient->caps;
 
