@@ -84,7 +84,6 @@ static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
 static char modebuf[MODEBUFLEN];
 static char parabuf[MODEBUFLEN];
 static const char *para[MAXMODEPARAMS];
-static int pargs;
 
 /* Check what we will forward to, without sending any notices to the user
  * -- jilles
@@ -548,7 +547,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 		return 0;
 
 	modebuf[0] = parabuf[0] = mode.key[0] = mode.forward[0] = '\0';
-	pargs = mode.mode = mode.limit = mode.join_num = mode.join_time = 0;
+	mode.mode = mode.limit = mode.join_num = mode.join_time = 0;
 
 	/* Hide connecting server on netburst -- jilles */
 	if (ConfigServerHide.flatten_links && !HasSentEob(source_p))
@@ -774,8 +773,9 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 
 	mbuf = modebuf;
 	para[0] = para[1] = para[2] = para[3] = empty;
-	pargs = 0;
 	len_uid = 0;
+
+	int pargs = 0;
 
 	/* if theres a space, theres going to be more than one nick, change the
 	 * first space to \0, so s is just the first nick, and point p to the
