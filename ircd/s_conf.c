@@ -590,11 +590,11 @@ attach_conf(struct Client *client_p, struct ConfItem *aconf)
 	if(IsIllegal(aconf))
 		return (NOT_AUTHORISED);
 
-	if(ClassPtr(aconf))
-	{
-		if(!add_ip_limit(client_p, aconf))
-			return (TOO_MANY_LOCAL);
-	}
+	if(s_assert(ClassPtr(aconf)))
+		return (NOT_AUTHORISED);
+
+	if(!add_ip_limit(client_p, aconf))
+		return (TOO_MANY_LOCAL);
 
 	if((aconf->status & CONF_CLIENT) &&
 	   ConfCurrUsers(aconf) >= ConfMaxUsers(aconf) && ConfMaxUsers(aconf) > 0)
