@@ -534,19 +534,19 @@ void
 add_conf_by_address(const char *address, int type, const char *username, const char *auth_user, struct ConfItem *aconf)
 {
 	static unsigned long prec_value = 0xFFFFFFFF;
-	int masktype, bits;
+	int bits;
 	unsigned long hv;
 	struct AddressRec *arec;
 
 	if(address == NULL)
 		address = "/NOMATCH!/";
 	arec = rb_malloc(sizeof(struct AddressRec));
-	masktype = parse_netmask(address, &arec->Mask.ipa.addr, &bits);
-	arec->Mask.ipa.bits = bits;
-	arec->masktype = masktype;
+	arec->masktype = parse_netmask(address, &arec->Mask.ipa.addr, &bits);
 #ifdef RB_IPV6
-	if(masktype == HM_IPV6)
+	if(arec->masktype == HM_IPV6)
 	{
+		arec->Mask.ipa.bits = bits;
+
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		bits -= bits % 16;
 		arec->next = atable[(hv = hash_ipv6((struct sockaddr *)&arec->Mask.ipa.addr, bits))];
@@ -554,8 +554,10 @@ add_conf_by_address(const char *address, int type, const char *username, const c
 	}
 	else
 #endif
-	if(masktype == HM_IPV4)
+	if(arec->masktype == HM_IPV4)
 	{
+		arec->Mask.ipa.bits = bits;
+
 		/* We have to do this, since we do not re-hash for every bit -A1kmm. */
 		bits -= bits % 8;
 		arec->next = atable[(hv = hash_ipv4((struct sockaddr *)&arec->Mask.ipa.addr, bits))];
