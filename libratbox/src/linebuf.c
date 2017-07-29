@@ -301,7 +301,6 @@ rb_linebuf_copy_raw(buf_head_t * bufhead, buf_line_t * bufline, char *data, int 
 		clen = BUF_DATA_SIZE - bufline->len - 1;
 		memcpy(bufch, ch, clen);
 		bufline->buf[BUF_DATA_SIZE - 1] = '\0';
-		bufch = bufline->buf + BUF_DATA_SIZE - 2;
 		bufline->terminated = 1;
 		bufline->len = BUF_DATA_SIZE - 1;
 		bufhead->len += BUF_DATA_SIZE - 1;
