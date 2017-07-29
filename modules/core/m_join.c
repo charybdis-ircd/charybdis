@@ -83,7 +83,6 @@ static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
 
 static char modebuf[MODEBUFLEN];
 static char parabuf[MODEBUFLEN];
-static const char *para[MAXMODEPARAMS];
 
 /* Check what we will forward to, without sending any notices to the user
  * -- jilles
@@ -535,6 +534,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	int i, joinc = 0, timeslice = 0;
 	static char empty[] = "";
 	rb_dlink_node *ptr, *next_ptr;
+	const char *para[MAXMODEPARAMS];
 
 	if(parc < 5)
 		return 0;
