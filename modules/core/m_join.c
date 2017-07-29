@@ -75,13 +75,11 @@ static void do_join_0(struct Client *client_p, struct Client *source_p);
 static int check_channel_name_loc(struct Client *source_p, const char *name);
 static void send_join_error(struct Client *source_p, int numeric, const char *name);
 
-static char *set_final_mode(char *mbuf, struct Mode *mode, struct Mode *oldmode);
+static char *set_final_mode(char *mbuf, char *parabuf, struct Mode *mode, struct Mode *oldmode);
 static void remove_our_modes(struct Channel *chptr, struct Client *source_p);
 
 static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
 			    rb_dlink_list * list, char c, int mems);
-
-static char parabuf[MODEBUFLEN];
 
 /* Check what we will forward to, without sending any notices to the user
  * -- jilles
@@ -391,6 +389,7 @@ static int
 ms_join(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static char modebuf[MODEBUFLEN];
+	static char parabuf[MODEBUFLEN];
 	struct Channel *chptr;
 	static struct Mode mode;
 	time_t oldts;
@@ -462,7 +461,7 @@ ms_join(struct Client *client_p, struct Client *source_p, int parc, const char *
 	/* Lost the TS, other side wins, so remove modes on this side */
 	if(!keep_our_modes)
 	{
-		mbuf = set_final_mode(mbuf, &mode, &chptr->mode);
+		mbuf = set_final_mode(mbuf, parabuf, &mode, &chptr->mode);
 		chptr->mode = mode;
 		remove_our_modes(chptr, source_p);
 		RB_DLINK_FOREACH_SAFE(ptr, next_ptr, chptr->invites.head)
@@ -512,6 +511,7 @@ static int
 ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static char modebuf[MODEBUFLEN];
+	static char parabuf[MODEBUFLEN];
 	static char buf_uid[BUFSIZE];
 	static const char empty_modes[] = "0";
 	struct Channel *chptr;
@@ -720,7 +720,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 			chptr->join_count = chptr->join_delta = 0;
 	}
 
-	mbuf = set_final_mode(mbuf, &mode, oldmode);
+	mbuf = set_final_mode(mbuf, parabuf, &mode, oldmode);
 	chptr->mode = mode;
 
 	/* Lost the TS, other side wins, so remove modes on this side */
@@ -1057,7 +1057,7 @@ send_join_error(struct Client *source_p, int numeric, const char *name)
 }
 
 static char *
-set_final_mode(char *mbuf, struct Mode *mode, struct Mode *oldmode)
+set_final_mode(char *mbuf, char *parabuf, struct Mode *mode, struct Mode *oldmode)
 {
 	int dir = MODE_QUERY;
 	char *pbuf = parabuf;
