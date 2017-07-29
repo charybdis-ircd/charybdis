@@ -426,7 +426,7 @@ get_or_create_channel(struct Client *client_p, const char *chname, bool *isnew)
 		}
 		len = CHANNELLEN;
 		t = LOCAL_COPY(s);
-		*(t + CHANNELLEN) = '\0';
+		t[len] = '\0';
 		s = t;
 	}
 
