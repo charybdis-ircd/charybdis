@@ -372,7 +372,6 @@ http_connect_connected(struct opm_scan *scan)
 {
 	struct auth_client *auth = scan->auth;
 	char sendbuf[128]; /* A bit bigger than we need but better safe than sorry */
-	char *c = sendbuf;
 
 	/* Simple enough to build */
 	snprintf(sendbuf, sizeof(sendbuf), "CONNECT %s:%hu HTTP/1.0\r\n\r\n", scan->listener->ip, scan->listener->port);
