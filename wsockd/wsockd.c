@@ -951,7 +951,7 @@ int
 main(int argc, char **argv)
 {
 	const char *s_ctlfd, *s_pipe, *s_pid;
-	int ctlfd, pipefd, x, maxfd;
+	int ctlfd, pipefd, maxfd;
 	maxfd = maxconn();
 
 	s_ctlfd = getenv("CTL_FD");
@@ -970,8 +970,9 @@ main(int argc, char **argv)
 	ctlfd = atoi(s_ctlfd);
 	pipefd = atoi(s_pipe);
 	ppid = atoi(s_pid);
-	x = 0;
+
 #ifndef _WIN32
+	int x = 0;
 	for(x = 0; x < maxfd; x++)
 	{
 		if(x != ctlfd && x != pipefd && x > 2)
