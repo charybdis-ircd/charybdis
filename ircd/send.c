@@ -543,8 +543,8 @@ sendto_channel_flags(struct Client *one, int type, struct Client *source_p,
 				rb_linebuf_newbuf(&rb_linebuf_local);
 
 				/* render the new linebuf and attach it */
-				linebuf_put_msgbuf(&msgbuf, &rb_linebuf_local, target_p->localClient->caps, "%s", buf);
 				current_capmask = target_p->localClient->caps;
+				linebuf_put_msgbuf(&msgbuf, &rb_linebuf_local, current_capmask, "%s", buf);
 			}
 
 			_send_linebuf(target_p, &rb_linebuf_local);
@@ -563,8 +563,8 @@ sendto_channel_flags(struct Client *one, int type, struct Client *source_p,
 			rb_linebuf_newbuf(&rb_linebuf_local);
 
 			/* render the new linebuf and attach it */
-			linebuf_put_msgbuf(&msgbuf, &rb_linebuf_local, target_p->localClient->caps, "%s", buf);
 			current_capmask = target_p->localClient->caps;
+			linebuf_put_msgbuf(&msgbuf, &rb_linebuf_local, current_capmask, "%s", buf);
 		}
 
 		_send_linebuf(target_p, &rb_linebuf_local);
