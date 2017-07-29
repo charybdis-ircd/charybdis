@@ -1159,7 +1159,7 @@ int
 main(int argc, char **argv)
 {
 	const char *s_ctlfd, *s_pipe, *s_pid;
-	int ctlfd, pipefd, x, maxfd;
+	int ctlfd, pipefd, maxfd;
 	maxfd = maxconn();
 
 	s_ctlfd = getenv("CTL_FD");
@@ -1178,8 +1178,9 @@ main(int argc, char **argv)
 	ctlfd = atoi(s_ctlfd);
 	pipefd = atoi(s_pipe);
 	ppid = atoi(s_pid);
-	x = 0;
+
 #ifndef _WIN32
+	int x;
 	for(x = 0; x < maxfd; x++)
 	{
 		if(x != ctlfd && x != pipefd && x > 2)
@@ -1199,6 +1200,7 @@ main(int argc, char **argv)
 			close(x);
 	}
 #endif
+
 	setup_signals();
 	rb_lib_init(NULL, NULL, NULL, 0, maxfd, 1024, 4096);
 	rb_init_rawbuffers(1024);
