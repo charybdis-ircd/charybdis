@@ -223,8 +223,6 @@ rb_lib_loop(long delay)
 
 	if(rb_io_supports_event())
 	{
-		if(delay == 0)
-			delay = -1;
 		while(1)
 			rb_select(-1);
 	}
