@@ -75,7 +75,7 @@ static void do_join_0(struct Client *client_p, struct Client *source_p);
 static int check_channel_name_loc(struct Client *source_p, const char *name);
 static void send_join_error(struct Client *source_p, int numeric, const char *name);
 
-static void set_final_mode(struct Mode *mode, struct Mode *oldmode);
+static char *set_final_mode(char *mbuf, struct Mode *mode, struct Mode *oldmode);
 static void remove_our_modes(struct Channel *chptr, struct Client *source_p);
 
 static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
@@ -84,7 +84,6 @@ static void remove_ban_list(struct Channel *chptr, struct Client *source_p,
 static char modebuf[MODEBUFLEN];
 static char parabuf[MODEBUFLEN];
 static const char *para[MAXMODEPARAMS];
-static char *mbuf;
 static int pargs;
 
 /* Check what we will forward to, without sending any notices to the user
@@ -419,7 +418,7 @@ ms_join(struct Client *client_p, struct Client *source_p, int parc, const char *
 	if(parv[2][0] == '&')
 		return 0;
 
-	mbuf = modebuf;
+	char *mbuf = modebuf;
 	mode.key[0] = mode.forward[0] = '\0';
 	mode.mode = mode.limit = mode.join_num = mode.join_time = 0;
 
@@ -465,7 +464,7 @@ ms_join(struct Client *client_p, struct Client *source_p, int parc, const char *
 	/* Lost the TS, other side wins, so remove modes on this side */
 	if(!keep_our_modes)
 	{
-		set_final_mode(&mode, &chptr->mode);
+		mbuf = set_final_mode(mbuf, &mode, &chptr->mode);
 		chptr->mode = mode;
 		remove_our_modes(chptr, source_p);
 		RB_DLINK_FOREACH_SAFE(ptr, next_ptr, chptr->invites.head)
@@ -557,7 +556,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 	else
 		fakesource_p = source_p;
 
-	mbuf = modebuf;
+	char *mbuf = modebuf;
 	newts = atol(parv[1]);
 
 	s = parv[3];
@@ -721,7 +720,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p, int parc, const char 
 			chptr->join_count = chptr->join_delta = 0;
 	}
 
-	set_final_mode(&mode, oldmode);
+	mbuf = set_final_mode(mbuf, &mode, oldmode);
 	chptr->mode = mode;
 
 	/* Lost the TS, other side wins, so remove modes on this side */
@@ -1056,8 +1055,8 @@ send_join_error(struct Client *source_p, int numeric, const char *name)
 	}
 }
 
-static void
-set_final_mode(struct Mode *mode, struct Mode *oldmode)
+static char *
+set_final_mode(char *mbuf, struct Mode *mode, struct Mode *oldmode)
 {
 	int dir = MODE_QUERY;
 	char *pbuf = parabuf;
@@ -1175,7 +1174,9 @@ set_final_mode(struct Mode *mode, struct Mode *oldmode)
 		len = rb_sprintf(pbuf, "%s ", mode->forward);
 		pbuf += len;
 	}
+
 	*mbuf = '\0';
+	return mbuf;
 }
 
 /*
@@ -1195,7 +1196,7 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 	int count = 0;
 	int i;
 
-	mbuf = lmodebuf;
+	char *mbuf = lmodebuf;
 	*mbuf++ = '-';
 
 	for(i = 0; i < MAXMODEPARAMS; i++)
@@ -1298,7 +1299,7 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 	pbuf = lparabuf;
 
 	cur_len = mlen = rb_sprintf(lmodebuf, ":%s MODE %s -", source_p->name, chptr->chname);
-	mbuf = lmodebuf + mlen;
+	char *mbuf = lmodebuf + mlen;
 
 	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, list->head)
 	{
