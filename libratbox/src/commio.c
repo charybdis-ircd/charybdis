@@ -336,11 +336,14 @@ rb_accept_tryaccept(rb_fde_t *F, void *data)
 {
 	struct rb_sockaddr_storage st;
 	rb_fde_t *new_F;
-	rb_socklen_t addrlen = sizeof(st);
+	rb_socklen_t addrlen;
 	int new_fd;
 
 	while(1)
 	{
+		(void) memset(&st, 0x00, sizeof st);
+		addrlen = (rb_socklen_t) sizeof st;
+
 		new_fd = accept(F->fd, (struct sockaddr *)&st, &addrlen);
 		rb_get_errno();
 		if(new_fd < 0)
@@ -742,9 +745,6 @@ mangle_mapped_sockaddr(struct sockaddr *in)
 {
 	struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)in;
 
-	if(in->sa_family == AF_INET)
-		return;
-
 	if(in->sa_family == AF_INET6 && IN6_IS_ADDR_V4MAPPED(&in6->sin6_addr))
 	{
 		struct sockaddr_in in4;
@@ -754,7 +754,6 @@ mangle_mapped_sockaddr(struct sockaddr *in)
 		in4.sin_addr.s_addr = ((uint32_t *)&in6->sin6_addr)[3];
 		memcpy(in, &in4, sizeof(struct sockaddr_in));
 	}
-	return;
 }
 #endif
 
