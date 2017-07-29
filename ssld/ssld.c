@@ -1181,11 +1181,13 @@ main(int argc, char **argv)
 
 #ifndef _WIN32
 	int x;
-	for(x = 0; x < maxfd; x++)
+
+	for(x = 3; x < maxfd; x++)
 	{
-		if(x != ctlfd && x != pipefd && x > 2)
+		if(x != ctlfd && x != pipefd)
 			close(x);
 	}
+
 	x = open("/dev/null", O_RDWR);
 
 	if(x >= 0)
