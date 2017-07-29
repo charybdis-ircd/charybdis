@@ -554,7 +554,6 @@ conn_mod_read_cb(rb_fde_t *fd, void *data)
 {
 	char inbuf[READBUF_SIZE];
 	conn_t *conn = data;
-	const char *err = remote_closed;
 	int length;
 	if(conn == NULL)
 		return;
@@ -584,6 +583,7 @@ conn_mod_read_cb(rb_fde_t *fd, void *data)
 				return;
 			}
 
+			const char *err;
 			if(IsSSL(conn) && length == RB_RW_SSL_ERROR)
 				err = rb_get_ssl_strerror(conn->mod_fd);
 			else
