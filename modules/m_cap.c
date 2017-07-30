@@ -152,65 +152,69 @@ clicap_find(const char *data, int *negate, int *finished)
 static void
 clicap_generate(struct Client *source_p, const char *subcmd, int flags)
 {
-	char buf[BUFSIZE] = { 0 };
-	char capbuf[BUFSIZE] = { 0 };
-	int capbuflen = 0;
-	int buflen;
+	static char buf_prefix[DATALEN + 1];
+	static char buf_list[DATALEN + 1];
+	const char *str_cont = " * :";
+	const char *str_final = " :";
+	int len_prefix;
+	int max_list;
 	struct CapabilityEntry *entry;
 	rb_dictionary_iter iter;
 
-	buflen = snprintf(buf, sizeof buf, ":%s CAP %s %s",
+	buf_prefix[0] = '\0';
+	len_prefix = rb_snprintf_try_append(buf_prefix, sizeof(buf_prefix),
+			":%s CAP %s %s",
 			me.name,
 			EmptyString(source_p->name) ? "*" : source_p->name,
 			subcmd);
 
 	/* shortcut, nothing to do */
-	if(flags == -1)
-	{
-		sendto_one(source_p, "%s :", buf);
+	if (flags == -1 || len_prefix < 0) {
+		sendto_one(source_p, "%s%s", buf_prefix, str_final);
 		return;
 	}
 
-	RB_DICTIONARY_FOREACH(entry, &iter, cli_capindex->cap_dict)
-	{
-		size_t caplen = 0;
+	buf_list[0] = '\0';
+	max_list = sizeof(buf_prefix) - len_prefix - strlen(str_cont);
+
+	RB_DICTIONARY_FOREACH(entry, &iter, cli_capindex->cap_dict) {
 		struct ClientCapability *clicap = entry->ownerdata;
 		const char *data = NULL;
 
-		if(flags && !IsCapableEntry(source_p, entry))
+		if (flags && !IsCapableEntry(source_p, entry))
 			continue;
 
 		if (!clicap_visible(source_p, entry))
 			continue;
 
-		caplen = strlen(entry->cap);
 		if (!flags && (source_p->flags & FLAGS_CLICAP_DATA) && clicap != NULL && clicap->data != NULL)
 			data = clicap->data(source_p);
 
-		if (data != NULL)
-			caplen += strlen(data) + 1 /* "=" between cap and data */;
+		for (int attempts = 0; attempts < 2; attempts++) {
+			if (rb_snprintf_try_append(buf_list, max_list, "%s%s%s%s",
+					buf_list[0] == '\0' ? "" : " ", /* space between caps */
+					entry->cap,
+					data != NULL ? "=" : "", /* '=' between cap and data */
+					data != NULL ? data : "") < 0
+					&& buf_list[0] != '\0') {
 
-		/* "<buf> * :<capbuf>-~=<cap><=><data> " */
-		if(buflen + 4 + capbuflen + 3 + caplen + 1 > DATALEN)
-		{
-			/* remove our trailing space -- if capbuflen == 0
-			 * here, we didnt even succeed in adding one.
-			 */
-			capbuf[capbuflen] = '\0';
+				if (!(source_p->flags & FLAGS_CLICAP_DATA)) {
+					/* the client doesn't support multiple lines */
+					break;
+				}
 
-			sendto_one(source_p, "%s * :%s", buf, capbuf);
+				/* doesn't fit in the buffer, output what we have */
+				sendto_one(source_p, "%s%s%s", buf_prefix, str_cont, buf_list);
 
-			memset(capbuf, 0, sizeof capbuf);
+				/* reset the buffer and go around the loop one more time */
+				buf_list[0] = '\0';
+			} else {
+				break;
+			}
 		}
-
-		capbuflen = rb_snprintf_append(capbuf, sizeof capbuf, "%s%s%s ",
-				entry->cap, data != NULL ? "=" : "", data != NULL ? data : "");
 	}
 
-	/* remove trailing space */
-	capbuf[capbuflen] = '\0';
-
-	sendto_one(source_p, "%s :%s", buf, capbuf);
+	sendto_one(source_p, "%s%s%s", buf_prefix, str_final, buf_list);
 }
 
 static void
@@ -271,11 +275,16 @@ cap_list(struct Client *source_p, const char *arg)
 static void
 cap_ls(struct Client *source_p, const char *arg)
 {
+	int caps_version = 301;
+
 	if(!IsRegistered(source_p))
 		source_p->flags |= FLAGS_CLICAP;
 
-	if (arg != NULL && !strcmp(arg, "302"))
-	{
+	if (!EmptyString(arg)) {
+		caps_version = atoi(arg);
+	}
+
+	if (caps_version >= 302) {
 		source_p->flags |= FLAGS_CLICAP_DATA;
 		source_p->localClient->caps |= CLICAP_CAP_NOTIFY;
 	}
@@ -287,10 +296,13 @@ cap_ls(struct Client *source_p, const char *arg)
 static void
 cap_req(struct Client *source_p, const char *arg)
 {
-	char buf[BUFSIZE];
-	char pbuf[2][BUFSIZE];
+	static char buf_prefix[DATALEN + 1];
+	static char buf_list[2][DATALEN + 1];
+	const char *str_cont = " * :";
+	const char *str_final = " :";
+	int len_prefix;
+	int max_list;
 	struct CapabilityEntry *cap;
-	int buflen, plen;
 	int i = 0;
 	int capadd = 0, capdel = 0;
 	int finished = 0, negate;
@@ -301,27 +313,21 @@ cap_req(struct Client *source_p, const char *arg)
 	if(EmptyString(arg))
 		return;
 
-	buflen = snprintf(buf, sizeof(buf), ":%s CAP %s ACK",
-			me.name, EmptyString(source_p->name) ? "*" : source_p->name);
+	buf_prefix[0] = '\0';
+	len_prefix = rb_snprintf_try_append(buf_prefix, sizeof(buf_prefix),
+			":%s CAP %s ACK",
+			me.name,
+			EmptyString(source_p->name) ? "*" : source_p->name);
 
-	pbuf[0][0] = '\0';
-	plen = 0;
+	buf_list[0][0] = '\0';
+	buf_list[1][0] = '\0';
+	max_list = sizeof(buf_prefix) - len_prefix - strlen(str_cont);
 
 	for(cap = clicap_find(arg, &negate, &finished); cap;
 	    cap = clicap_find(NULL, &negate, &finished))
 	{
 		size_t namelen = strlen(cap->cap);
-
-		/* filled the first array, but cant send it in case the
-		 * request fails.  one REQ should never fill more than two
-		 * buffers --fl
-		 */
-		if(buflen + plen + namelen + 6 >= BUFSIZE)
-		{
-			pbuf[1][0] = '\0';
-			plen = 0;
-			i = 1;
-		}
+		const char *type;
 
 		if(negate)
 		{
@@ -331,9 +337,7 @@ cap_req(struct Client *source_p, const char *arg)
 				break;
 			}
 
-			strcat(pbuf[i], "-");
-			plen++;
-
+			type = "-";
 			capdel |= (1 << cap->value);
 		}
 		else
@@ -344,20 +348,41 @@ cap_req(struct Client *source_p, const char *arg)
 				break;
 			}
 
+			type = "";
 			capadd |= (1 << cap->value);
 		}
 
 		/* XXX this probably should exclude REQACK'd caps from capadd/capdel, but keep old behaviour for now */
 		if(HasCapabilityFlag(cap, CLICAP_FLAGS_REQACK))
 		{
-			strcat(pbuf[i], "~");
-			plen++;
+			type = "~";
 		}
 
-		strcat(pbuf[i], cap->cap);
-		if (!finished) {
-			strcat(pbuf[i], " ");
-			plen += (namelen + 1);
+		for (int attempts = 0; attempts < 2; attempts++) {
+			if (rb_snprintf_try_append(buf_list[i], max_list, "%s%s%s",
+					buf_list[i][0] == '\0' ? "" : " ", /* space between caps */
+					type,
+					cap->cap) < 0
+					&& buf_list[i][0] != '\0') {
+
+				if (!(source_p->flags & FLAGS_CLICAP_DATA)) {
+					/* the client doesn't support multiple lines */
+					break;
+				}
+
+				/* doesn't fit in the buffer, move to the next one */
+				if (i < 2) {
+					i++;
+				} else {
+					/* uh-oh */
+					break;
+				}
+
+				/* reset the buffer and go around the loop one more time */
+				buf_list[i][0] = '\0';
+			} else {
+				break;
+			}
 		}
 	}
 
@@ -368,13 +393,12 @@ cap_req(struct Client *source_p, const char *arg)
 		return;
 	}
 
-	if(i)
-	{
-		sendto_one(source_p, "%s * :%s", buf, pbuf[0]);
-		sendto_one(source_p, "%s :%s", buf, pbuf[1]);
+	if (i) {
+		sendto_one(source_p, "%s%s%s", buf_prefix, str_cont, buf_list[0]);
+		sendto_one(source_p, "%s%s%s", buf_prefix, str_final, buf_list[1]);
+	} else {
+		sendto_one(source_p, "%s%s%s", buf_prefix, str_final, buf_list[0]);
 	}
-	else
-		sendto_one(source_p, "%s :%s", buf, pbuf[0]);
 
 	source_p->localClient->caps |= capadd;
 	source_p->localClient->caps &= ~capdel;
