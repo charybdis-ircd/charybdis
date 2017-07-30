@@ -161,6 +161,7 @@ rb_setup_fd
 rb_setup_ssl_server
 rb_sleep
 rb_snprintf_append
+rb_snprintf_try_append
 rb_socket
 rb_socketpair
 rb_spawn_process

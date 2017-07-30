@@ -324,6 +324,41 @@ rb_snprintf_append(char *str, size_t len, const char *format, ...)
 	return (orig_len + append_len);
 }
 
+/*
+ * rb_snprintf_try_append()
+ * appends snprintf formatted string to the end of the buffer but not
+ * exceeding len
+ * returns -1 if there isn't enough space for the whole string to fit
+ */
+int
+rb_snprintf_try_append(char *str, size_t len, const char *format, ...)
+{
+	if(len == 0)
+		return -1;
+
+	int orig_len = strlen(str);
+
+	if((int)len < orig_len) {
+		str[len - 1] = '\0';
+		return -1;
+	}
+
+	va_list ap;
+	va_start(ap, format);
+	int append_len = vsnprintf(str + orig_len, len - orig_len, format, ap);
+	va_end(ap);
+
+	if (append_len < 0)
+		return append_len;
+
+	if (orig_len + append_len > (int)(len - 1)) {
+		str[orig_len] = '\0';
+		return -1;
+	}
+
+	return (orig_len + append_len);
+}
+
 /* rb_basename
  *
  * input        -
