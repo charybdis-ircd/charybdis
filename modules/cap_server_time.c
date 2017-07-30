@@ -53,12 +53,16 @@ static void
 cap_server_time_process(hook_data *data)
 {
 	static char buf[BUFSIZE];
-	time_t ts = rb_current_time();
 	struct MsgBuf *msgbuf = data->arg1;
+	struct timeval tv;
+	time_t ts = rb_current_time();
 
-	strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%S.000Z", gmtime(&ts));
+	if (!rb_gettimeofday(&tv, NULL)) {
+		strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S.", gmtime(&tv.tv_sec));
+		rb_snprintf_append(buf, sizeof(buf), "%03uZ", (int)tv.tv_usec / 1000);
 
-	msgbuf_append_tag(msgbuf, "time", buf, CLICAP_SERVER_TIME);
+		msgbuf_append_tag(msgbuf, "time", buf, CLICAP_SERVER_TIME);
+	}
 }
 
 DECLARE_MODULE_AV2(cap_server_time, NULL, NULL, NULL, NULL, cap_server_time_hfnlist, cap_server_time_cap_list, NULL, cap_server_time_desc);
