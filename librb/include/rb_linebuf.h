@@ -39,12 +39,14 @@ struct _buf_line;
 struct _buf_head;
 
 /* IRCv3 tags (512 bytes) + RFC1459 message (510 bytes) */
-#define LINEBUF_DATA_SIZE	(512 + 510)
-#define CRLF_LEN		2
+#define LINEBUF_TAGSLEN         512     /* IRCv3 message tags */
+#define LINEBUF_DATALEN         510     /* RFC1459 message data */
+#define LINEBUF_SIZE            (512 + 510)
+#define CRLF_LEN                2
 
 typedef struct _buf_line
 {
-	char buf[LINEBUF_DATA_SIZE + CRLF_LEN + 1];
+	char buf[LINEBUF_SIZE + CRLF_LEN + 1];
 	uint8_t terminated;	/* Whether we've terminated the buffer */
 	uint8_t raw;		/* Whether this linebuf may hold 8-bit data */
 	int len;		/* How much data we've got */
@@ -72,10 +74,15 @@ void rb_linebuf_newbuf(buf_head_t *);
 void rb_linebuf_donebuf(buf_head_t *);
 int rb_linebuf_parse(buf_head_t *, char *, int, int);
 int rb_linebuf_get(buf_head_t *, char *, int, int, int);
-void rb_linebuf_putmsg(buf_head_t *, const char *, va_list *, const char *, ...);
-void rb_linebuf_putprefix(buf_head_t *, const char *, va_list *, const char *, size_t);
-void rb_linebuf_put(buf_head_t *, const char *, ...);
-void rb_linebuf_putbuf(buf_head_t * bufhead, const char *buffer);
+/* "msg" is limited to RFC1459 message size */
+void rb_linebuf_put_msgf(buf_head_t *, const char *, ...) AFP(2,3);
+void rb_linebuf_put_vmsg(buf_head_t *, const char *, va_list *);
+void rb_linebuf_put_vmsg_prefixf(buf_head_t *, const char *, va_list *, const char *, ...) AFP(4,5);
+/* "tags" has a prefix that contains tags AND messages, it must
+ * specify the correct total buffer length to enforce the limit
+ * of the RFC1459 message size */
+void rb_linebuf_put_vtags_prefix(buf_head_t *, const char *, va_list *, size_t, const char *);
+void rb_linebuf_put_vtags_prefixf(buf_head_t *, const char *, va_list *, size_t, const char *, ...) AFP(5,6);
 void rb_linebuf_attach(buf_head_t *, buf_head_t *);
 void rb_count_rb_linebuf_memory(size_t *, size_t *);
 int rb_linebuf_flush(rb_fde_t *F, buf_head_t *);

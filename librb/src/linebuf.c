@@ -204,7 +204,7 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 	/* If its full or terminated, ignore it */
 
 	bufline->raw = 0;
-	lrb_assert(bufline->len <= LINEBUF_DATA_SIZE);
+	lrb_assert(bufline->len <= LINEBUF_SIZE);
 	if(bufline->terminated == 1)
 		return 0;
 
@@ -213,12 +213,12 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 		return -1;
 
 	/* This is the ~overflow case..This doesn't happen often.. */
-	if(cpylen > (LINEBUF_DATA_SIZE - bufline->len))
+	if(cpylen > (LINEBUF_SIZE - bufline->len))
 	{
-		cpylen = LINEBUF_DATA_SIZE - bufline->len;
+		cpylen = LINEBUF_SIZE - bufline->len;
 		memcpy(bufch, ch, cpylen);
-		bufline->buf[LINEBUF_DATA_SIZE] = '\0';
-		bufch = bufline->buf + LINEBUF_DATA_SIZE - 1;
+		bufline->buf[LINEBUF_SIZE] = '\0';
+		bufch = bufline->buf + LINEBUF_SIZE - 1;
 		while(cpylen && (*bufch == '\r' || *bufch == '\n'))
 		{
 			*bufch = '\0';
@@ -226,8 +226,8 @@ rb_linebuf_copy_line(buf_head_t * bufhead, buf_line_t * bufline, char *data, int
 			bufch--;
 		}
 		bufline->terminated = 1;
-		bufline->len = LINEBUF_DATA_SIZE;
-		bufhead->len += LINEBUF_DATA_SIZE;
+		bufline->len = LINEBUF_SIZE;
+		bufhead->len += LINEBUF_SIZE;
 		return clen;
 	}
 
@@ -278,7 +278,7 @@ rb_linebuf_copy_raw(buf_head_t * bufhead, buf_line_t * bufline, char *data, int 
 	/* If its full or terminated, ignore it */
 
 	bufline->raw = 1;
-	lrb_assert(bufline->len <= LINEBUF_DATA_SIZE);
+	lrb_assert(bufline->len <= LINEBUF_SIZE);
 	if(bufline->terminated == 1)
 		return 0;
 
@@ -287,14 +287,14 @@ rb_linebuf_copy_raw(buf_head_t * bufhead, buf_line_t * bufline, char *data, int 
 		return -1;
 
 	/* This is the overflow case..This doesn't happen often.. */
-	if(cpylen > (LINEBUF_DATA_SIZE - bufline->len))
+	if(cpylen > (LINEBUF_SIZE - bufline->len))
 	{
-		clen = LINEBUF_DATA_SIZE - bufline->len;
+		clen = LINEBUF_SIZE - bufline->len;
 		memcpy(bufch, ch, clen);
-		bufline->buf[LINEBUF_DATA_SIZE] = '\0';
+		bufline->buf[LINEBUF_SIZE] = '\0';
 		bufline->terminated = 1;
-		bufline->len = LINEBUF_DATA_SIZE;
-		bufhead->len += LINEBUF_DATA_SIZE;
+		bufline->len = LINEBUF_SIZE;
+		bufhead->len += LINEBUF_SIZE;
 		return clen;
 	}
 
@@ -485,253 +485,140 @@ rb_linebuf_attach(buf_head_t * bufhead, buf_head_t * new)
 }
 
 /*
- * rb_linebuf_putmsg
+ * rb_linebuf_put_vstr_vprefix
  *
- * Similar to rb_linebuf_put, but designed for use by send.c.
+ * prefix (with/without prefix_args) is inserted first, then format/va_args is
+ * appended to the buffer.
  *
- * prefixfmt is used as a format for the varargs, and is inserted first.
- * Then format/va_args is appended to the buffer.
+ * max_buflen is the maximum size of the buffer that can be used
+ * (including the NULL terminator) so that the RFC1459 message is not too long
  */
-void
-rb_linebuf_putmsg(buf_head_t * bufhead, const char *format, va_list * va_args,
-		  const char *prefixfmt, ...)
+static void
+rb_linebuf_put_vstr_vprefix(buf_head_t *bufhead, const char *format, va_list *format_args,
+		size_t max_buflen, const char *prefix, va_list *prefix_args)
 {
 	buf_line_t *bufline;
-	int len = 0;
-	va_list prefix_args;
+	ssize_t len = 0;
 
 	/* make sure the previous line is terminated */
-	if(bufhead->list.tail)
-	{
+	if (bufhead->list.tail) {
 		bufline = bufhead->list.tail->data;
 		lrb_assert(bufline->terminated);
 	}
 
-	/* Create a new line */
+	/* create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
-	if(prefixfmt != NULL)
-	{
-		va_start(prefix_args, prefixfmt);
-		len = vsnprintf(bufline->buf, LINEBUF_DATA_SIZE + 1, prefixfmt, prefix_args);
-		va_end(prefix_args);
-	}
+	if (max_buflen > LINEBUF_SIZE + 1)
+		max_buflen = LINEBUF_SIZE + 1;
 
-	if(va_args != NULL)
-	{
-		len += vsnprintf((bufline->buf + len), (LINEBUF_DATA_SIZE - len) + 1, format, *va_args);
-	}
-
-	bufline->terminated = 1;
-
-	/* Truncate the data if required */
-	if(len > LINEBUF_DATA_SIZE)
-	{
-		len = LINEBUF_DATA_SIZE;
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-	}
-	else if(len == 0)
-	{
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-		bufline->buf[len] = '\0';
-	}
-	else
-	{
-		/* Chop trailing CRLF's .. */
-		while((bufline->buf[len] == '\r') || (bufline->buf[len] == '\n')
-		      || (bufline->buf[len] == '\0'))
-		{
-			len--;
+	if (prefix != NULL) {
+		if (prefix_args != NULL) {
+			len = vsnprintf(bufline->buf, max_buflen, prefix, *prefix_args);
+		} else {
+			len = rb_strlcpy(bufline->buf, prefix, max_buflen);
 		}
 
-		bufline->buf[++len] = '\r';
-		bufline->buf[++len] = '\n';
-		bufline->buf[++len] = '\0';
+		if (len > max_buflen - 1)
+			len = max_buflen - 1;
 	}
+
+	if (format != NULL) {
+		len += vsnprintf(bufline->buf + len, max_buflen - len, format, *format_args);
+		if (len > max_buflen - 1)
+			len = max_buflen - 1;
+	}
+
+	/* add trailing CRLF */
+	bufline->buf[len++] = '\r';
+	bufline->buf[len++] = '\n';
+	bufline->buf[len] = '\0';
+
+	bufline->terminated = 1;
 
 	bufline->len = len;
 	bufhead->len += len;
 }
 
 /*
- * rb_linebuf_putprefix
+ * rb_linebuf_put_vtags_prefix
  *
- * Similar to rb_linebuf_put, but designed for use by send.c.
+ * prefix is inserted first, then format/va_args is
+ * appended to the buffer.
  *
- * prefix is inserted first, then format/va_args is appended to the buffer.
- * prefix_buflen is the maximum size of the buffer that can be used so that the RFC1459 message is not too long
+ * prefix_buflen is the maximum size of the buffer that can be used
+ * (including the NULL terminator) so that the RFC1459 message is not too long
  */
 void
-rb_linebuf_putprefix(buf_head_t * bufhead, const char *format, va_list * va_args,
-		  const char *prefix, size_t prefix_buflen)
+rb_linebuf_put_vtags_prefix(buf_head_t *bufhead, const char *format, va_list *va_args,
+		  size_t prefix_buflen, const char *prefix)
 {
-	buf_line_t *bufline;
-	int len = 0;
-
-	/* make sure the previous line is terminated */
-	if(bufhead->list.tail)
-	{
-		bufline = bufhead->list.tail->data;
-		lrb_assert(bufline->terminated);
-	}
-
-	/* Create a new line */
-	bufline = rb_linebuf_new_line(bufhead);
-
-	if(prefix != NULL)
-		len = rb_strlcpy(bufline->buf, prefix, LINEBUF_DATA_SIZE + 1);
-
-	if(va_args != NULL)
-	{
-		if (prefix_buflen > LINEBUF_DATA_SIZE + 1)
-			prefix_buflen = LINEBUF_DATA_SIZE + 1;
-		len += vsnprintf((bufline->buf + len), prefix_buflen - len, format, *va_args);
-	}
-
-	bufline->terminated = 1;
-
-	/* Truncate the data if required */
-	if(len > LINEBUF_DATA_SIZE)
-	{
-		len = LINEBUF_DATA_SIZE;
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-	}
-	else if(len == 0)
-	{
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-		bufline->buf[len] = '\0';
-	}
-	else
-	{
-		/* Chop trailing CRLF's .. */
-		while((bufline->buf[len] == '\r') || (bufline->buf[len] == '\n')
-		      || (bufline->buf[len] == '\0'))
-		{
-			len--;
-		}
-
-		bufline->buf[++len] = '\r';
-		bufline->buf[++len] = '\n';
-		bufline->buf[++len] = '\0';
-	}
-
-	bufline->len = len;
-	bufhead->len += len;
+	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, prefix_buflen, prefix, NULL);
 }
 
+/*
+ * rb_linebuf_put_vtags_prefixf
+ *
+ * prefixfmt is inserted first, then format/va_args is
+ * appended to the buffer.
+ *
+ * prefix_buflen is the maximum size of the buffer that can be used
+ * (including the NULL terminator) so that the RFC1459 message is not too long
+ */
 void
-rb_linebuf_putbuf(buf_head_t * bufhead, const char *buffer)
+rb_linebuf_put_vtags_prefixf(buf_head_t *bufhead, const char *format, va_list *va_args,
+		  size_t prefix_buflen, const char *prefixfmt, ...)
 {
-	buf_line_t *bufline;
-	int len = 0;
+	va_list prefix_args;
 
-	/* make sure the previous line is terminated */
-	if(bufhead->list.tail)
-	{
-		bufline = bufhead->list.tail->data;
-		lrb_assert(bufline->terminated);
-	}
-
-	/* Create a new line */
-	bufline = rb_linebuf_new_line(bufhead);
-
-	if(buffer != NULL)
-		len = rb_strlcpy(bufline->buf, buffer, LINEBUF_DATA_SIZE + 1);
-
-	bufline->terminated = 1;
-
-	/* Truncate the data if required */
-	if(len > LINEBUF_DATA_SIZE)
-	{
-		len = LINEBUF_DATA_SIZE;
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-	}
-	else if(len == 0)
-	{
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-		bufline->buf[len] = '\0';
-	}
-	else
-	{
-		/* Chop trailing CRLF's .. */
-		while((bufline->buf[len] == '\r') || (bufline->buf[len] == '\n')
-		      || (bufline->buf[len] == '\0'))
-		{
-			len--;
-		}
-
-		bufline->buf[++len] = '\r';
-		bufline->buf[++len] = '\n';
-		bufline->buf[++len] = '\0';
-	}
-
-	bufline->len = len;
-	bufhead->len += len;
-
-
+	va_start(prefix_args, prefixfmt);
+	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, prefix_buflen, prefixfmt, &prefix_args);
+	va_end(prefix_args);
 }
 
+/*
+ * rb_linebuf_put_msgf
+ *
+ * format (with args) is appended to the buffer.
+ * Messages will be limited to the RFC1459 data length
+ */
 void
-rb_linebuf_put(buf_head_t * bufhead, const char *format, ...)
+rb_linebuf_put_msgf(buf_head_t *bufhead, const char *format, ...)
 {
-	buf_line_t *bufline;
-	int len = 0;
-	va_list args;
+	va_list va_args;
 
-	/* make sure the previous line is terminated */
-	if(bufhead->list.tail)
-	{
-		bufline = bufhead->list.tail->data;
-		lrb_assert(bufline->terminated);
-	}
+	va_start(va_args, format);
+	rb_linebuf_put_vstr_vprefix(bufhead, format, &va_args, LINEBUF_DATALEN + 1, NULL, NULL);
+	va_end(va_args);
+}
 
-	/* Create a new line */
-	bufline = rb_linebuf_new_line(bufhead);
+/*
+ * rb_linebuf_put_vmsg
+ *
+ * format/va_args is appended to the buffer.
+ * Messages will be limited to the RFC1459 data length
+ */
+void
+rb_linebuf_put_vmsg(buf_head_t *bufhead, const char *format, va_list *va_args)
+{
+	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, LINEBUF_DATALEN + 1, NULL, NULL);
+}
 
-	if(format != NULL)
-	{
-		va_start(args, format);
-		len = vsnprintf(bufline->buf, LINEBUF_DATA_SIZE + 1, format, args);
-		va_end(args);
-	}
+/*
+ * rb_linebuf_put_vmsg_prefixf
+ *
+ * prefix is inserted first, then format/va_args is appended to the buffer.
+ * Messages will be limited to the RFC1459 data length
+ */
+void
+rb_linebuf_put_vmsg_prefixf(buf_head_t *bufhead, const char *format, va_list *va_args,
+		  const char *prefixfmt, ...)
+{
+	va_list prefix_args;
 
-	bufline->terminated = 1;
-
-	/* Truncate the data if required */
-	if(len > LINEBUF_DATA_SIZE)
-	{
-		len = LINEBUF_DATA_SIZE;
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-	}
-	else if(len == 0)
-	{
-		bufline->buf[len++] = '\r';
-		bufline->buf[len++] = '\n';
-		bufline->buf[len] = '\0';
-	}
-	else
-	{
-		/* Chop trailing CRLF's .. */
-		while((bufline->buf[len] == '\r') || (bufline->buf[len] == '\n')
-		      || (bufline->buf[len] == '\0'))
-		{
-			len--;
-		}
-
-		bufline->buf[++len] = '\r';
-		bufline->buf[++len] = '\n';
-		bufline->buf[++len] = '\0';
-	}
-
-	bufline->len = len;
-	bufhead->len += len;
+	va_start(prefix_args, prefixfmt);
+	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, LINEBUF_DATALEN + 1, prefixfmt, &prefix_args);
+	va_end(prefix_args);
 }
 
 

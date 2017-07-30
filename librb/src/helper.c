@@ -215,7 +215,7 @@ rb_helper_write_queue(rb_helper *helper, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	rb_linebuf_putmsg(&helper->sendq, format, &ap, NULL);
+	rb_linebuf_put_vmsg(&helper->sendq, format, &ap);
 	va_end(ap);
 }
 
@@ -231,7 +231,7 @@ rb_helper_write(rb_helper *helper, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	rb_linebuf_putmsg(&helper->sendq, format, &ap, NULL);
+	rb_linebuf_put_vmsg(&helper->sendq, format, &ap);
 	va_end(ap);
 	rb_helper_write_flush(helper);
 }
