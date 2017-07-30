@@ -303,22 +303,25 @@ int
 rb_snprintf_append(char *str, size_t len, const char *format, ...)
 {
 	if(len == 0)
-		return 0;
+		return -1;
 
-	size_t x = strlen(str);
+	int orig_len = strlen(str);
 
-	if(len < x)
+	if((int)len < orig_len)
 	{
 		str[len - 1] = '\0';
-		return (int)len - 1;
+		return len - 1;
 	}
 
 	va_list ap;
 	va_start(ap, format);
-	int y = (vsnprintf(str + x, len - x, format, ap) + (int)x);
+	int append_len = vsnprintf(str + orig_len, len - orig_len, format, ap);
 	va_end(ap);
 
-	return (y);
+	if (append_len < 0)
+		return append_len;
+
+	return (orig_len + append_len);
 }
 
 /* rb_basename
