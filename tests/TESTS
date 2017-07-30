@@ -1,3 +1,4 @@
 msgbuf_parse1
 msgbuf_unparse1
+rb_linebuf_put1
 substitution1

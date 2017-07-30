@@ -58,6 +58,7 @@ ssld/ssld
 wsockd/wsockd
 tests/msgbuf_parse1
 tests/msgbuf_unparse1
+tests/rb_linebuf_put
 tests/substitution1
 tests/runtests
 testsuite/ircd.pid.*
