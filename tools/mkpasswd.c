@@ -49,8 +49,8 @@ static char *int_to_base64(int);
 static char *generate_random_salt(char *, int);
 static char *generate_poor_salt(char *, int);
 
-static void full_usage(void);
-static void brief_usage(void);
+static void full_usage(void) __attribute__((noreturn));
+static void brief_usage(void) __attribute__((noreturn));
 
 static char saltChars[] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
        /* 0 .. 63, ascii - 64 */
@@ -150,11 +150,9 @@ main(int argc, char *argv[])
 		case 'h':
 			full_usage();
 			/* NOT REACHED */
-			break;
 		case '?':
 			brief_usage();
 			/* NOT REACHED */
-			break;
 		default:
 			printf("Invalid Option: -%c\n", c);
 			break;
@@ -511,7 +509,7 @@ generate_random_salt(char *salt, int length)
 	return (salt);
 }
 
-void
+static void
 full_usage()
 {
 	printf("mkpasswd [-m|-d|-b|-e] [-l saltlength] [-r rounds] [-s salt] [-p plaintext]\n");
@@ -532,7 +530,7 @@ full_usage()
 	exit(0);
 }
 
-void
+static void
 brief_usage()
 {
 	printf("mkpasswd - password hash generator\n");
