@@ -328,11 +328,11 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 
 	if(MyClient(target_p) && !EmptyString(target_p->localClient->opername) && IsOper(target_p) && IsOper(source_p))
 	{
-		char buf[512];
-		rb_snprintf(buf, sizeof(buf), "is opered as %s, privset %s",
+		char obuf[512];
+		rb_snprintf(obuf, sizeof(obuf), "is opered as %s, privset %s",
 			    target_p->localClient->opername, target_p->localClient->privset->name);
 		sendto_one_numeric(source_p, RPL_WHOISSPECIAL, form_str(RPL_WHOISSPECIAL),
-				   target_p->name, buf);
+				   target_p->name, obuf);
 	}
 
 	if(IsSSLClient(target_p))
