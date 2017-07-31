@@ -1947,6 +1947,9 @@ static void *rb_sha512_finish_ctx(struct sha512_ctx *ctx, void *resbuf)
 	return resbuf;
 }
 
+#ifndef _STRING_ARCH_unaligned
+#define _STRING_ARCH_unaligned 0
+#endif
 
 static void rb_sha512_process_bytes(const void *buffer, size_t len, struct sha512_ctx *ctx)
 {
@@ -1976,7 +1979,7 @@ static void rb_sha512_process_bytes(const void *buffer, size_t len, struct sha51
 	/* Process available complete blocks.  */
 	if (len >= 128)
 	{
-	#if !_STRING_ARCH_unaligned
+	#if (!_STRING_ARCH_unaligned)
 	/* To check alignment gcc has an appropriate operator.  Other
 	   compilers don't.  */
 	#	if __GNUC__ >= 2
