@@ -73,7 +73,10 @@ static const char *expand_xline(const char *mask)
 	while (*p != '\0')
 	{
 		if (*p == ' ')
-			*q++ = '\\', *q++ = 's';
+		{
+			*q++ = '\\';
+			*q++ = 's';
+		}
 		else
 			*q++ = *p;
 		p++;
