@@ -54,7 +54,7 @@ sigchld_handler(int sig)
 /*
  * sigterm_handler - exit the server
  */
-static void
+static void __attribute__((noreturn))
 sigterm_handler(int sig)
 {
 	ircd_shutdown("Received SIGTERM");
