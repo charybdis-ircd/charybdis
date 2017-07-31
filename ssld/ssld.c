@@ -1248,7 +1248,7 @@ main(int argc, char **argv)
 		/* this is really useless... */
 		send_i_am_useless(mod_ctl);
 		/* sleep until the ircd kills us */
-		rb_sleep(2 << 30, 0);
+		rb_sleep(1 << 30, 0);
 		exit(1);
 	}
 
