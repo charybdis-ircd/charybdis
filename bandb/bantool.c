@@ -123,7 +123,7 @@ static void db_reclaim_slack(void);
 static void export_config(const char *conf, int id);
 static void import_config(const char *conf, int id);
 static void check_schema(void);
-static void print_help(int i_exit);
+static void print_help(int i_exit) __attribute__((noreturn));
 static void wipe_schema(void);
 static void drop_dupes(const char *user, const char *host, const char *t);
 
@@ -867,8 +867,8 @@ bt_smalldate(const char *string)
 /**
  * you are here ->.
  */
-void
-print_help(int i_exit)
+static void
+print_help(const int i_exit)
 {
 	fprintf(stderr, "bantool v.%s - the ircd-ratbox database tool.\n", BT_VERSION);
 	fprintf(stderr, "Copyright (C) 2008 Daniel J Reidy <dubkat@gmail.com>\n");
@@ -899,5 +899,6 @@ print_help(int i_exit)
 	fprintf(stderr,
 		"     path : An optional directory containing old ratbox configs for import, or export.\n");
 	fprintf(stderr, "            If not specified, it looks in PREFIX/etc.\n");
+
 	exit(i_exit);
 }
