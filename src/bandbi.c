@@ -384,7 +384,7 @@ bandb_handle_finish(void)
 	check_banned_lines();
 }
 
-static void
+static void __attribute__((noreturn))
 bandb_handle_failure(rb_helper *helper, char **parv, int parc)
 {
 	if(server_state_foreground)
@@ -413,7 +413,7 @@ bandb_parse(rb_helper *helper)
 		{
 		case '!':
 			bandb_handle_failure(helper, parv, parc);
-			break;
+			/* UNREACHABLE */
 		case 'K':
 		case 'D':
 		case 'X':
