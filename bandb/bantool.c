@@ -146,7 +146,7 @@ main(int argc, char *argv[])
 		{
 		case 'h':
 			print_help(EXIT_SUCCESS);
-			break;
+			/* noreturn call above, this is unreachable */
 		case 'i':
 			flag.none = NO;
 			flag.import = YES;
