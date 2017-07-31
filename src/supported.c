@@ -169,7 +169,10 @@ show_isupport(struct Client *client_p)
 	/* form_str(RPL_ISUPPORT) is %s :are supported by this server */
 	extra_space += strlen(me.name) + 1 + strlen(form_str(RPL_ISUPPORT));
 
-	nchars = extra_space, nparams = 0, buf[0] = '\0';
+	nchars = extra_space;
+	nparams = 0;
+	buf[0] = '\0';
+
 	RB_DLINK_FOREACH(ptr, isupportlist.head)
 	{
 		item = ptr->data;
@@ -180,10 +183,15 @@ show_isupport(struct Client *client_p)
 		if (nchars + l + (nparams > 0) >= sizeof buf || nparams + 1 > 12)
 		{
 			sendto_one_numeric(client_p, RPL_ISUPPORT, form_str(RPL_ISUPPORT), buf);
-			nchars = extra_space, nparams = 0, buf[0] = '\0';
+			nchars = extra_space;
+			nparams = 0;
+			buf[0] = '\0';
 		}
 		if (nparams > 0)
-			rb_strlcat(buf, " ", sizeof buf), nchars++;
+		{
+			rb_strlcat(buf, " ", sizeof buf);
+			nchars++;
+		}
 		rb_strlcat(buf, item->name, sizeof buf);
 		if (!EmptyString(value))
 		{
