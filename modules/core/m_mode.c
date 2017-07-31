@@ -375,7 +375,10 @@ ms_bmask(struct Client *client_p, struct Client *source_p, int parc, const char 
 		{
 			*forward++ = '\0';
 			if(*forward == '\0')
-				tlen--, forward = NULL;
+			{
+				tlen--;
+				forward = NULL;
+			}
 			else
 				possibly_remove_lower_forward(fakesource_p,
 						mems, chptr, banlist,
