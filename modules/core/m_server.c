@@ -134,8 +134,6 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Invalid servername.");
 		return 0;
-		/* NOT REACHED */
-		break;
 
 	case -2:
 		sendto_realops_snomask(SNO_GENERAL, is_remote_connect(client_p) ? L_NETWIDE : L_ALL,
@@ -149,8 +147,6 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Invalid credentials.");
 		return 0;
-		/* NOT REACHED */
-		break;
 
 	case -3:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
@@ -164,8 +160,6 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Invalid host.");
 		return 0;
-		/* NOT REACHED */
-		break;
 
 		/* servername is > HOSTLEN */
 	case -4:
@@ -177,8 +171,7 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Invalid servername.");
 		return 0;
-		/* NOT REACHED */
-		break;
+
 	case -5:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 		     "Connection from servername %s requires SSL/TLS but is plaintext",
@@ -188,6 +181,7 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 
 		exit_client(client_p, client_p, client_p, "Access denied, requires SSL/TLS but is plaintext");
 		return 0;
+
 	case -6:
 		if (client_p->certfp)
 		{
@@ -209,6 +203,7 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 		}
 
 		return 0;
+
 	default:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 		     "Connection from servername %s rejected, unknown error %d",
