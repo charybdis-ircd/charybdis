@@ -311,8 +311,7 @@ main(int argc, char *argv[])
 	rsdb_init(db_error_cb);
 	check_schema();
 	rb_helper_loop(bandb_helper, 0);
-
-	return 0;
+	/* UNREACHABLE */
 }
 
 static void
