@@ -50,6 +50,9 @@
 #include "whowas.h"
 #include "sslproc.h"
 
+#define Lformat "%s %u %u %u %u %u :%ld %ld %s"
+#define Sformat ":%s %d %s %s %u %u %u %u %u :%ld %ld %s"
+
 static int m_stats (struct Client *, struct Client *, int, const char **);
 
 struct Message stats_msgtab = {
@@ -68,8 +71,6 @@ mapi_hlist_av1 stats_hlist[] = {
 };
 
 DECLARE_MODULE_AV1(stats, NULL, NULL, stats_clist, stats_hlist, NULL, "$Revision: 1608 $");
-
-const char *Lformat = "%s %u %u %u %u %u :%u %u %s";
 
 static void stats_l_list(struct Client *s, const char *, int, int, rb_dlink_list *, char,
 				int (*check_fn)(struct Client *target_p));
@@ -178,7 +179,7 @@ static struct StatsStruct stats_cmd_table[] = {
 	{'z', stats_memory,		1, 0, },
 	{'Z', stats_ziplinks,		1, 0, },
 	{'?', stats_servlinks,		0, 0, },
-	{(char) 0, (void (*)()) 0, 	0, 0, }
+	{(char) 0, (void (*)(struct Client *)) 0, 0, 0, }
 };
 
 /*
@@ -1474,7 +1475,6 @@ stats_ziplinks (struct Client *source_p)
 static void
 stats_servlinks (struct Client *source_p)
 {
-	static char Sformat[] = ":%s %d %s %s %u %u %u %u %u :%u %u %s";
 	long uptime, sendK, receiveK;
 	struct Client *target_p;
 	rb_dlink_node *ptr;
@@ -1509,7 +1509,7 @@ stats_servlinks (struct Client *source_p)
 			(int) target_p->localClient->receiveK,
 			rb_current_time() - target_p->localClient->firsttime,
 			(rb_current_time() > target_p->localClient->lasttime) ?
-			 (rb_current_time() - target_p->localClient->lasttime) : 0,
+			 (rb_current_time() - target_p->localClient->lasttime) : (long) 0,
 			IsOper (source_p) ? show_capabilities (target_p) : "TS");
 	}
 
@@ -1672,7 +1672,7 @@ stats_l_client(struct Client *source_p, struct Client *target_p,
 				(int) target_p->localClient->receiveK,
 				rb_current_time() - target_p->localClient->firsttime,
 				(rb_current_time() > target_p->localClient->lasttime) ?
-				 (rb_current_time() - target_p->localClient->lasttime) : 0,
+				 (rb_current_time() - target_p->localClient->lasttime) : (long) 0,
 				IsOper(source_p) ? show_capabilities(target_p) : "-");
 	}
 
@@ -1691,7 +1691,7 @@ stats_l_client(struct Client *source_p, struct Client *target_p,
 				    (int) target_p->localClient->receiveK,
 				    rb_current_time() - target_p->localClient->firsttime,
 				    (rb_current_time() > target_p->localClient->lasttime) ?
-				     (rb_current_time() - target_p->localClient->lasttime) : 0,
+				     (rb_current_time() - target_p->localClient->lasttime) : (long) 0,
 				    "-");
 	}
 }
