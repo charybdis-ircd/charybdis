@@ -418,7 +418,7 @@ ircd_log_cb(const char *str)
 	ilog(L_MAIN, "libratbox reports: %s", str);
 }
 
-static void
+static void __attribute__((noreturn))
 ircd_restart_cb(const char *str)
 {
 	inotice("libratbox has called the restart callback: %s", str);
@@ -730,6 +730,5 @@ main(int argc, char *argv[])
 		        ConfigFileEntry.dpath, getpid());
 
 	rb_lib_loop(0);
-
-	return 0;
+	/* UNREACHABLE */
 }

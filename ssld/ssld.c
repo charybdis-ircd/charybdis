@@ -1257,7 +1257,7 @@ main(int argc, char **argv)
 	if(!ssld_ssl_ok)
 		send_nossl_support(mod_ctl, NULL);
 	rb_lib_loop(0);
-	return 0;
+	/* UNREACHABLE */
 }
 
 
