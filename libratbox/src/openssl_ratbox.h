@@ -123,7 +123,7 @@ static const char rb_default_ciphers[] = ""
 	"!aNULL";
 
 #ifdef LRB_HAVE_TLS_SET_CURVES
-static const char rb_default_curves[] = "P-521:P-384:P-256";
+static char rb_default_curves[] = "P-521:P-384:P-256";
 #endif
 
 #endif /* LRB_OPENSSL_H_INC */
