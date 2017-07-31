@@ -30,6 +30,8 @@
 
 # define OPTCHAR '-'
 
+static void usage(char *name) __attribute__((noreturn));
+
 void
 parseargs(int *argc, char ***argv, struct lgetopt *opts)
 {
@@ -119,7 +121,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 	}
 }
 
-void
+static void
 usage(char *name)
 {
 	int i = 0;
