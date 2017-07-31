@@ -796,9 +796,9 @@ load_a_module(const char *path, int warn, int core)
 	 * as a single int in order to determine the API version.
 	 *      -larne.
 	 */
-	mapi_version = (int *) (uintptr_t) dlsym(tmpptr, "_mheader");
+	mapi_version = (int *) dlsym(tmpptr, "_mheader");
 	if((mapi_version == NULL
-	    && (mapi_version = (int *) (uintptr_t) dlsym(tmpptr, "__mheader")) == NULL)
+	    && (mapi_version = (int *) dlsym(tmpptr, "__mheader")) == NULL)
 	   || MAPI_MAGIC(*mapi_version) != MAPI_MAGIC_HDR)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
