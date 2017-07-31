@@ -377,13 +377,25 @@ mo_rehash(struct Client *client_p, struct Client *source_p, int parc, const char
 	}
 
 	if (parc > 2)
-		type = parv[1], target_server = parv[2];
+	{
+		type = parv[1];
+		target_server = parv[2];
+	}
 	else if (parc > 1 && (strchr(parv[1], '.') || strchr(parv[1], '?') || strchr(parv[1], '*')))
-		type = NULL, target_server = parv[1];
+	{
+		type = NULL;
+		target_server = parv[1];
+	}
 	else if (parc > 1)
-		type = parv[1], target_server = NULL;
+	{
+		type = parv[1];
+		target_server = NULL;
+	}
 	else
-		type = NULL, target_server = NULL;
+	{
+		type = NULL;
+		target_server = NULL;
+	}
 
 	if (target_server != NULL)
 	{
