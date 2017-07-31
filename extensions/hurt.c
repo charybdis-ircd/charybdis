@@ -193,9 +193,17 @@ mo_hurt(struct Client *client_p, struct Client *source_p,
 	}
 
 	if (parc == 3)
-		expire = NULL, ip = parv[1], reason = parv[2];
+	{
+		expire = NULL;
+		ip = parv[1];
+		reason = parv[2];
+	}
 	else
-		expire = parv[1], ip = parv[2], reason = parv[3];
+	{
+		expire = parv[1];
+		ip = parv[2];
+		reason = parv[3];
+	}
 
 	if (!expire)
 		expire_time = HURT_DEFAULT_EXPIRE;
