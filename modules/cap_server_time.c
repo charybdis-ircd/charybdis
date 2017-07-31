@@ -58,8 +58,11 @@ cap_server_time_process(hook_data *data)
 	time_t ts = rb_current_time();
 
 	if (!rb_gettimeofday(&tv, NULL)) {
-		strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S.", gmtime(&tv.tv_sec));
-		rb_snprintf_append(buf, sizeof(buf), "%03uZ", (int)tv.tv_usec / 1000);
+		if (strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S.", gmtime(&tv.tv_sec)) < 0)
+			return;
+
+		if (rb_snprintf_append(buf, sizeof(buf), "%03uZ", (int)tv.tv_usec / 1000) < 0)
+			return;
 
 		msgbuf_append_tag(msgbuf, "time", buf, CLICAP_SERVER_TIME);
 	}
