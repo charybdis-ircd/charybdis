@@ -432,7 +432,7 @@ ircd_restart_cb(const char *str)
  * exception, so it is logical to return a FAILURE exit code here.
  *    --nenolod
  */
-static void
+static void __attribute__((noreturn))
 ircd_die_cb(const char *str)
 {
 	if(str != NULL)
