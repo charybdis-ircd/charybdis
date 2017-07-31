@@ -414,29 +414,43 @@ pretty_mask(const char *idmask)
 		at = t;
 		t++;
 		if(*t != '\0')
-			host = t, hl = strlen(t);
+		{
+			host = t;
+			hl = strlen(t);
+		}
 
 		if((t = memchr(mask, '!', at - mask)) != NULL)
 		{
 			ex = t;
 			t++;
 			if(at != t)
-				user = t, ul = at - t;
+			{
+				user = t;
+				ul = at - t;
+			}
 			if(ex != mask)
-				nick = mask, nl = ex - mask;
+			{
+				nick = mask;
+				nl = ex - mask;
+			}
 		}
-		else
+		else if(at != mask)
 		{
-			if(at != mask)
-				user = mask, ul = at - mask;
+			user = mask;
+			ul = at - mask;
 		}
 
 		if((t = memchr(host, '!', hl)) != NULL ||
 				(t = memchr(host, '$', hl)) != NULL)
 		{
 			t++;
+
 			if (host + hl != t)
-				forward = t, fl = host + hl - t;
+			{
+				forward = t;
+				fl = host + hl - t;
+			}
+
 			hl = t - 1 - host;
 		}
 	}
@@ -445,19 +459,26 @@ pretty_mask(const char *idmask)
 		ex = t;
 		t++;
 		if(ex != mask)
-			nick = mask, nl = ex - mask;
+		{
+			nick = mask;
+			nl = ex - mask;
+		}
 		if(*t != '\0')
-			user = t, ul = strlen(t);
+		{
+			user = t;
+			ul = strlen(t);
+		}
 	}
 	else if(memchr(mask, '.', masklen) != NULL ||
 			memchr(mask, ':', masklen) != NULL)
 	{
-		host = mask, hl = masklen;
+		host = mask;
+		hl = masklen;
 	}
-	else
+	else if(masklen > 0)
 	{
-		if(masklen > 0)
-			nick = mask, nl = masklen;
+		nick = mask;
+		nl = masklen;
 	}
 
 	/* truncate values to max lengths */
@@ -470,15 +491,24 @@ pretty_mask(const char *idmask)
 	if(fl > CHANNELLEN)
 		fl = CHANNELLEN;
 
-	memcpy(mask_buf + mask_pos, nick, nl), mask_pos += nl;
+	memcpy(mask_buf + mask_pos, nick, nl);
+	mask_pos += nl;
 	mask_buf[mask_pos++] = '!';
-	memcpy(mask_buf + mask_pos, user, ul), mask_pos += ul;
+
+	memcpy(mask_buf + mask_pos, user, ul);
+	mask_pos += ul;
 	mask_buf[mask_pos++] = '@';
-	memcpy(mask_buf + mask_pos, host, hl), mask_pos += hl;
+
+	memcpy(mask_buf + mask_pos, host, hl);
+	mask_pos += hl;
+
 	if (forward) {
 		mask_buf[mask_pos++] = '$';
-		memcpy(mask_buf + mask_pos, forward, fl), mask_pos += fl;
+
+		memcpy(mask_buf + mask_pos, forward, fl);
+		mask_pos += fl;
 	}
+
 	mask_buf[mask_pos++] = '\0';
 
 	return mask_buf + old_mask_pos;
