@@ -106,7 +106,7 @@ static HANDLE block_heap;
 
 #define rb_bh_fail(x) _rb_bh_fail(x, __FILE__, __LINE__)
 
-static void
+static void __attribute__((noreturn))
 _rb_bh_fail(const char *reason, const char *file, int line)
 {
 	rb_lib_log("rb_heap_blockheap failure: %s (%s:%d)", reason, file, line);
