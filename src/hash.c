@@ -711,7 +711,7 @@ find_cli_connid_hash(int connid)
 	RB_DLINK_FOREACH(ptr, clientbyconnidTable[hashv].head)
 	{
 		target_p = ptr->data;
-		if(target_p->localClient->connid == connid)
+		if(target_p->localClient->connid == (uint32_t)connid)
 			return target_p;
 	}
 
@@ -719,7 +719,7 @@ find_cli_connid_hash(int connid)
 	RB_DLINK_FOREACH(ptr, clientbyzconnidTable[hashv].head)
 	{
 		target_p = ptr->data;
-		if(target_p->localClient->zconnid == connid)
+		if(target_p->localClient->zconnid == (uint32_t)connid)
 			return target_p;
 	}
 
