@@ -37,9 +37,6 @@
 static void ws_read_ctl(rb_fde_t * F, void *data);
 static int wsockd_count;
 
-static char tmpbuf[READBUF_SIZE];
-static char nul = '\0';
-
 #define MAXPASSFD 4
 #define READSIZE 1024
 typedef struct _ws_ctl_buf

@@ -144,7 +144,6 @@ static void
 m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	static char jbuf[BUFSIZE];
-	static char parabuf[MODEBUFLEN];
 	struct Channel *chptr = NULL, *chptr2 = NULL;
 	struct ConfItem *aconf;
 	char *name;

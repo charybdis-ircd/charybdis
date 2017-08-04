@@ -326,7 +326,6 @@ cap_req(struct Client *source_p, const char *arg)
 	for(cap = clicap_find(arg, &negate, &finished); cap;
 	    cap = clicap_find(NULL, &negate, &finished))
 	{
-		size_t namelen = strlen(cap->cap);
 		const char *type;
 
 		if(negate)

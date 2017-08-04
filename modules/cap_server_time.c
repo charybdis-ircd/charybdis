@@ -55,7 +55,6 @@ cap_server_time_process(hook_data *data)
 	static char buf[BUFSIZE];
 	struct MsgBuf *msgbuf = data->arg1;
 	struct timeval tv;
-	time_t ts = rb_current_time();
 
 	if (!rb_gettimeofday(&tv, NULL)) {
 		if (strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S.", gmtime(&tv.tv_sec)) < 0)

@@ -370,7 +370,6 @@ socks5_connected(struct opm_scan *scan)
 static void
 http_connect_connected(struct opm_scan *scan)
 {
-	struct auth_client *auth = scan->auth;
 	char sendbuf[128]; /* A bit bigger than we need but better safe than sorry */
 
 	/* Simple enough to build */

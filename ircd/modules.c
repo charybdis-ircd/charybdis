@@ -428,7 +428,6 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	lt_dlhandle tmpptr;
 	char *mod_displayname, *c;
 	const char *ver, *description = NULL;
-	size_t module_ext_len = strlen(LT_MODULE_EXT);
 
 	int *mapi_version;
 
