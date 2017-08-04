@@ -31,7 +31,6 @@
 #define MSG "%s:%d (%s)", __FILE__, __LINE__, __FUNCTION__
 
 struct Client me;
-static char tmp[2048];
 static const char text[] =
 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkjihgfedcba"
 "ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkjihgfedcba9876543210abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -2879,6 +2878,7 @@ int main(int argc, char *argv[])
 	exact_space_for_tag2b();
 
 	escape_test();
+	escape_test_8bit();
 
 	long_para1a();
 	too_long_para1a();

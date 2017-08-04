@@ -31,7 +31,6 @@
 #define MSG "%s:%d (%s)", __FILE__, __LINE__, __FUNCTION__
 
 struct Client me;
-static char tmp[2048];
 static const char text[] =
 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkjihgfedcba"
 "ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkjihgfedcba9876543210abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -486,7 +485,6 @@ static void long_msgf2(void)
 {
 	buf_head_t linebuf;
 	char output[2048] = { 0 };
-	char prefix[2048] = { 0 };
 	int len;
 
 	rb_linebuf_newbuf(&linebuf);
@@ -509,7 +507,6 @@ static void too_long_msgf2(void)
 {
 	buf_head_t linebuf;
 	char output[2048] = { 0 };
-	char prefix[2048] = { 0 };
 	int len;
 
 	rb_linebuf_newbuf(&linebuf);
@@ -593,7 +590,6 @@ static void long_vmsg2(void)
 {
 	buf_head_t linebuf;
 	char output[2048] = { 0 };
-	char prefix[2048] = { 0 };
 	int len;
 
 	rb_linebuf_newbuf(&linebuf);
@@ -616,7 +612,6 @@ static void too_long_vmsg2(void)
 {
 	buf_head_t linebuf;
 	char output[2048] = { 0 };
-	char prefix[2048] = { 0 };
 	int len;
 
 	rb_linebuf_newbuf(&linebuf);

@@ -3313,6 +3313,7 @@ int main(int argc, char *argv[])
 	basic_tags4();
 	basic_tags5a();
 	basic_tags5b();
+	basic_tags13();
 	basic_tags14();
 	basic_tags15();
 	basic_tags16();
@@ -3374,6 +3375,7 @@ int main(int argc, char *argv[])
 	long_para4();
 
 	too_long_para1();
+	too_long_para2();
 
 	long_everything1();
 	long_everything2();
@@ -3397,6 +3399,7 @@ int main(int argc, char *argv[])
 	origin_no_para_0_spaces();
 	origin_no_para_1_space();
 	origin_no_para_2_spaces();
+	origin_no_para_3_spaces();
 
 	unescape_test();
 	unescape_bad_test1();
