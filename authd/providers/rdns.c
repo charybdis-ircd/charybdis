@@ -58,9 +58,6 @@ static void
 dns_answer_callback(const char *res, bool status, query_type type, void *data)
 {
 	struct auth_client *auth = data;
-	struct user_query *query = get_provider_data(auth, SELF_PID);
-
-	lrb_assert(query != NULL);
 
 	if(res == NULL || status == false)
 		client_fail(auth, REPORT_FAIL);

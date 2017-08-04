@@ -119,17 +119,12 @@ static void
 read_ident_reply(rb_fde_t *F, void *data)
 {
 	struct auth_client *auth = data;
-	struct ident_query *query;
 	char buf[IDENT_BUFSIZE + 1];	/* buffer to read auth reply into */
 	ident_message message = REPORT_FAIL;
 	char *s = NULL;
 	char *t = NULL;
 	ssize_t len;
 	int count;
-
-	lrb_assert(auth != NULL);
-	query = get_provider_data(auth, SELF_PID);
-	lrb_assert(query != NULL);
 
 	len = rb_read(F, buf, IDENT_BUFSIZE);
 	if(len < 0 && rb_ignore_errno(errno))
