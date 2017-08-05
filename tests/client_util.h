@@ -27,11 +27,22 @@
 #include "msg.h"
 #include "client.h"
 
-#define TEST_NICK "test"
+#include "ircd_util.h"
+
+#define TEST_NICK "local_test"
 #define TEST_USERNAME "username"
 #define TEST_HOSTNAME "example.test"
 #define TEST_IP "2001:db8::1:5ee:bad:c0de"
 #define TEST_REALNAME "Test user"
+#define TEST_ID TEST_ME_ID "00000"
+
+#define TEST_ID_SUFFIX "!" TEST_USERNAME "@" TEST_HOSTNAME
+
+#define TEST_SERVER_NAME "remote.test"
+#define TEST_SERVER_ID "1BB"
+
+#define TEST_REMOTE_NICK "remote_test"
+#define TEST_REMOTE_ID TEST_SERVER_ID "00001"
 
 #define CRLF "\r\n"
 
@@ -43,6 +54,16 @@ struct Client *make_local_person_nick(const char *nick);
 struct Client *make_local_person_full(const char *nick, const char *username, const char *hostname, const char *ip, const char *realname);
 void make_local_person_oper(struct Client *client);
 void remove_local_person(struct Client *client);
+
+struct Client *make_remote_server(struct Client *uplink);
+struct Client *make_remote_server_name(struct Client *uplink, const char *name);
+struct Client *make_remote_server_full(struct Client *uplink, const char *name, const char *id);
+struct Client *make_remote_person(struct Client *server);
+struct Client *make_remote_person_nick(struct Client *server, const char *nick);
+struct Client *make_remote_person_full(struct Client *server, const char *nick, const char *username, const char *hostname, const char *ip, const char *realname);
+void make_remote_person_oper(struct Client *client);
+void remove_remote_person(struct Client *client);
+void remove_remote_server(struct Client *server);
 
 char *get_client_sendq(const struct Client *client);
 

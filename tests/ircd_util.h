@@ -26,6 +26,7 @@
 #include "ircd_defs.h"
 
 #define TEST_ME_NAME "me.test"
+#define TEST_ME_ID "0AA"
 
 void ircd_util_init(const char *name);
 void ircd_util_free(void);
