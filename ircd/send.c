@@ -897,7 +897,8 @@ sendto_common_channels_local(struct Client *user, int cap, int negcap, const cha
 	/* this can happen when the user isnt in any channels, but we still
 	 * need to send them the data, ie a nick change
 	 */
-	if(MyConnect(user) && (user->serial != current_serial))
+	if(MyConnect(user) && (user->serial != current_serial)
+			&& IsCapable(user, cap) && NotCapable(user, negcap))
 		send_linebuf(user, &linebuf);
 
 	rb_linebuf_donebuf(&linebuf);
