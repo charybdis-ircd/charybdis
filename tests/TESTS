@@ -3,4 +3,5 @@ msgbuf_unparse1
 rb_linebuf_put1
 rb_snprintf_append1
 rb_snprintf_try_append1
+send1
 substitution1

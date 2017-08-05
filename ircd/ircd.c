@@ -823,13 +823,6 @@ charybdis_main(int argc, char * const argv[])
 			ircd_ssl_ok = true;
 	}
 
-	if (testing_conf)
-	{
-		fprintf(stderr, "\nConfig testing complete.\n");
-		fflush(stderr);
-		return 0;	/* Why? We want the launcher to exit out. */
-	}
-
 	me.from = &me;
 	me.servptr = &me;
 	SetMe(&me);
@@ -842,6 +835,13 @@ charybdis_main(int argc, char * const argv[])
 	rb_dlinkAddAlloc(&me, &global_serv_list);
 
 	construct_umodebuf();
+
+	if (testing_conf)
+	{
+		fprintf(stderr, "\nConfig testing complete.\n");
+		fflush(stderr);
+		return 0;	/* Why? We want the launcher to exit out. */
+	}
 
 	check_class();
 	write_pidfile(pidFileName);

@@ -4,6 +4,7 @@ check_PROGRAMS = runtests \
 	rb_linebuf_put1 \
 	rb_snprintf_append1 \
 	rb_snprintf_try_append1 \
+	send1 \
 	substitution1
 AM_CFLAGS=$(WARNFLAGS)
 AM_CPPFLAGS = $(DEFAULT_INCLUDES) -I../librb/include -I..
@@ -24,7 +25,16 @@ msgbuf_unparse1_SOURCES = msgbuf_unparse1.c
 rb_linebuf_put1_SOURCES = rb_linebuf_put1.c
 rb_snprintf_append1_SOURCES = rb_snprintf_append1.c
 rb_snprintf_try_append1_SOURCES = rb_snprintf_try_append1.c
+send1_SOURCES = send1.c ircd_util.c client_util.c
 substitution1_SOURCES = substitution1.c
 
-check-local: $(check_PROGRAMS)
+check-local: $(check_PROGRAMS) \
+	../authd/authd \
+	../bandb/bandb \
+	../ssld/ssld \
+	../wsockd/wsockd \
+	$(patsubst ../modules/%.c,../modules/.libs/%.so,$(wildcard ../modules/*.c)) \
+	$(patsubst ../modules/core/%.c,../modules/core/.libs/%.so,$(wildcard ../modules/core/*.c)) \
+	$(patsubst ../extensions/%.c,../extensions/.libs/%.so,$(wildcard ../extensions/*.c))
+
 	./runtests -l $(abs_top_srcdir)/tests/TESTS
