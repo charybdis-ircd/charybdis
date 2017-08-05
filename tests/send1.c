@@ -49,21 +49,10 @@ static void sendto_wallops_flags1(void)
 	struct Client *oper3 = make_local_person_nick("oper3");
 	struct Client *oper4 = make_local_person_nick("oper4");
 
-	rb_dlinkAddAlloc(oper1, &local_oper_list);
-	rb_dlinkAddAlloc(oper1, &oper_list);
-	SetOper(oper1);
-
-	rb_dlinkAddAlloc(oper2, &local_oper_list);
-	rb_dlinkAddAlloc(oper2, &oper_list);
-	SetOper(oper2);
-
-	rb_dlinkAddAlloc(oper3, &local_oper_list);
-	rb_dlinkAddAlloc(oper3, &oper_list);
-	SetOper(oper3);
-
-	rb_dlinkAddAlloc(oper4, &local_oper_list);
-	rb_dlinkAddAlloc(oper4, &oper_list);
-	SetOper(oper4);
+	make_local_person_oper(oper1);
+	make_local_person_oper(oper2);
+	make_local_person_oper(oper3);
+	make_local_person_oper(oper4);
 
 	user1->umodes |= UMODE_WALLOP;
 	oper1->umodes |= UMODE_WALLOP | UMODE_OPERWALL;

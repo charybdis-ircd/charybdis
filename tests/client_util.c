@@ -60,6 +60,13 @@ struct Client *make_local_person_full(const char *nick, const char *username, co
 	return client;
 }
 
+void make_local_person_oper(struct Client *client)
+{
+	rb_dlinkAddAlloc(client, &local_oper_list);
+	rb_dlinkAddAlloc(client, &oper_list);
+	SetOper(client);
+}
+
 void remove_local_person(struct Client *client)
 {
 	exit_client(NULL, client, &me, "Test client removed");

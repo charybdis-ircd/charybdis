@@ -41,6 +41,7 @@ void client_util_free(void);
 struct Client *make_local_person(void);
 struct Client *make_local_person_nick(const char *nick);
 struct Client *make_local_person_full(const char *nick, const char *username, const char *hostname, const char *ip, const char *realname);
+void make_local_person_oper(struct Client *client);
 void remove_local_person(struct Client *client);
 
 char *get_client_sendq(const struct Client *client);
