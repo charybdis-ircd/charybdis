@@ -294,6 +294,7 @@ mod_add_cmd(struct Message *msg)
 		return;
 
 	if (rb_dictionary_find(cmd_dict, msg->cmd) != NULL) {
+		ilog(L_MAIN, "Add command: %s already exists", msg->cmd);
 		s_assert(0);
 		return;
 	}
@@ -318,8 +319,10 @@ mod_del_cmd(struct Message *msg)
 	if(msg == NULL)
 		return;
 
-	if (rb_dictionary_delete(cmd_dict, msg->cmd) == NULL)
+	if (rb_dictionary_delete(cmd_dict, msg->cmd) == NULL) {
+		ilog(L_MAIN, "Delete command: %s not found", msg->cmd);
 		s_assert(0);
+	}
 }
 
 /* cancel_clients()
