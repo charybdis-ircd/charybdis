@@ -270,6 +270,16 @@ static void too_long_variable3c(void) {
 	is_string(tmp2, substitution_parse("${text200}${text400}${text100}", &varlist2), MSG);
 }
 
+static void long_variable_name1(void) {
+	char input[2048];
+
+	strcpy(input, "${");
+	strcat(input, MKTEXT(1000));
+	strcat(input, "}");
+
+	is_string("test", substitution_parse(input, &varlist2), MSG);
+}
+
 int main(int argc, char *argv[])
 {
 	memset(&me, 0, sizeof(me));
@@ -303,6 +313,11 @@ int main(int argc, char *argv[])
 	substitution_append_var(&varlist2, "text514", MKTEXT(514));
 	substitution_append_var(&varlist2, "text600", MKTEXT(600));
 
+	char temp[2048];
+	strcpy(temp, MKTEXT(1000));
+	temp[BUFSIZE - 1] = '\0';
+	substitution_append_var(&varlist2, temp, "test");
+
 	plan_lazy();
 
 	valid_variable1();
@@ -335,6 +350,11 @@ int main(int argc, char *argv[])
 	too_long_variable3a();
 	too_long_variable3b();
 	too_long_variable3c();
+
+	long_variable_name1();
+
+	substitution_free(&varlist);
+	substitution_free(&varlist2);
 
 	return 0;
 }

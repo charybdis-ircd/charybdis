@@ -101,45 +101,30 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 	const char *ptr;
 	char *bptr = buf;
 
-	for (ptr = fmt; *ptr != '\0' && bptr - buf < BUFSIZE; ptr++)
-		if (*ptr != '$')
+	for (ptr = fmt; *ptr != '\0' && bptr - buf < BUFSIZE; ptr++) {
+		if (*ptr != '$') {
 			*bptr++ = *ptr;
-		else if (*(ptr + 1) == '{')
-		{
-			static char varname[BUFSIZE];
+		} else if (*(ptr + 1) == '{') {
+			char varname[BUFSIZE] = { 0 };
 			char *vptr = varname;
-			const char *pptr;
 			rb_dlink_node *nptr;
 
-			*vptr = '\0';
-
 			/* break out ${var} */
-			for (pptr = ptr + 2; *pptr != '\0'; pptr++)
-			{
-				if (*pptr == '$')
-				{
-					*vptr++ = '\0';
-					pptr--;
+			for (ptr += 2; *ptr != '\0'; ptr++) {
+				if (*ptr == '$') {
+					ptr--;
 					break;
-				}
-				else if (*pptr != '}')
-					*vptr++ = *pptr;
-				else
-				{
-					*vptr++ = '\0';
+				} else if (*ptr == '}') {
 					break;
+				} else if (vptr < &varname[sizeof(varname) - 1]) {
+					*vptr++ = *ptr;
 				}
 			}
 
-			/* advance ptr by length of variable */
-			ptr += (pptr - ptr);
-
-			RB_DLINK_FOREACH(nptr, varlist->head)
-			{
+			RB_DLINK_FOREACH(nptr, varlist->head) {
 				struct substitution_variable *val = (struct substitution_variable *) nptr->data;
 
-				if (!rb_strcasecmp(varname, val->name))
-				{
+				if (!rb_strcasecmp(varname, val->name)) {
 					rb_strlcpy(bptr, val->value, sizeof(buf) - (bptr - buf));
 					bptr += strlen(val->value);
 					if (bptr >= &buf[sizeof(buf)]) {
@@ -153,6 +138,7 @@ char *substitution_parse(const char *fmt, rb_dlink_list *varlist)
 			if (*ptr == '\0')
 				break;
 		}
+	}
 
 	*bptr = '\0';
 	return buf;
