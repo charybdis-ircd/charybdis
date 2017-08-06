@@ -69,6 +69,8 @@ tests/*.c.ban.db
 tests/*.c.ban.db-journal
 tests/*.c.log
 tests/*.c.pid
+!tests/runtime/modules/*.so
+!tests/runtime/modules/autoload/*.so
 testsuite/ircd.pid.*
 tools/charybdis-mkpasswd
 tools/charybdis-mkfingerprint
