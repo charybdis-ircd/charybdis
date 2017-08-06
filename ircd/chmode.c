@@ -1778,8 +1778,8 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 				*mbuf = '\0';
 
 				if(cur_len > mlen)
-					sendto_channel_local(flags, chptr, "%s %s", modebuf,
-							     parabuf);
+					sendto_channel_local(IsServer(source_p) ? fakesource_p : source_p,
+							flags, chptr, "%s %s", modebuf, parabuf);
 				else
 					continue;
 
@@ -1815,7 +1815,8 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 
 		*mbuf = '\0';
 		if(cur_len > mlen)
-			sendto_channel_local(flags, chptr, "%s %s", modebuf, parabuf);
+			sendto_channel_local(IsServer(source_p) ? fakesource_p : source_p,
+				flags, chptr, "%s %s", modebuf, parabuf);
 	}
 
 	/* only propagate modes originating locally, or if we're hubbing */

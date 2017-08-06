@@ -248,7 +248,7 @@ possibly_remove_lower_forward(struct Client *fakesource_p, int mems,
 				(actualBan->forward == NULL ||
 				 irccmp(actualBan->forward, forward) < 0))
 		{
-			sendto_channel_local(mems, chptr, ":%s MODE %s -%c %s%s%s",
+			sendto_channel_local(fakesource_p, mems, chptr, ":%s MODE %s -%c %s%s%s",
 					fakesource_p->name,
 					chptr->chname,
 					mchar,
@@ -383,7 +383,7 @@ ms_bmask(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			{
 				*mbuf = '\0';
 				*(pbuf - 1) = '\0';
-				sendto_channel_local(mems, chptr, "%s %s", modebuf, parabuf);
+				sendto_channel_local(fakesource_p, mems, chptr, "%s %s", modebuf, parabuf);
 
 				mbuf = modebuf + mlen;
 				pbuf = parabuf;
@@ -419,7 +419,7 @@ ms_bmask(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	{
 		*mbuf = '\0';
 		*(pbuf - 1) = '\0';
-		sendto_channel_local(mems, chptr, "%s %s", modebuf, parabuf);
+		sendto_channel_local(fakesource_p, mems, chptr, "%s %s", modebuf, parabuf);
 	}
 
 	sendto_server(client_p, chptr, CAP_TS6 | needcap, NOCAPS, ":%s BMASK %ld %s %s :%s",

@@ -113,7 +113,7 @@ ms_tb(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
 			return;
 
 		set_channel_topic(chptr, newtopic, newtopicwho, newtopicts);
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
+		sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
 				     fakesource_p->name, chptr->chname, newtopic);
 		sendto_server(client_p, chptr, CAP_TB|CAP_TS6, NOCAPS,
 			      ":%s TB %s %ld %s%s:%s",
@@ -177,7 +177,7 @@ ms_etb(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		if(textchange)
 		{
 			if (IsPerson(fakesource_p))
-				sendto_channel_local(ALL_MEMBERS, chptr,
+				sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
 						":%s!%s@%s TOPIC %s :%s",
 						fakesource_p->name,
 						fakesource_p->username,
@@ -185,7 +185,7 @@ ms_etb(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 						chptr->chname,
 						newtopic);
 			else
-				sendto_channel_local(ALL_MEMBERS, chptr,
+				sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
 						":%s TOPIC %s :%s",
 						fakesource_p->name,
 						chptr->chname, newtopic);

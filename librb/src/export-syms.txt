@@ -65,6 +65,8 @@ rb_get_type
 rb_getmaxconnect
 rb_getpid
 rb_gettimeofday
+rb_fsnprint
+rb_fsnprintf
 rb_helper_child
 rb_helper_close
 rb_helper_loop
@@ -100,11 +102,7 @@ rb_linebuf_get
 rb_linebuf_init
 rb_linebuf_newbuf
 rb_linebuf_parse
-rb_linebuf_put_msgf
-rb_linebuf_put_vmsg
-rb_linebuf_put_vmsg_prefixf
-rb_linebuf_put_vtags_prefix
-rb_linebuf_put_vtags_prefixf
+rb_linebuf_put
 rb_listen
 rb_make_rb_dlink_node
 rb_match_exact_string

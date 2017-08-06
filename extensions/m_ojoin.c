@@ -105,7 +105,7 @@ mo_ojoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			      ":%s SJOIN %ld %s + :@%s",
 			      me.id, (long) chptr->channelts, chptr->chname, source_p->id);
 		send_channel_join(chptr, source_p);
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s MODE %s +o %s",
+		sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +o %s",
 				     me.name, chptr->chname, source_p->name);
 
 	}
@@ -116,7 +116,7 @@ mo_ojoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			      ":%s SJOIN %ld %s + :+%s",
 			      me.id, (long) chptr->channelts, chptr->chname, source_p->id);
 		send_channel_join(chptr, source_p);
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s MODE %s +v %s",
+		sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +v %s",
 				     me.name, chptr->chname, source_p->name);
 	}
 	else

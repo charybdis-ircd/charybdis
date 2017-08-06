@@ -345,7 +345,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			chptr->mode.mode |= ConfigChannel.autochanmodes;
 			modes = channel_modes(chptr, &me);
 
-			sendto_channel_local(ONLY_CHANOPS, chptr, ":%s MODE %s %s",
+			sendto_channel_local(&me, ONLY_CHANOPS, chptr, ":%s MODE %s %s",
 					     me.name, chptr->chname, modes);
 
 			sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
@@ -434,7 +434,7 @@ ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	/* making a channel TS0 */
 	if(!isnew && !newts && oldts)
 	{
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(&me, ALL_MEMBERS, chptr,
 				     ":%s NOTICE %s :*** Notice -- TS for %s changed from %ld to 0",
 				     me.name, chptr->chname, chptr->chname, (long) oldts);
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
@@ -466,7 +466,7 @@ ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		}
 		/* If setting -j, clear join throttle state -- jilles */
 		chptr->join_count = chptr->join_delta = 0;
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(&me, ALL_MEMBERS, chptr,
 				     ":%s NOTICE %s :*** Notice -- TS for %s changed from %ld to %ld",
 				     me.name, chptr->chname, chptr->chname,
 				     (long) oldts, (long) newts);
@@ -474,7 +474,7 @@ ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		 * capitalization timestamped like modes are -- jilles */
 		strcpy(chptr->chname, parv[2]);
 		if(*modebuf != '\0')
-			sendto_channel_local(ALL_MEMBERS, chptr,
+			sendto_channel_local(source_p->servptr, ALL_MEMBERS, chptr,
 					     ":%s MODE %s %s %s",
 					     source_p->servptr->name,
 					     chptr->chname, modebuf, parabuf);
@@ -615,7 +615,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	if(!isnew && !newts && oldts)
 	{
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(&me, ALL_MEMBERS, chptr,
 				     ":%s NOTICE %s :*** Notice -- TS for %s "
 				     "changed from %ld to 0",
 				     me.name, chptr->chname, chptr->chname, (long) oldts);
@@ -731,7 +731,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 					'q', ALL_MEMBERS);
 		chptr->bants++;
 
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(&me, ALL_MEMBERS, chptr,
 				     ":%s NOTICE %s :*** Notice -- TS for %s changed from %ld to %ld",
 				     me.name, chptr->chname, chptr->chname,
 				     (long) oldts, (long) newts);
@@ -744,7 +744,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	}
 
 	if(*modebuf != '\0')
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s MODE %s %s %s",
+		sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr, ":%s MODE %s %s %s",
 				     fakesource_p->name, chptr->chname, modebuf, parabuf);
 
 	*modebuf = *parabuf = '\0';
@@ -851,7 +851,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 				if(pargs >= MAXMODEPARAMS)
 				{
 					*mbuf = '\0';
-					sendto_channel_local(ALL_MEMBERS, chptr,
+					sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
 							     ":%s MODE %s %s %s %s %s %s",
 							     fakesource_p->name, chptr->chname,
 							     modebuf,
@@ -875,7 +875,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		if(pargs >= MAXMODEPARAMS)
 		{
 			*mbuf = '\0';
-			sendto_channel_local(ALL_MEMBERS, chptr,
+			sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
 					     ":%s MODE %s %s %s %s %s %s",
 					     fakesource_p->name,
 					     chptr->chname,
@@ -910,7 +910,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	*mbuf = '\0';
 	if(pargs)
 	{
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
 				     ":%s MODE %s %s %s %s %s %s",
 				     fakesource_p->name, chptr->chname, modebuf,
 				     para[0], CheckEmpty(para[1]),
@@ -962,7 +962,7 @@ do_join_0(struct Client *client_p, struct Client *source_p)
 
 		msptr = ptr->data;
 		chptr = msptr->chptr;
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s!%s@%s PART %s",
+		sendto_channel_local(source_p, ALL_MEMBERS, chptr, ":%s!%s@%s PART %s",
 				     source_p->name,
 				     source_p->username, source_p->host, chptr->chname);
 		remove_user_from_channel(msptr);
@@ -1202,7 +1202,7 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 				if(count >= MAXMODEPARAMS)
 				{
 					*mbuf = '\0';
-					sendto_channel_local(ALL_MEMBERS, chptr,
+					sendto_channel_local(source_p, ALL_MEMBERS, chptr,
 							     ":%s MODE %s %s %s %s %s %s",
 							     source_p->name, chptr->chname,
 							     lmodebuf, lpara[0], lpara[1],
@@ -1234,7 +1234,7 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 		if(count >= MAXMODEPARAMS)
 		{
 			*mbuf = '\0';
-			sendto_channel_local(ALL_MEMBERS, chptr,
+			sendto_channel_local(source_p, ALL_MEMBERS, chptr,
 					     ":%s MODE %s %s %s %s %s %s",
 					     source_p->name, chptr->chname, lmodebuf,
 					     lpara[0], lpara[1], lpara[2], lpara[3]);
@@ -1250,7 +1250,7 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 	if(count != 0)
 	{
 		*mbuf = '\0';
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(source_p, ALL_MEMBERS, chptr,
 				     ":%s MODE %s %s %s %s %s %s",
 				     source_p->name, chptr->chname, lmodebuf,
 				     EmptyString(lpara[0]) ? "" : lpara[0],
@@ -1300,7 +1300,7 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 			*mbuf = '\0';
 			*(pbuf - 1) = '\0';
 
-			sendto_channel_local(mems, chptr, "%s %s", lmodebuf, lparabuf);
+			sendto_channel_local(source_p, mems, chptr, "%s %s", lmodebuf, lparabuf);
 
 			cur_len = mlen;
 			mbuf = lmodebuf + mlen;
@@ -1321,7 +1321,7 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 
 	*mbuf = '\0';
 	*(pbuf - 1) = '\0';
-	sendto_channel_local(mems, chptr, "%s %s", lmodebuf, lparabuf);
+	sendto_channel_local(source_p, mems, chptr, "%s %s", lmodebuf, lparabuf);
 
 	list->head = list->tail = NULL;
 	list->length = 0;

@@ -108,6 +108,6 @@ mo_opme(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			      me.id, (long) chptr->channelts, parv[1], source_p->id);
 	}
 
-	sendto_channel_local(ALL_MEMBERS, chptr,
+	sendto_channel_local(&me, ALL_MEMBERS, chptr,
 			     ":%s MODE %s +o %s", me.name, parv[1], source_p->name);
 }

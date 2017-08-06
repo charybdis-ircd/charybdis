@@ -214,8 +214,10 @@ void
 rb_helper_write_queue(rb_helper *helper, const char *format, ...)
 {
 	va_list ap;
+	rb_strf_t strings = { .format = format, .format_args = &ap, .next = NULL };
+
 	va_start(ap, format);
-	rb_linebuf_put_vmsg(&helper->sendq, format, &ap);
+	rb_linebuf_put(&helper->sendq, &strings);
 	va_end(ap);
 }
 
@@ -230,9 +232,12 @@ void
 rb_helper_write(rb_helper *helper, const char *format, ...)
 {
 	va_list ap;
+	rb_strf_t strings = { .format = format, .format_args = &ap, .next = NULL };
+
 	va_start(ap, format);
-	rb_linebuf_put_vmsg(&helper->sendq, format, &ap);
+	rb_linebuf_put(&helper->sendq, &strings);
 	va_end(ap);
+
 	rb_helper_write_flush(helper);
 }
 

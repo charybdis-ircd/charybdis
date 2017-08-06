@@ -62,8 +62,6 @@ typedef struct _buf_head
 	int numlines;		/* number of lines */
 } buf_head_t;
 
-
-
 /* they should be functions, but .. */
 #define rb_linebuf_len(x)		((x)->len)
 #define rb_linebuf_alloclen(x)	((x)->alloclen)
@@ -74,15 +72,7 @@ void rb_linebuf_newbuf(buf_head_t *);
 void rb_linebuf_donebuf(buf_head_t *);
 int rb_linebuf_parse(buf_head_t *, char *, int, int);
 int rb_linebuf_get(buf_head_t *, char *, int, int, int);
-/* "msg" is limited to RFC1459 message size */
-void rb_linebuf_put_msgf(buf_head_t *, const char *, ...) AFP(2,3);
-void rb_linebuf_put_vmsg(buf_head_t *, const char *, va_list *);
-void rb_linebuf_put_vmsg_prefixf(buf_head_t *, const char *, va_list *, const char *, ...) AFP(4,5);
-/* "tags" has a prefix that contains tags AND messages, it must
- * specify the correct total buffer length to enforce the limit
- * of the RFC1459 message size */
-void rb_linebuf_put_vtags_prefix(buf_head_t *, const char *, va_list *, size_t, const char *);
-void rb_linebuf_put_vtags_prefixf(buf_head_t *, const char *, va_list *, size_t, const char *, ...) AFP(5,6);
+void rb_linebuf_put(buf_head_t *, const rb_strf_t *);
 void rb_linebuf_attach(buf_head_t *, buf_head_t *);
 void rb_count_rb_linebuf_memory(size_t *, size_t *);
 int rb_linebuf_flush(rb_fde_t *F, buf_head_t *);

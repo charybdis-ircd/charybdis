@@ -244,17 +244,26 @@ msgbuf_unparse_tags(char *buf, size_t buflen, const struct MsgBuf *msgbuf, unsig
 	return commit - buf;
 }
 
+int
+msgbuf_unparse_linebuf_tags(char *buf, size_t buflen, void *data)
+{
+	struct MsgBuf_str_data *str_data = data;
+
+	return msgbuf_unparse_tags(buf, buflen, str_data->msgbuf, str_data->caps);
+}
+
 /*
  * unparse a MsgBuf and message prefix into a buffer
  * if origin is NULL, me.name will be used.
  * cmd should not be NULL.
  * updates buflen to correctly allow remaining message data to be added
  */
-void
+int
 msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, unsigned int capmask)
 {
 	size_t tags_buflen;
-	size_t tags_used = 0;
+	size_t used = 0;
+	int ret;
 
 	memset(buf, 0, *buflen);
 
@@ -263,19 +272,32 @@ msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, un
 		tags_buflen = TAGSLEN + 1;
 
 	if (msgbuf->n_tags > 0)
-		tags_used = msgbuf_unparse_tags(buf, tags_buflen, msgbuf, capmask);
+		used = msgbuf_unparse_tags(buf, tags_buflen, msgbuf, capmask);
 
-	const size_t data_bufmax = (tags_used + DATALEN + 1);
+	const size_t data_bufmax = (used + DATALEN + 1);
 	if (*buflen > data_bufmax)
 		*buflen = data_bufmax;
 
-	rb_snprintf_append(buf, *buflen, ":%s ", msgbuf->origin != NULL ? msgbuf->origin : me.name);
+	ret = rb_snprintf_append(buf, *buflen, ":%s ", msgbuf->origin != NULL ? msgbuf->origin : me.name);
+	if (ret > 0)
+		used += ret;
 
-	if (msgbuf->cmd != NULL)
-		rb_snprintf_append(buf, *buflen, "%s ", msgbuf->cmd);
+	if (msgbuf->cmd != NULL) {
+		ret = rb_snprintf_append(buf, *buflen, "%s ", msgbuf->cmd);
+		if (ret > 0)
+			used += ret;
+	}
 
-	if (msgbuf->target != NULL)
-		rb_snprintf_append(buf, *buflen, "%s ", msgbuf->target);
+	if (msgbuf->target != NULL) {
+		ret = rb_snprintf_append(buf, *buflen, "%s ", msgbuf->target);
+		if (ret > 0)
+			used += ret;
+	}
+
+	if (used > data_bufmax - 1)
+		used = data_bufmax - 1;
+
+	return used;
 }
 
 /*
@@ -345,4 +367,104 @@ msgbuf_unparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned
 	va_end(va);
 
 	return res;
+}
+
+void
+msgbuf_cache_init(struct MsgBuf_cache *cache, const struct MsgBuf *msgbuf, const rb_strf_t *message)
+{
+	cache->msgbuf = msgbuf;
+	cache->head = NULL;
+	cache->overall_capmask = 0;
+
+	for (size_t i = 0; i < msgbuf->n_tags; i++) {
+		cache->overall_capmask |= msgbuf->tags[i].capmask;
+	}
+
+	for (int i = 0; i < MSGBUF_CACHE_SIZE; i++) {
+		cache->entry[i].caps = 0;
+		cache->entry[i].next = NULL;
+	}
+
+	rb_fsnprint(cache->message, sizeof(cache->message), message);
+}
+
+void
+msgbuf_cache_initf(struct MsgBuf_cache *cache, const struct MsgBuf *msgbuf, const rb_strf_t *message, const char *format, ...)
+{
+	va_list va;
+	rb_strf_t strings = { .format = format, .format_args = &va, .next = message };
+
+	va_start(va, format);
+	msgbuf_cache_init(cache, msgbuf, &strings);
+	va_end(va);
+}
+
+buf_head_t*
+msgbuf_cache_get(struct MsgBuf_cache *cache, unsigned int caps)
+{
+	struct MsgBuf_cache_entry *entry = cache->head;
+	struct MsgBuf_cache_entry *prev = NULL;
+	struct MsgBuf_cache_entry *result = NULL;
+	int n = 0;
+
+	while (entry != NULL) {
+		if (entry->caps == caps) {
+			/* Cache hit */
+			result = entry;
+			break;
+		}
+
+		prev = entry;
+		entry = entry->next;
+		n++;
+	}
+
+	if (result == NULL) {
+		if (n < MSGBUF_CACHE_SIZE) {
+			/* Cache miss, allocate a new entry */
+			result = &cache->entry[n];
+			prev = NULL;
+		} else {
+			/* Cache full, replace the last entry */
+			result = prev;
+			prev = NULL;
+
+			rb_linebuf_donebuf(&result->linebuf);
+		}
+
+		/* Construct the line using the tags followed by the no tags line */
+		struct MsgBuf_str_data msgbuf_str_data = { .msgbuf = cache->msgbuf, .caps = caps };
+		rb_strf_t strings[2] = {
+			{ .func = msgbuf_unparse_linebuf_tags, .func_args = &msgbuf_str_data, .length = TAGSLEN + 1, .next = &strings[1] },
+			{ .format = cache->message, .length = DATALEN + 1, .next = NULL }
+		};
+
+		result->caps = caps;
+		rb_linebuf_newbuf(&result->linebuf);
+		rb_linebuf_put(&result->linebuf, &strings[0]);
+	}
+
+	/* Move it to the top */
+	if (cache->head != result) {
+		if (prev != NULL) {
+			prev->next = result->next;
+		}
+		result->next = cache->head;
+		cache->head = result;
+	}
+
+	return &result->linebuf;
+}
+
+void
+msgbuf_cache_free(struct MsgBuf_cache *cache)
+{
+	struct MsgBuf_cache_entry *entry = cache->head;
+
+	while (entry != NULL) {
+		rb_linebuf_donebuf(&entry->linebuf);
+		entry = entry->next;
+	}
+
+	cache->head = NULL;
 }

@@ -126,10 +126,10 @@ send_channel_join(struct Channel *chptr, struct Client *client_p)
 	if (!IsClient(client_p))
 		return;
 
-	sendto_channel_local_with_capability(ALL_MEMBERS, NOCAPS, CLICAP_EXTENDED_JOIN, chptr, ":%s!%s@%s JOIN %s",
+	sendto_channel_local_with_capability(client_p, ALL_MEMBERS, NOCAPS, CLICAP_EXTENDED_JOIN, chptr, ":%s!%s@%s JOIN %s",
 					     client_p->name, client_p->username, client_p->host, chptr->chname);
 
-	sendto_channel_local_with_capability(ALL_MEMBERS, CLICAP_EXTENDED_JOIN, NOCAPS, chptr, ":%s!%s@%s JOIN %s %s :%s",
+	sendto_channel_local_with_capability(client_p, ALL_MEMBERS, CLICAP_EXTENDED_JOIN, NOCAPS, chptr, ":%s!%s@%s JOIN %s %s :%s",
 					     client_p->name, client_p->username, client_p->host, chptr->chname,
 					     EmptyString(client_p->user->suser) ? "*" : client_p->user->suser,
 					     client_p->info);
@@ -1383,7 +1383,7 @@ resv_chan_forcepart(const char *name, const char *reason, int temp_time)
 			sendto_server(target_p, chptr, CAP_TS6, NOCAPS,
 			              ":%s PART %s", target_p->id, chptr->chname);
 
-			sendto_channel_local(ALL_MEMBERS, chptr, ":%s!%s@%s PART %s :%s",
+			sendto_channel_local(target_p, ALL_MEMBERS, chptr, ":%s!%s@%s PART %s :%s",
 			                     target_p->name, target_p->username,
 			                     target_p->host, chptr->chname, target_p->name);
 

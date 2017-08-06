@@ -135,7 +135,7 @@ mo_omode(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 					   form_str(ERR_USERNOTINCHANNEL), parv[3], chptr->chname);
 			return;
 		}
-		sendto_channel_local(ALL_MEMBERS, chptr, ":%s MODE %s +o %s",
+		sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +o %s",
 				me.name, parv[1], source_p->name);
 		sendto_server(NULL, chptr, CAP_TS6, NOCAPS,
 				":%s TMODE %ld %s +o %s",

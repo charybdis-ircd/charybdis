@@ -140,7 +140,7 @@ m_topic(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 					":%s TOPIC %s :%s",
 					use_id(source_p), chptr->chname,
 					chptr->topic == NULL ? "" : chptr->topic);
-			sendto_channel_local(ALL_MEMBERS,
+			sendto_channel_local(source_p, ALL_MEMBERS,
 					chptr, ":%s!%s@%s TOPIC %s :%s",
 					source_p->name, source_p->username,
 					source_p->host, chptr->chname,
@@ -197,7 +197,7 @@ ms_topic(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	set_channel_topic(chptr, parv[4], parv[2], atoi(parv[3]));
 
-	sendto_channel_local(ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
+	sendto_channel_local(source_p, ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
 			     source_p->name, parv[1],
 			     chptr->topic == NULL ? "" : chptr->topic);
 }

@@ -193,7 +193,7 @@ m_remove(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		 * - Personally, flame and I believe that server kicks shouldn't
 		 *   be sent anyways.  Just waiting for some oper to abuse it...
 		 */
-		sendto_channel_local(ALL_MEMBERS, chptr,
+		sendto_channel_local(who, ALL_MEMBERS, chptr,
 				     ":%s!%s@%s PART %s :requested by %s (%s)",
 				     who->name, who->username,
 				     who->host, name, source_p->name, comment);

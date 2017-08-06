@@ -368,6 +368,26 @@ void rb_zstring_append_from_c(rb_zstring_t *zs, const char *buf, size_t len);
 char *rb_zstring_to_c(rb_zstring_t *zs, char *buf, size_t len);
 char *rb_zstring_to_c_alloc(rb_zstring_t *zs);
 size_t rb_zstring_to_ptr(rb_zstring_t *zs, void **ptr);
+
+
+
+typedef int (*rb_strf_func_t)(char *buf, size_t len, void *args);
+
+typedef struct _rb_strf {
+	size_t length;			/* length limit to apply to this string (and following strings if their length is 0) */
+	const char *format;		/* string or format string */
+	rb_strf_func_t func;		/* function to print to string */
+	union {
+		va_list *format_args;	/* non-NULL if this is a format string */
+		void *func_args;	/* args for a function */
+	};
+	const struct _rb_strf *next;	/* next string to append */
+} rb_strf_t;
+
+int rb_fsnprint(char *buf, size_t len, const rb_strf_t *strings);
+int rb_fsnprintf(char *buf, size_t len, const rb_strf_t *strings, const char *format, ...) AFP(4, 5);
+
+
 const char *rb_path_to_self(void);
 
 #endif /* __TOOLS_H__ */

@@ -167,10 +167,10 @@ m_kick(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		 *   be sent anyways.  Just waiting for some oper to abuse it...
 		 */
 		if(IsServer(source_p))
-			sendto_channel_local(ALL_MEMBERS, chptr, ":%s KICK %s %s :%s",
+			sendto_channel_local(source_p, ALL_MEMBERS, chptr, ":%s KICK %s %s :%s",
 					     source_p->name, name, who->name, comment);
 		else
-			sendto_channel_local(ALL_MEMBERS, chptr,
+			sendto_channel_local(source_p, ALL_MEMBERS, chptr,
 					     ":%s!%s@%s KICK %s %s :%s",
 					     source_p->name, source_p->username,
 					     source_p->host, name, who->name, comment);

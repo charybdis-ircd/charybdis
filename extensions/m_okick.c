@@ -131,7 +131,7 @@ mo_okick(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			me.name, chptr->chname, target_p->name,
 			source_p->name, source_p->username, source_p->host);
 
-	sendto_channel_local(ALL_MEMBERS, chptr, ":%s KICK %s %s :%s",
+	sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s KICK %s %s :%s",
 			     me.name, chptr->chname, who->name, comment);
 	sendto_server(&me, chptr, CAP_TS6, NOCAPS,
 		      ":%s KICK %s %s :%s", me.id, chptr->chname, who->id, comment);

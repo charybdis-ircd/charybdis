@@ -58,10 +58,10 @@ extern void sendto_channel_opmod(struct Client *one, struct Client *source_p,
 				 struct Channel *chptr, const char *command,
 				 const char *text);
 
-extern void sendto_channel_local(int type, struct Channel *, const char *, ...) AFP(3, 4);
+extern void sendto_channel_local(struct Client *, int type, struct Channel *, const char *, ...) AFP(4, 5);
 extern void sendto_channel_local_butone(struct Client *, int type, struct Channel *, const char *, ...) AFP(4, 5);
 
-extern void sendto_channel_local_with_capability(int type, int caps, int negcaps, struct Channel *, const char *, ...) AFP(5, 6);
+extern void sendto_channel_local_with_capability(struct Client *, int type, int caps, int negcaps, struct Channel *, const char *, ...) AFP(6, 7);
 extern void sendto_channel_local_with_capability_butone(struct Client *, int type, int caps, int negcaps, struct Channel *,
 							const char *, ...) AFP(6, 7);
 
@@ -74,7 +74,7 @@ extern void sendto_match_butone(struct Client *, struct Client *,
 extern void sendto_match_servs(struct Client *source_p, const char *mask,
 				int capab, int, const char *, ...) AFP(5, 6);
 
-extern void sendto_monitor(struct monitor *monptr, const char *, ...) AFP(2, 3);
+extern void sendto_monitor(struct Client *, struct monitor *monptr, const char *, ...) AFP(3, 4);
 
 extern void sendto_anywhere(struct Client *, struct Client *, const char *,
 			    const char *, ...) AFP(4, 5);

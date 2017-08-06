@@ -59,7 +59,6 @@ wsockd/wsockd
 tests/core
 tests/msgbuf_parse1
 tests/msgbuf_unparse1
-tests/rb_linebuf_put1
 tests/rb_snprintf_append1
 tests/rb_snprintf_try_append1
 tests/send1

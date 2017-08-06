@@ -224,10 +224,10 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			if (!add_invite(chptr, target_p))
 				return;
 
-			sendto_channel_local_with_capability(CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, chptr,
+			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, chptr,
 				":%s NOTICE %s :%s is inviting %s to %s.",
 				me.name, chptr->chname, source_p->name, target_p->name, chptr->chname);
-			sendto_channel_local_with_capability(CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, chptr,
+			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, chptr,
 				":%s!%s@%s INVITE %s %s", source_p->name, source_p->username,
 				source_p->host, target_p->name, chptr->chname);
 		}

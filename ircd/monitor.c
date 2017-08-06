@@ -95,7 +95,7 @@ monitor_signon(struct Client *client_p)
 
 	snprintf(buf, sizeof(buf), "%s!%s@%s", client_p->name, client_p->username, client_p->host);
 
-	sendto_monitor(monptr, form_str(RPL_MONONLINE), me.name, "*", buf);
+	sendto_monitor(client_p, monptr, form_str(RPL_MONONLINE), me.name, "*", buf);
 }
 
 /* monitor_signoff()
@@ -114,7 +114,7 @@ monitor_signoff(struct Client *client_p)
 	if(monptr == NULL)
 		return;
 
-	sendto_monitor(monptr, form_str(RPL_MONOFFLINE), me.name, "*",
+	sendto_monitor(client_p, monptr, form_str(RPL_MONOFFLINE), me.name, "*",
 			client_p->name);
 }
 

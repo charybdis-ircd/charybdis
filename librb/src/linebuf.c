@@ -485,20 +485,16 @@ rb_linebuf_attach(buf_head_t * bufhead, buf_head_t * new)
 }
 
 /*
- * rb_linebuf_put_vstr_vprefix
+ * rb_linebuf_put
  *
- * prefix (with/without prefix_args) is inserted first, then format/va_args is
- * appended to the buffer.
- *
- * max_buflen is the maximum size of the buffer that can be used
- * (including the NULL terminator) so that the RFC1459 message is not too long
+ * linked list of strings are appended in order.
  */
-static void
-rb_linebuf_put_vstr_vprefix(buf_head_t *bufhead, const char *format, va_list *format_args,
-		size_t max_buflen, const char *prefix, va_list *prefix_args)
+void
+rb_linebuf_put(buf_head_t *bufhead, const rb_strf_t *strings)
 {
 	buf_line_t *bufline;
-	ssize_t len = 0;
+	size_t len = 0;
+	int ret;
 
 	/* make sure the previous line is terminated */
 	if (bufhead->list.tail) {
@@ -509,25 +505,12 @@ rb_linebuf_put_vstr_vprefix(buf_head_t *bufhead, const char *format, va_list *fo
 	/* create a new line */
 	bufline = rb_linebuf_new_line(bufhead);
 
-	if (max_buflen > LINEBUF_SIZE + 1)
-		max_buflen = LINEBUF_SIZE + 1;
+	ret = rb_fsnprint(bufline->buf, LINEBUF_SIZE + 1, strings);
+	if (ret > 0)
+		len += ret;
 
-	if (prefix != NULL) {
-		if (prefix_args != NULL) {
-			len = vsnprintf(bufline->buf, max_buflen, prefix, *prefix_args);
-		} else {
-			len = rb_strlcpy(bufline->buf, prefix, max_buflen);
-		}
-
-		if (len > max_buflen - 1)
-			len = max_buflen - 1;
-	}
-
-	if (format != NULL) {
-		len += vsnprintf(bufline->buf + len, max_buflen - len, format, *format_args);
-		if (len > max_buflen - 1)
-			len = max_buflen - 1;
-	}
+	if (len > LINEBUF_SIZE)
+		len = LINEBUF_SIZE;
 
 	/* add trailing CRLF */
 	bufline->buf[len++] = '\r';
@@ -539,89 +522,6 @@ rb_linebuf_put_vstr_vprefix(buf_head_t *bufhead, const char *format, va_list *fo
 	bufline->len = len;
 	bufhead->len += len;
 }
-
-/*
- * rb_linebuf_put_vtags_prefix
- *
- * prefix is inserted first, then format/va_args is
- * appended to the buffer.
- *
- * prefix_buflen is the maximum size of the buffer that can be used
- * (including the NULL terminator) so that the RFC1459 message is not too long
- */
-void
-rb_linebuf_put_vtags_prefix(buf_head_t *bufhead, const char *format, va_list *va_args,
-		  size_t prefix_buflen, const char *prefix)
-{
-	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, prefix_buflen, prefix, NULL);
-}
-
-/*
- * rb_linebuf_put_vtags_prefixf
- *
- * prefixfmt is inserted first, then format/va_args is
- * appended to the buffer.
- *
- * prefix_buflen is the maximum size of the buffer that can be used
- * (including the NULL terminator) so that the RFC1459 message is not too long
- */
-void
-rb_linebuf_put_vtags_prefixf(buf_head_t *bufhead, const char *format, va_list *va_args,
-		  size_t prefix_buflen, const char *prefixfmt, ...)
-{
-	va_list prefix_args;
-
-	va_start(prefix_args, prefixfmt);
-	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, prefix_buflen, prefixfmt, &prefix_args);
-	va_end(prefix_args);
-}
-
-/*
- * rb_linebuf_put_msgf
- *
- * format (with args) is appended to the buffer.
- * Messages will be limited to the RFC1459 data length
- */
-void
-rb_linebuf_put_msgf(buf_head_t *bufhead, const char *format, ...)
-{
-	va_list va_args;
-
-	va_start(va_args, format);
-	rb_linebuf_put_vstr_vprefix(bufhead, format, &va_args, LINEBUF_DATALEN + 1, NULL, NULL);
-	va_end(va_args);
-}
-
-/*
- * rb_linebuf_put_vmsg
- *
- * format/va_args is appended to the buffer.
- * Messages will be limited to the RFC1459 data length
- */
-void
-rb_linebuf_put_vmsg(buf_head_t *bufhead, const char *format, va_list *va_args)
-{
-	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, LINEBUF_DATALEN + 1, NULL, NULL);
-}
-
-/*
- * rb_linebuf_put_vmsg_prefixf
- *
- * prefix is inserted first, then format/va_args is appended to the buffer.
- * Messages will be limited to the RFC1459 data length
- */
-void
-rb_linebuf_put_vmsg_prefixf(buf_head_t *bufhead, const char *format, va_list *va_args,
-		  const char *prefixfmt, ...)
-{
-	va_list prefix_args;
-
-	va_start(prefix_args, prefixfmt);
-	rb_linebuf_put_vstr_vprefix(bufhead, format, va_args, LINEBUF_DATALEN + 1, prefixfmt, &prefix_args);
-	va_end(prefix_args);
-}
-
-
 
 /*
  * rb_linebuf_flush

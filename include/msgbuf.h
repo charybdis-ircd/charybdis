@@ -43,6 +43,33 @@ struct MsgBuf {
 	const char *para[MAXPARA];	/* parameters vector (starting with cmd as para[0]) */
 };
 
+struct MsgBuf_str_data {
+	const struct MsgBuf *msgbuf;
+	unsigned int caps;
+};
+
+#define MSGBUF_CACHE_SIZE 32
+
+struct MsgBuf_cache_entry {
+	unsigned int caps;
+	buf_head_t linebuf;
+	struct MsgBuf_cache_entry *next;
+};
+
+struct MsgBuf_cache {
+	const struct MsgBuf *msgbuf;
+	char message[DATALEN + 1];
+	unsigned int overall_capmask;
+
+	/* Fixed maximum size linked list, new entries are allocated at the end
+	 * of the array but are accessed through the "next" pointers.
+	 *
+	 * This does not use rb dlink to avoid unnecessary individual allocations.
+	 */
+	struct MsgBuf_cache_entry entry[MSGBUF_CACHE_SIZE];
+	struct MsgBuf_cache_entry *head; /* LRU cache head */
+};
+
 /*
  * parse a message into a MsgBuf.
  * returns 0 on success, 1 on error.
@@ -66,7 +93,13 @@ int msgbuf_unparse(char *buf, size_t buflen, const struct MsgBuf *msgbuf, unsign
 int msgbuf_unparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, ...) AFP(5, 6);
 int msgbuf_vunparse_fmt(char *buf, size_t buflen, const struct MsgBuf *head, unsigned int capmask, const char *fmt, va_list va);
 
-void msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, unsigned int capmask);
+int msgbuf_unparse_linebuf_tags(char *buf, size_t buflen, void *data);
+int msgbuf_unparse_prefix(char *buf, size_t *buflen, const struct MsgBuf *msgbuf, unsigned int capmask);
+
+void msgbuf_cache_init(struct MsgBuf_cache *cache, const struct MsgBuf *msgbuf, const rb_strf_t *message);
+void msgbuf_cache_initf(struct MsgBuf_cache *cache, const struct MsgBuf *msgbuf, const rb_strf_t *message, const char *format, ...) AFP(4, 5);
+buf_head_t *msgbuf_cache_get(struct MsgBuf_cache *cache, unsigned int caps);
+void msgbuf_cache_free(struct MsgBuf_cache *cache);
 
 static inline void
 msgbuf_init(struct MsgBuf *msgbuf)

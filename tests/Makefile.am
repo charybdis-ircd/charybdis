@@ -1,7 +1,6 @@
 check_PROGRAMS = runtests \
 	msgbuf_parse1 \
 	msgbuf_unparse1 \
-	rb_linebuf_put1 \
 	rb_snprintf_append1 \
 	rb_snprintf_try_append1 \
 	send1 \
@@ -22,7 +21,6 @@ tap_libtap_a_SOURCES = tap/basic.c tap/basic.h \
 
 msgbuf_parse1_SOURCES = msgbuf_parse1.c
 msgbuf_unparse1_SOURCES = msgbuf_unparse1.c
-rb_linebuf_put1_SOURCES = rb_linebuf_put1.c
 rb_snprintf_append1_SOURCES = rb_snprintf_append1.c
 rb_snprintf_try_append1_SOURCES = rb_snprintf_try_append1.c
 send1_SOURCES = send1.c ircd_util.c client_util.c

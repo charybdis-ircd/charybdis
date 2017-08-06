@@ -523,3 +523,69 @@ size_t rb_zstring_to_ptr(rb_zstring_t *zs, void **ptr)
 	*ptr = (void *)zs->data;
 	return zs->len;
 }
+
+
+
+int rb_fsnprint(char *buf, size_t len, const rb_strf_t *strings)
+{
+	size_t used = 0;
+	size_t remaining = len;
+
+	while (strings != NULL) {
+		int ret = 0;
+
+		if (strings->length != 0) {
+			remaining = strings->length;
+			if (remaining > len - used)
+				remaining = len - used;
+		}
+
+		if (remaining == 0)
+			break;
+
+		if (strings->format != NULL) {
+			if (strings->format_args != NULL) {
+				ret = vsnprintf(buf + used, remaining,
+					strings->format, *strings->format_args);
+			} else {
+				ret = rb_strlcpy(buf + used,
+					strings->format, remaining);
+			}
+		} else if (strings->func != NULL) {
+			ret = strings->func(buf + used, remaining,
+				strings->func_args);
+		}
+
+		if (ret < 0) {
+			return ret;
+		} else if ((size_t)ret > remaining - 1) {
+			used += remaining - 1;
+		} else {
+			used += ret;
+		}
+
+		if (used >= len - 1) {
+			used = len - 1;
+			break;
+		}
+
+		remaining -= ret;
+		strings = strings->next;
+	}
+
+	return used;
+}
+
+int rb_fsnprintf(char *buf, size_t len, const rb_strf_t *strings, const char *format, ...)
+{
+	va_list args;
+	rb_strf_t prepend_string = { .format = format, .format_args = &args, .next = strings };
+	int ret;
+
+	va_start(args, format);
+	ret = rb_fsnprint(buf, len, &prepend_string);
+	va_end(args);
+
+	return ret;
+}
+

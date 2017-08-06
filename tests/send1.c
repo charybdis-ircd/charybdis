@@ -1009,7 +1009,7 @@ static void sendto_channel_local1(void)
 {
 	standard_init();
 
-	sendto_channel_local(ALL_MEMBERS, channel, "Hello %s!", "World");
+	sendto_channel_local(user, ALL_MEMBERS, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1019,7 +1019,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(CHFL_VOICE, channel, "Hello %s!", "World");
+	sendto_channel_local(user, CHFL_VOICE, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1029,7 +1029,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(CHFL_CHANOP, channel, "Hello %s!", "World");
+	sendto_channel_local(user, CHFL_CHANOP, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1039,7 +1039,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(CHFL_CHANOP | CHFL_VOICE, channel, "Hello %s!", "World");
+	sendto_channel_local(user, CHFL_CHANOP | CHFL_VOICE, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1049,7 +1049,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(ONLY_OPERS, channel, "Hello %s!", "World");
+	sendto_channel_local(user, ONLY_OPERS, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not an oper; " MSG);
@@ -1070,7 +1070,7 @@ static void sendto_channel_local1(void)
 	add_user_to_channel(lchannel, oper1, CHFL_PEON);
 	add_user_to_channel(lchannel, oper2, CHFL_PEON);
 
-	sendto_channel_local(ALL_MEMBERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local(user, ALL_MEMBERS, lchannel, "Hello %s!", "World");
 	is_client_sendq("Hello World!" CRLF, user, "On channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "On channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper2, "On channel; " MSG);
@@ -1078,7 +1078,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1096,7 +1096,7 @@ static void sendto_channel_local_with_capability1(void)
 	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
 	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
 
-	sendto_channel_local_with_capability(ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1106,7 +1106,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1116,7 +1116,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(ALL_MEMBERS, 0, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1126,7 +1126,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1136,7 +1136,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1146,7 +1146,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_VOICE, 0, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1156,7 +1156,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1166,7 +1166,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1176,7 +1176,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP, 0, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1186,7 +1186,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1196,7 +1196,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1206,7 +1206,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(CHFL_CHANOP | CHFL_VOICE, 0, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1858,7 +1858,7 @@ static void sendto_monitor1(void)
 	rb_dlinkAddAlloc(local_chan_v, &monptr->users);
 	rb_dlinkAddAlloc(monptr, &local_chan_v->localClient->monitor_list);
 
-	sendto_monitor(monptr, "Hello %s!", "World");
+	sendto_monitor(user, monptr, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not monitoring; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Monitoring; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not monitoring; " MSG);
