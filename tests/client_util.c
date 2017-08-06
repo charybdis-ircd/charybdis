@@ -160,6 +160,10 @@ void remove_remote_server(struct Client *server)
 	exit_client(server, server, server->servptr, "Test server removed");
 }
 
+struct Channel *make_channel(void)
+{
+	return allocate_channel(TEST_CHANNEL);
+}
 
 char *get_client_sendq(const struct Client *client)
 {
@@ -171,7 +175,7 @@ char *get_client_sendq(const struct Client *client)
 		memset(buf, 0, sizeof(buf));
 		ret = rb_linebuf_get(&client->localClient->buf_sendq, buf, sizeof(buf), 0, 1);
 
-		if (is_bool(ret > 0, true, MSG)) {
+		if (ok(ret > 0, MSG)) {
 			return buf;
 		} else {
 			return "<get_client_sendq error>";

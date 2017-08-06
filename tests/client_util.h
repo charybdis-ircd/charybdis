@@ -44,6 +44,20 @@
 #define TEST_REMOTE_NICK "remote_test"
 #define TEST_REMOTE_ID TEST_SERVER_ID "00001"
 
+#define TEST_SERVER2_NAME "remote2.test"
+#define TEST_SERVER2_ID "2CC"
+
+#define TEST_REMOTE2_NICK "remote2_test"
+#define TEST_REMOTE2_ID TEST_SERVER2_ID "00002"
+
+#define TEST_SERVER3_NAME "remote3.test"
+#define TEST_SERVER3_ID "3DD"
+
+#define TEST_REMOTE3_NICK "remote3_test"
+#define TEST_REMOTE3_ID TEST_SERVER3_ID "00003"
+
+#define TEST_CHANNEL "#test"
+
 #define CRLF "\r\n"
 
 void client_util_init(void);
@@ -64,6 +78,8 @@ struct Client *make_remote_person_full(struct Client *server, const char *nick, 
 void make_remote_person_oper(struct Client *client);
 void remove_remote_person(struct Client *client);
 void remove_remote_server(struct Client *server);
+
+struct Channel *make_channel(void);
 
 char *get_client_sendq(const struct Client *client);
 
