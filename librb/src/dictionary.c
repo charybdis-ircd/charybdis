@@ -272,7 +272,7 @@ rb_dictionary_retune(rb_dictionary *dict, const void *key)
  * Side Effects:
  *     - a node is linked to the dictionary tree
  */
-static void
+static rb_dictionary_element *
 rb_dictionary_link(rb_dictionary *dict,
 	rb_dictionary_element *delem)
 {
@@ -334,8 +334,11 @@ rb_dictionary_link(rb_dictionary *dict,
 			dict->count--;
 
 			rb_free(delem);
+			delem = dict->root;
 		}
 	}
+
+	return delem;
 }
 
 /*
@@ -686,9 +689,7 @@ rb_dictionary_element *rb_dictionary_add(rb_dictionary *dict, const void *key, v
 	delem->key = key;
 	delem->data = data;
 
-	rb_dictionary_link(dict, delem);
-
-	return delem;
+	return rb_dictionary_link(dict, delem);
 }
 
 /*
