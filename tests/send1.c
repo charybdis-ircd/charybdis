@@ -508,11 +508,13 @@ static void sendto_channel_flags__remote__all_members__tags(void)
 
 	strcpy(remote_chan_p->user->suser, "test");
 	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
 	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST #placeholder :Hello %s!", "World");
-	is_client_sendq("@account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME ";account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME " :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
 	is_client_sendq("@account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_v, "On channel; " MSG);
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_p, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
@@ -522,8 +524,8 @@ static void sendto_channel_flags__remote__all_members__tags(void)
 	standard_ids();
 
 	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST #placeholder :Hello %s!", "World");
-	is_client_sendq("@account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME ";account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME " :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
 	is_client_sendq("@account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_v, "On channel; " MSG);
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_p, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
