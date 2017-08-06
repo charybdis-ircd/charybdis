@@ -23,11 +23,11 @@
 #include <unistd.h>
 #include "tap/basic.h"
 
-#include "stdinc.h"
-#include "ircd_defs.h"
+#include "ircd_util.h"
+
 #include "defaults.h"
 #include "client.h"
-#include "ircd_util.h"
+#include "modules.h"
 
 #define MSG "%s:%d (%s)", __FILE__, __LINE__, __FUNCTION__
 
@@ -95,6 +95,17 @@ void ircd_util_init(const char *name)
 	ircd_paths[IRCD_PATH_LIBEXEC] = rb_strdup(buf);
 
 	is_int(0, charybdis_main(ARRAY_SIZE(argv) - 1, argv), MSG);
+}
+
+void ircd_util_reload_module(const char *name)
+{
+	struct module *mod = findmodule_byname(name);
+
+	if (ok(mod != NULL, MSG)) {
+		if (ok(unload_one_module(name, false), MSG)) {
+			ok(load_one_module(name, mod->origin, mod->core), MSG);
+		}
+	}
 }
 
 void ircd_util_free(void)

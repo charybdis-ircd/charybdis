@@ -2682,6 +2682,10 @@ int main(int argc, char *argv[])
 	ircd_util_init(__FILE__);
 	client_util_init();
 
+	// Load modules in a predictable order so that tags are added in the same order every time
+	ircd_util_reload_module("cap_account_tag");
+	ircd_util_reload_module("cap_server_time");
+
 	CAP_ACCOUNT_TAG = capability_get(cli_capindex, "account-tag", NULL);
 	ok(CAP_ACCOUNT_TAG != 0, "CAP_ACCOUNT_TAG missing; " MSG);
 

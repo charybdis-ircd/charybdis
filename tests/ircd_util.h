@@ -29,4 +29,5 @@
 #define TEST_ME_ID "0AA"
 
 void ircd_util_init(const char *name);
+void ircd_util_reload_module(const char *name);
 void ircd_util_free(void);
