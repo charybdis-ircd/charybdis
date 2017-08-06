@@ -507,8 +507,8 @@ static void sendto_channel_flags__remote__all_members__tags(void)
 	standard_init();
 
 	strcpy(remote_chan_p->user->suser, "test");
-	local_chan_o->localClient->caps |= capability_get(cli_capindex, "account-tag", NULL);
-	local_chan_v->localClient->caps |= capability_get(cli_capindex, "account-tag", NULL);
+	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
 	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST #placeholder :Hello %s!", "World");
 	is_client_sendq("@account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
@@ -920,7 +920,21 @@ static void sendto_channel_opmod__local(void)
 	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:#test> Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "No users to receive message; " MSG);
 
+	// Moderated channel
+	channel->mode.mode |= MODE_MODERATED;
+
+	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
+	is_client_sendq_empty(user, "Not on channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_ME_ID "90004 TEST " TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
 	// With CAP_CHW | CAP_EOPMOD
+	channel->mode.mode &= ~MODE_MODERATED;
 	standard_server_caps(CAP_CHW | CAP_EOPMOD, 0);
 
 	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
