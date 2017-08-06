@@ -954,10 +954,9 @@ static void sendto_channel_opmod__remote(void)
 {
 	standard_init();
 
-	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
+	sendto_channel_opmod(server, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_v, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
 	is_client_sendq_empty(server, "Message source; " MSG);
@@ -965,10 +964,9 @@ static void sendto_channel_opmod__remote(void)
 
 	standard_ids();
 
-	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
+	sendto_channel_opmod(server, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_v, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
 	is_client_sendq_empty(server, "Message source; " MSG);
