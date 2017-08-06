@@ -954,23 +954,53 @@ static void sendto_channel_opmod__remote(void)
 {
 	standard_init();
 
-	sendto_channel_opmod(server, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
-	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
-	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
-	is_client_sendq_empty(server, "Message source; " MSG);
-	is_client_sendq(":RChanPeon TEST " TEST_CHANNEL " :Hello World!" CRLF, server2, MSG);
-
+	// This function does not support TS5...
 	standard_ids();
 
-	sendto_channel_opmod(server, remote_chan_p, channel, "TEST " TEST_CHANNEL " :Hello %s!", "World");
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
-	is_client_sendq(":RChanPeon" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	// Without CAP_CHW | CAP_EOPMOD
+	standard_server_caps(0, CAP_CHW | CAP_EOPMOD);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
 	is_client_sendq_empty(server, "Message source; " MSG);
-	is_client_sendq(":" TEST_SERVER_ID "90104 TEST " TEST_CHANNEL " :Hello World!" CRLF, server2, MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	// With CAP_CHW, without CAP_EOPMOD
+	standard_server_caps(CAP_CHW, CAP_EOPMOD);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:#test> Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
+
+	// Moderated channel
+	channel->mode.mode |= MODE_MODERATED;
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID "90205 TEST " TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
+
+	// With CAP_CHW | CAP_EOPMOD
+	channel->mode.mode &= ~MODE_MODERATED;
+	standard_server_caps(CAP_CHW | CAP_EOPMOD, 0);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID "90205 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
 
 	standard_free();
 }
