@@ -837,6 +837,16 @@ Part of a SASL authentication exchange. The mode is 'C' to send some data
 termination: 'A' for abort, 'F' for authentication failure, 'S' for
 authentication success).
 
+3.
+encap target: *
+source: server
+parameters: source uid, '*', 'H', hostname, ip, tls
+
+Provides information on a client. The "tls" data is either 'P' for a
+plaintext connection or any other string for a TLS connection.
+The source uid is that of an unregistered client. This is why it is not sent
+as the prefix.
+
 SAVE
 capab: SAVE
 source: server
