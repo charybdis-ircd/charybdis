@@ -53,7 +53,6 @@ eb_hostmask(const char *banstr, struct Client *client_p, struct Channel *chptr, 
 		s3 = src_althost;
 	}
 
-#ifdef RB_IPV6
 	/* handle Teredo if necessary */
 	if (GET_SS_FAMILY(&client_p->localClient->ip) == AF_INET6 && rb_ipv4_from_ipv6((const struct sockaddr_in6 *) &client_p->localClient->ip, &ip4))
 	{
@@ -63,7 +62,6 @@ eb_hostmask(const char *banstr, struct Client *client_p, struct Channel *chptr, 
 				s4, src_ip4host + sizeof src_ip4host - s4);
 		s4 = src_ip4host;
 	}
-#endif
 
 	return match(banstr, s) || match(banstr, s2) || (s3 != NULL && match(banstr, s3)) || (s4 != NULL && match(banstr, s4)) ? EXTBAN_MATCH : EXTBAN_NOMATCH;
 }

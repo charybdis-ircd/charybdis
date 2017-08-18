@@ -310,10 +310,8 @@ lookup_all_blacklists(struct auth_client *auth)
 
 	if(GET_SS_FAMILY(&auth->c_addr) == AF_INET)
 		iptype = IPTYPE_IPV4;
-#ifdef RB_IPV6
 	else if(GET_SS_FAMILY(&auth->c_addr) == AF_INET6)
 		iptype = IPTYPE_IPV6;
-#endif
 	else
 		return false;
 

@@ -166,10 +166,8 @@ add_reject(struct Client *client_p, const char *mask1, const char *mask2)
 	else
 	{
 		int bitlen = 32;
-#ifdef RB_IPV6
 		if(GET_SS_FAMILY(&client_p->localClient->ip) == AF_INET6)
 			bitlen = 128;
-#endif
 		pnode = make_and_lookup_ip(reject_tree, (struct sockaddr *)&client_p->localClient->ip, bitlen);
 		pnode->data = rdata = rb_malloc(sizeof(reject_t));
 		rb_dlinkAddTail(pnode, &rdata->rnode, &reject_list);
@@ -321,10 +319,8 @@ throttle_add(struct sockaddr *addr)
 
 	} else {
 		int bitlen = 32;
-#ifdef RB_IPV6
 		if(GET_SS_FAMILY(addr) == AF_INET6)
 			bitlen = 128;
-#endif
 		t = rb_malloc(sizeof(throttle_t));
 		t->last = rb_current_time();
 		t->count = 1;

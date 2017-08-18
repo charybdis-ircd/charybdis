@@ -28,10 +28,8 @@
 enum
 {
 	HM_HOST,
-	HM_IPV4
-#ifdef RB_IPV6
-		, HM_IPV6
-#endif
+	HM_IPV4,
+	HM_IPV6,
 };
 
 int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
@@ -57,9 +55,7 @@ struct ConfItem *find_dline(struct sockaddr *, int);
 			 GET_SS_FAMILY(&(x)->localClient->ip), (x)->username, NULL))
 
 void report_auth(struct Client *);
-#ifdef RB_IPV6
 int match_ipv6(struct sockaddr *, struct sockaddr *, int);
-#endif
 int match_ipv4(struct sockaddr *, struct sockaddr *, int);
 
 /* Hashtable stuff... */

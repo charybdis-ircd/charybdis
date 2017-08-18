@@ -36,9 +36,7 @@ typedef struct _rb_prefix_t
 	union
 	{
 		struct in_addr sin;
-#ifdef RB_IPV6
 		struct in6_addr sin6;
-#endif				/* RB_IPV6 */
 	}
 	add;
 }

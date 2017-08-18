@@ -236,7 +236,6 @@ accept_opm(rb_fde_t *F, int status, struct sockaddr *addr, rb_socklen_t len, voi
 				}
 				break;
 			}
-#ifdef RB_IPV6
 		case AF_INET6:
 			{
 				struct sockaddr_in6 *s = (struct sockaddr_in6 *)&localaddr, *c = (struct sockaddr_in6 *)&auth->c_addr;
@@ -248,7 +247,6 @@ accept_opm(rb_fde_t *F, int status, struct sockaddr *addr, rb_socklen_t len, voi
 				}
 				break;
 			}
-#endif
 		default:
 			warn_opers(L_CRIT, "OPM: unknown address type in listen function");
 			exit(EX_PROVIDER_ERROR);
@@ -283,7 +281,6 @@ opm_connected(rb_fde_t *F, int error, void *data)
 			goto end;
 
 		break;
-#ifdef RB_IPV6
 	case AF_INET6:
 		if(!proxy->ipv6)
 			/* Welp, too bad */
@@ -294,7 +291,6 @@ opm_connected(rb_fde_t *F, int error, void *data)
 			goto end;
 
 		break;
-#endif
 	default:
 		goto end;
 	}
@@ -347,13 +343,11 @@ socks5_connected(struct opm_scan *scan)
 		memcpy(c, &(((struct sockaddr_in *)&scan->listener->addr)->sin_addr.s_addr), 4); c += 4; /* Address */
 		memcpy(c, &(((struct sockaddr_in *)&scan->listener->addr)->sin_port), 2); c += 2; /* Port */
 		break;
-#ifdef RB_IPV6
 	case AF_INET6:
 		*(c++) = '\x04'; /* Address type (4 = IPv6) */
 		memcpy(c, ((struct sockaddr_in6 *)&scan->listener->addr)->sin6_addr.s6_addr, 16); c += 16; /* Address */
 		memcpy(c, &(((struct sockaddr_in6 *)&scan->listener->addr)->sin6_port), 2); c += 2; /* Port */
 		break;
-#endif
 	default:
 		return;
 	}
@@ -400,7 +394,6 @@ establish_connection(struct auth_client *auth, struct opm_proxy *proxy)
 
 	lrb_assert(lookup != NULL);
 
-#ifdef RB_IPV6
 	if(GET_SS_FAMILY(&auth->c_addr) == AF_INET6)
 	{
 		if(proxy->proto == PROTO_SOCKS4)
@@ -412,7 +405,6 @@ establish_connection(struct auth_client *auth, struct opm_proxy *proxy)
 		listener = &listeners[LISTEN_IPV6];
 	}
 	else
-#endif
 		listener = &listeners[LISTEN_IPV4];
 
 	if(listener->F == NULL)
@@ -473,7 +465,6 @@ create_listener(const char *ip, uint16_t port)
 
 	SET_SS_PORT(&addr, htons(port));
 
-#ifdef RB_IPV6
 	if(GET_SS_FAMILY(&addr) == AF_INET6)
 	{
 		struct sockaddr_in6 *a1, *a2;
@@ -492,7 +483,6 @@ create_listener(const char *ip, uint16_t port)
 		}
 	}
 	else
-#endif
 	{
 		struct sockaddr_in *a1, *a2;
 
@@ -904,10 +894,8 @@ delete_opm_listener_all(const char *key __unused, int parc __unused, const char 
 	if(listeners[LISTEN_IPV4].F != NULL)
 		rb_close(listeners[LISTEN_IPV4].F);
 
-#ifdef RB_IPV6
 	if(listeners[LISTEN_IPV6].F != NULL)
 		rb_close(listeners[LISTEN_IPV6].F);
-#endif
 
 	memset(&listeners, 0, sizeof(listeners));
 }

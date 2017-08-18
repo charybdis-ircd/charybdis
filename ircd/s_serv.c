@@ -379,11 +379,9 @@ check_server(const char *name, struct Client *client_p)
 			|| (GET_SS_FAMILY(&client_addr) == GET_SS_FAMILY(&tmp_p->connect4)
 				&& comp_with_mask_sock((struct sockaddr *)&client_addr,
 					(struct sockaddr *)&tmp_p->connect4, 32))
-#ifdef RB_IPV6
 			|| (GET_SS_FAMILY(&client_addr) == GET_SS_FAMILY(&tmp_p->connect6)
 				&& comp_with_mask_sock((struct sockaddr *)&client_addr,
 					(struct sockaddr *)&tmp_p->connect6, 128))
-#endif
 			)
 		{
 			host_matched = true;
@@ -1045,7 +1043,6 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	SET_SS_FAMILY(&sa_connect, AF_UNSPEC);
 	SET_SS_FAMILY(&sa_bind, AF_UNSPEC);
 
-#ifdef RB_IPV6
 	if(server_p->aftype != AF_UNSPEC
 		&& GET_SS_FAMILY(&server_p->connect4) == AF_INET
 		&& GET_SS_FAMILY(&server_p->connect6) == AF_INET6)
@@ -1062,18 +1059,15 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 		}
 	}
 	else if(server_p->aftype == AF_INET || GET_SS_FAMILY(&server_p->connect4) == AF_INET)
-#endif
 	{
 		sa_connect = server_p->connect4;
 		sa_bind = server_p->bind4;
 	}
-#ifdef RB_IPV6
 	else if(server_p->aftype == AF_INET6 || GET_SS_FAMILY(&server_p->connect6) == AF_INET6)
 	{
 		sa_connect = server_p->connect6;
 		sa_bind = server_p->bind6;
 	}
-#endif
 
 	/* log */
 	buf[0] = 0;
@@ -1171,10 +1165,8 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	{
 		if(GET_SS_FAMILY(&sa_connect) == GET_SS_FAMILY(&ServerInfo.bind4))
 			sa_bind = ServerInfo.bind4;
-#ifdef RB_IPV6
 		if(GET_SS_FAMILY(&sa_connect) == GET_SS_FAMILY(&ServerInfo.bind6))
 			sa_bind = ServerInfo.bind6;
-#endif
 	}
 
 	rb_connect_tcp(client_p->localClient->F,

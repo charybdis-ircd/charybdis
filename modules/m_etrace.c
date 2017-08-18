@@ -107,12 +107,10 @@ mo_etrace(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	{
 		if(!irccmp(parv[1], "-full"))
 			do_etrace_full(source_p);
-#ifdef RB_IPV6
 		else if(!irccmp(parv[1], "-v6"))
 			do_etrace(source_p, 0, 1);
 		else if(!irccmp(parv[1], "-v4"))
 			do_etrace(source_p, 1, 0);
-#endif
 		else
 		{
 			struct Client *target_p = find_named_person(parv[1]);
@@ -163,11 +161,9 @@ do_etrace(struct Client *source_p, int ipv4, int ipv6)
 	{
 		target_p = ptr->data;
 
-#ifdef RB_IPV6
 		if((!ipv4 && GET_SS_FAMILY(&target_p->localClient->ip) == AF_INET) ||
 		   (!ipv6 && GET_SS_FAMILY(&target_p->localClient->ip) == AF_INET6))
 			continue;
-#endif
 
 		sendto_one(source_p, form_str(RPL_ETRACE),
 			   me.name, source_p->name,

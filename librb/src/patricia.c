@@ -92,25 +92,17 @@ prefix_toa2(rb_prefix_t *prefix, char *buff, int buf_len)
 static char *
 prefix_toa(rb_prefix_t *prefix)
 {
-#ifdef RB_IPV6
 	static char buf[INET6_ADDRSTRLEN + 6];
-#else
-	static char buf[16 + 6];
-#endif
 	return (prefix_toa2(prefix, buf, sizeof(buf)));
 }
 #endif
+
 static rb_prefix_t *
 New_Prefix2(int family, void *dest, int bitlen, rb_prefix_t *prefix)
 {
 	int dynamic_allocated = 0;
-#ifdef RB_IPV6
 	int default_bitlen = 128;
-#else
-	int default_bitlen = 32;
-#endif
 
-#ifdef RB_IPV6
 	if(family == AF_INET6)
 	{
 		default_bitlen = 128;
@@ -121,9 +113,7 @@ New_Prefix2(int family, void *dest, int bitlen, rb_prefix_t *prefix)
 		}
 		memcpy(&prefix->add.sin6, dest, 16);
 	}
-	else
-#endif /* RB_IPV6 */
-	if(family == AF_INET)
+	else if(family == AF_INET)
 	{
 		if(prefix == NULL)
 		{
@@ -161,9 +151,7 @@ ascii2prefix(int family, const char *string)
 	long bitlen, maxbitlen = 0;
 	char *cp;
 	struct in_addr sinaddr;
-#ifdef RB_IPV6
 	struct in6_addr sinaddr6;
-#endif /* RB_IPV6 */
 	int result;
 	char save[MAXLINE];
 
@@ -174,21 +162,17 @@ ascii2prefix(int family, const char *string)
 	if(family == 0)
 	{
 		family = AF_INET;
-#ifdef RB_IPV6
 		if(strchr(string, ':'))
 			family = AF_INET6;
-#endif /* RB_IPV6 */
 	}
 	if(family == AF_INET)
 	{
 		maxbitlen = 32;
 	}
-#ifdef RB_IPV6
 	else if(family == AF_INET6)
 	{
 		maxbitlen = 128;
 	}
-#endif /* RB_IPV6 */
 
 	if((cp = strchr(string, '/')) != NULL)
 	{
@@ -213,14 +197,12 @@ ascii2prefix(int family, const char *string)
 			return (NULL);
 		return (New_Prefix(AF_INET, &sinaddr, bitlen));
 	}
-#ifdef RB_IPV6
 	else if(family == AF_INET6)
 	{
 		if((result = rb_inet_pton(AF_INET6, string, &sinaddr6)) <= 0)
 			return (NULL);
 		return (New_Prefix(AF_INET6, &sinaddr6, bitlen));
 	}
-#endif /* RB_IPV6 */
 	else
 		return (NULL);
 }
@@ -916,11 +898,9 @@ make_and_lookup_ip(rb_patricia_tree_t *tree, struct sockaddr *in, int bitlen)
 	rb_prefix_t *prefix;
 	rb_patricia_node_t *node;
 	void *ipptr = NULL;
-#ifdef RB_IPV6
 	if(in->sa_family == AF_INET6)
 		ipptr = &((struct sockaddr_in6 *)in)->sin6_addr;
 	else
-#endif
 		ipptr = &((struct sockaddr_in *)in)->sin_addr;
 
 	prefix = New_Prefix(in->sa_family, ipptr, bitlen);
@@ -948,13 +928,11 @@ make_and_lookup(rb_patricia_tree_t *tree, const char *string)
 		node = rb_patricia_lookup(tree, prefix);
 	}
 	else
-#ifdef RB_IPV6
 	if((prefix = ascii2prefix(AF_INET6, string)) != NULL)
 	{
 		node = rb_patricia_lookup(tree, prefix);
 	}
 	else
-#endif
 		return NULL;
 #ifdef PATRICIA_DEBUG
 	printf("make_and_lookup: %s/%d\n", prefix_toa(prefix), prefix->bitlen);
@@ -975,14 +953,12 @@ try_search_exact(rb_patricia_tree_t *tree, char *string)
 		Deref_Prefix(prefix);
 		return (node);
 	}
-#ifdef RB_IPV6
 	else if((prefix = ascii2prefix(AF_INET6, string)) != NULL)
 	{
 		node = rb_patricia_search_exact(tree, prefix);
 		Deref_Prefix(prefix);
 		return (node);
 	}
-#endif
 	else
 		return NULL;
 }
@@ -1005,11 +981,7 @@ rb_match_ip(rb_patricia_tree_t *tree, struct sockaddr *ip)
 	void *ipptr;
 	unsigned int len;
 	int family;
-#ifndef RB_IPV6
-	len = 32;
-	family = AF_INET;
-	ipptr = &((struct sockaddr_in *)ip)->sin_addr;
-#else
+
 	if(ip->sa_family == AF_INET6)
 	{
 		len = 128;
@@ -1022,7 +994,6 @@ rb_match_ip(rb_patricia_tree_t *tree, struct sockaddr *ip)
 		family = AF_INET;
 		ipptr = &((struct sockaddr_in *)ip)->sin_addr;
 	}
-#endif
 
 	if((prefix = New_Prefix(family, ipptr, len)) != NULL)
 	{
@@ -1040,13 +1011,7 @@ rb_match_ip_exact(rb_patricia_tree_t *tree, struct sockaddr *ip, unsigned int le
 	rb_patricia_node_t *node;
 	void *ipptr;
 	int family;
-#ifndef RB_IPV6
-	if(len > 128)
-		len = 128;
 
-	family = AF_INET;
-	ipptr = &((struct sockaddr_in *)ip)->sin_addr;
-#else
 	if(ip->sa_family == AF_INET6)
 	{
 		if(len > 128)
@@ -1061,7 +1026,6 @@ rb_match_ip_exact(rb_patricia_tree_t *tree, struct sockaddr *ip, unsigned int le
 		family = AF_INET;
 		ipptr = &((struct sockaddr_in *)ip)->sin_addr;
 	}
-#endif
 
 	if((prefix = New_Prefix(family, ipptr, len)) != NULL)
 	{
@@ -1086,14 +1050,12 @@ rb_match_string(rb_patricia_tree_t *tree, const char *string)
 		Deref_Prefix(prefix);
 	}
 	else
-#ifdef RB_IPV6
 	if((prefix = ascii2prefix(AF_INET6, string)) != NULL)
 	{
 		node = rb_patricia_search_best(tree, prefix);
 		Deref_Prefix(prefix);
 	}
 	else
-#endif
 		return NULL;
 	return node;
 }
@@ -1109,14 +1071,12 @@ rb_match_exact_string(rb_patricia_tree_t *tree, const char *string)
 		Deref_Prefix(prefix);
 	}
 	else
-#ifdef RB_IPV6
 	if((prefix = ascii2prefix(AF_INET6, string)) != NULL)
 	{
 		node = rb_patricia_search_exact(tree, prefix);
 		Deref_Prefix(prefix);
 	}
 	else
-#endif
 		return NULL;
 	return node;
 }

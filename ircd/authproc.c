@@ -335,11 +335,9 @@ configure_authd(void)
 			rb_helper_write(authd_helper, "O opm_listener %s %hu",
 				opm_listeners[LISTEN_IPV4].ipaddr, opm_listeners[LISTEN_IPV4].port);
 
-#ifdef RB_IPV6
 		if(opm_listeners[LISTEN_IPV6].ipaddr[0] != '\0')
 			rb_helper_write(authd_helper, "O opm_listener %s %hu",
 				opm_listeners[LISTEN_IPV6].ipaddr, opm_listeners[LISTEN_IPV6].port);
-#endif
 
 		RB_DLINK_FOREACH(ptr, opm_list.head)
 		{

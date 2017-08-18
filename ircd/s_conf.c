@@ -679,10 +679,8 @@ set_default_conf(void)
 
 	memset(&ServerInfo.bind4, 0, sizeof(ServerInfo.bind4));
 	SET_SS_FAMILY(&ServerInfo.bind4, AF_UNSPEC);
-#ifdef RB_IPV6
 	memset(&ServerInfo.bind6, 0, sizeof(ServerInfo.bind6));
 	SET_SS_FAMILY(&ServerInfo.bind6, AF_UNSPEC);
-#endif
 
 	AdminInfo.name = NULL;
 	AdminInfo.email = NULL;

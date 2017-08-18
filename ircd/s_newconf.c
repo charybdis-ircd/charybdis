@@ -331,13 +331,11 @@ make_server_conf(void)
 	SET_SS_FAMILY(&server_p->bind4, AF_UNSPEC);
 	SET_SS_LEN(&server_p->bind4, sizeof(struct sockaddr_in));
 
-#ifdef RB_IPV6
 	SET_SS_FAMILY(&server_p->connect6, AF_UNSPEC);
 	SET_SS_LEN(&server_p->connect6, sizeof(struct sockaddr_in6));
 
 	SET_SS_FAMILY(&server_p->bind6, AF_UNSPEC);
 	SET_SS_LEN(&server_p->bind6, sizeof(struct sockaddr_in6));
-#endif
 
 	server_p->aftype = AF_UNSPEC;
 
@@ -393,7 +391,6 @@ conf_connect_dns_callback(const char *result, int status, int aftype, void *data
 
 		server_p->dns_query_connect4 = 0;
 	}
-#ifdef RB_IPV6
 	else if(aftype == AF_INET6)
 	{
 		if(status == 1)
@@ -401,7 +398,6 @@ conf_connect_dns_callback(const char *result, int status, int aftype, void *data
 
 		server_p->dns_query_connect6 = 0;
 	}
-#endif
 }
 
 /*
@@ -426,7 +422,6 @@ conf_bind_dns_callback(const char *result, int status, int aftype, void *data)
 
 		server_p->dns_query_bind4 = 0;
 	}
-#ifdef RB_IPV6
 	else if(aftype == AF_INET6)
 	{
 		if(status == 1)
@@ -434,7 +429,6 @@ conf_bind_dns_callback(const char *result, int status, int aftype, void *data)
 
 		server_p->dns_query_bind6 = 0;
 	}
-#endif
 }
 
 void
@@ -462,20 +456,16 @@ add_server_conf(struct server_conf *server_p)
 	{
 		server_p->dns_query_connect4 =
 			lookup_hostname(server_p->connect_host, AF_INET, conf_connect_dns_callback, server_p);
-#ifdef RB_IPV6
 		server_p->dns_query_connect6 =
 			lookup_hostname(server_p->connect_host, AF_INET6, conf_connect_dns_callback, server_p);
-#endif
 	}
 
 	if(server_p->bind_host)
 	{
 		server_p->dns_query_bind4 =
 			lookup_hostname(server_p->bind_host, AF_INET, conf_bind_dns_callback, server_p);
-#ifdef RB_IPV6
 		server_p->dns_query_bind6 =
 			lookup_hostname(server_p->bind_host, AF_INET6, conf_bind_dns_callback, server_p);
-#endif
 	}
 }
 

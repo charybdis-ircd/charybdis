@@ -332,14 +332,12 @@ int comp_with_mask_sock(struct sockaddr *addr, struct sockaddr *dest, unsigned i
 		iaddr = &((struct sockaddr_in *)(void *)addr)->sin_addr;
 		idest = &((struct sockaddr_in *)(void *)dest)->sin_addr;
 	}
-#ifdef RB_IPV6
 	else
 	{
 		iaddr = &((struct sockaddr_in6 *)(void *)addr)->sin6_addr;
 		idest = &((struct sockaddr_in6 *)(void *)dest)->sin6_addr;
 
 	}
-#endif
 
 	return (comp_with_mask(iaddr, idest, mask));
 }
@@ -371,7 +369,6 @@ int match_ips(const char *s1, const char *s2)
 	if (cidrlen <= 0)
 		return 0;
 
-#ifdef RB_IPV6
 	if (strchr(mask, ':') && strchr(address, ':'))
 	{
 		if (cidrlen > 128)
@@ -381,9 +378,7 @@ int match_ips(const char *s1, const char *s2)
 		ipptr = &((struct sockaddr_in6 *)&ipaddr)->sin6_addr;
 		maskptr = &((struct sockaddr_in6 *)&maskaddr)->sin6_addr;
 	}
-	else
-#endif
-	if (!strchr(mask, ':') && !strchr(address, ':'))
+	else if (!strchr(mask, ':') && !strchr(address, ':'))
 	{
 		if (cidrlen > 32)
 			return 0;
@@ -447,7 +442,6 @@ int match_cidr(const char *s1, const char *s2)
 	if (cidrlen <= 0)
 		return 0;
 
-#ifdef RB_IPV6
 	if (strchr(ip, ':') && strchr(ipmask, ':'))
 	{
 		if (cidrlen > 128)
@@ -457,9 +451,7 @@ int match_cidr(const char *s1, const char *s2)
 		ipptr = &((struct sockaddr_in6 *)&ipaddr)->sin6_addr;
 		maskptr = &((struct sockaddr_in6 *)&maskaddr)->sin6_addr;
 	}
-	else
-#endif
-	if (!strchr(ip, ':') && !strchr(ipmask, ':'))
+	else if (!strchr(ip, ':') && !strchr(ipmask, ':'))
 	{
 		if (cidrlen > 32)
 			return 0;

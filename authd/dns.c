@@ -43,13 +43,11 @@ lookup_ip(const char *host, int aftype, DNSCB callback, void *data)
 		query->type = QUERY_A;
 		g_type = T_A;
 	}
-#ifdef RB_IPV6
 	else if(aftype == AF_INET6)
 	{
 		query->type = QUERY_AAAA;
 		g_type = T_AAAA;
 	}
-#endif
 	else
 	{
 		rb_free(query);
@@ -85,10 +83,8 @@ lookup_hostname(const char *ip, DNSCB callback, void *data)
 
 	if(aftype == AF_INET)
 		query->type = QUERY_PTR_A;
-#ifdef RB_IPV6
 	else if(aftype == AF_INET6)
 		query->type = QUERY_PTR_AAAA;
-#endif
 	else
 	{
 		rb_free(query);
@@ -137,7 +133,6 @@ handle_lookup_ip_reply(void *data, struct DNSReply *reply)
 		if(GET_SS_FAMILY(&reply->addr) == AF_INET)
 			rb_inet_ntop_sock((struct sockaddr *)&reply->addr, ip, sizeof(ip));
 		break;
-#ifdef RB_IPV6
 	case QUERY_AAAA:
 		if(GET_SS_FAMILY(&reply->addr) == AF_INET6)
 		{
@@ -149,7 +144,6 @@ handle_lookup_ip_reply(void *data, struct DNSReply *reply)
 			}
 		}
 		break;
-#endif
 	default:
 		warn_opers(L_CRIT, "DNS: handle_lookup_ip_reply: unknown query type %d",
 				query->type);
@@ -189,7 +183,6 @@ handle_lookup_hostname_reply(void *data, struct DNSReply *reply)
 		if(ip->sin_addr.s_addr == ip_fwd->sin_addr.s_addr)
 			hostname = reply->h_name;
 	}
-#ifdef RB_IPV6
 	else if(query->type == QUERY_PTR_AAAA)
 	{
 		struct sockaddr_in6 *ip, *ip_fwd;
@@ -199,7 +192,6 @@ handle_lookup_hostname_reply(void *data, struct DNSReply *reply)
 		if(memcmp(&ip->sin6_addr, &ip_fwd->sin6_addr, sizeof(struct in6_addr)) == 0)
 			hostname = reply->h_name;
 	}
-#endif
 	else
 	{
 		/* Shouldn't happen */
@@ -246,17 +238,13 @@ handle_resolve_dns(int parc, char *parv[])
 
 	switch(qtype)
 	{
-#ifdef RB_IPV6
 	case '6':
 		aftype = AF_INET6;
-#endif
 	case '4':
 		if(!lookup_ip(record, aftype, submit_dns_answer, id))
 			submit_dns_answer(NULL, false, qtype, NULL);
 		break;
-#ifdef RB_IPV6
 	case 'S':
-#endif
 	case 'R':
 		if(!lookup_hostname(record, submit_dns_answer, id))
 			submit_dns_answer(NULL, false, qtype, NULL);

@@ -283,10 +283,8 @@ struct server_info
 	char *network_name;
 	int hub;
 	struct rb_sockaddr_storage bind4;
-	int default_max_clients;
-#ifdef RB_IPV6
 	struct rb_sockaddr_storage bind6;
-#endif
+	int default_max_clients;
 	char *ssl_private_key;
 	char *ssl_ca_cert;
 	char *ssl_cert;

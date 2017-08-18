@@ -69,9 +69,7 @@ int rb_maxconnections = 0;
 
 static PF rb_connect_timeout;
 static PF rb_connect_tryconnect;
-#ifdef RB_IPV6
 static void mangle_mapped_sockaddr(struct sockaddr *in);
-#endif
 
 #ifndef HAVE_SOCKETPAIR
 static int rb_inet_socketpair(int d, int type, int protocol, rb_platform_fd_t sv[2]);
@@ -382,9 +380,7 @@ rb_accept_tryaccept(rb_fde_t *F, void *data)
 			rb_close(new_F);
 		}
 
-#ifdef RB_IPV6
 		mangle_mapped_sockaddr((struct sockaddr *)&st);
-#endif
 
 		if(F->accept->precb != NULL)
 		{
@@ -708,7 +704,6 @@ rb_socket(int family, int sock_type, int proto, const char *note)
 	if(rb_unlikely(fd < 0))
 		return NULL;	/* errno will be passed through, yay.. */
 
-#if defined(RB_IPV6) && defined(IPV6_V6ONLY)
 	/*
 	 * Make sure we can take both IPv4 and IPv6 connections
 	 * on an AF_INET6 socket
@@ -724,7 +719,6 @@ rb_socket(int family, int sock_type, int proto, const char *note)
 			return NULL;
 		}
 	}
-#endif
 
 	F = rb_open(fd, RB_FD_SOCKET, note);
 	if(F == NULL)
@@ -749,7 +743,6 @@ rb_socket(int family, int sock_type, int proto, const char *note)
  * If a sockaddr_storage is AF_INET6 but is a mapped IPv4
  * socket manged the sockaddr.
  */
-#ifdef RB_IPV6
 static void
 mangle_mapped_sockaddr(struct sockaddr *in)
 {
@@ -765,7 +758,6 @@ mangle_mapped_sockaddr(struct sockaddr *in)
 		memcpy(in, &in4, sizeof(struct sockaddr_in));
 	}
 }
-#endif
 
 /*
  * rb_listen() - listen on a port
@@ -1180,9 +1172,7 @@ inetntoa(const char *in)
  */
 
 static const char *inet_ntop4(const unsigned char *src, char *dst, unsigned int size);
-#ifdef RB_IPV6
 static const char *inet_ntop6(const unsigned char *src, char *dst, unsigned int size);
-#endif
 
 /* const char *
  * inet_ntop4(src, dst, size)
@@ -1209,7 +1199,6 @@ inet_ntop4(const unsigned char *src, char *dst, unsigned int size)
  * author:
  *	Paul Vixie, 1996.
  */
-#ifdef RB_IPV6
 static const char *
 inet_ntop6(const unsigned char *src, char *dst, unsigned int size)
 {
@@ -1314,7 +1303,6 @@ inet_ntop6(const unsigned char *src, char *dst, unsigned int size)
 	}
 	return memcpy(dst, tmp, tp - tmp);
 }
-#endif
 
 int
 rb_inet_pton_sock(const char *src, struct sockaddr *dst)
@@ -1326,7 +1314,6 @@ rb_inet_pton_sock(const char *src, struct sockaddr *dst)
 		SET_SS_LEN(dst, sizeof(struct sockaddr_in));
 		return 1;
 	}
-#ifdef RB_IPV6
 	else if(rb_inet_pton(AF_INET6, src, &((struct sockaddr_in6 *)dst)->sin6_addr))
 	{
 		SET_SS_FAMILY(dst, AF_INET6);
@@ -1334,7 +1321,6 @@ rb_inet_pton_sock(const char *src, struct sockaddr *dst)
 		SET_SS_LEN(dst, sizeof(struct sockaddr_in6));
 		return 1;
 	}
-#endif
 	return 0;
 }
 
@@ -1345,11 +1331,9 @@ rb_inet_ntop_sock(struct sockaddr *src, char *dst, unsigned int size)
 	{
 	case AF_INET:
 		return (rb_inet_ntop(AF_INET, &((struct sockaddr_in *)src)->sin_addr, dst, size));
-#ifdef RB_IPV6
 	case AF_INET6:
 		return (rb_inet_ntop
 			(AF_INET6, &((struct sockaddr_in6 *)src)->sin6_addr, dst, size));
-#endif
 	default:
 		return NULL;
 	}
@@ -1370,7 +1354,6 @@ rb_inet_ntop(int af, const void *src, char *dst, unsigned int size)
 	{
 	case AF_INET:
 		return (inet_ntop4(src, dst, size));
-#ifdef RB_IPV6
 	case AF_INET6:
 		if(IN6_IS_ADDR_V4MAPPED((const struct in6_addr *)src) ||
 		   IN6_IS_ADDR_V4COMPAT((const struct in6_addr *)src))
@@ -1379,9 +1362,6 @@ rb_inet_ntop(int af, const void *src, char *dst, unsigned int size)
 				 s6_addr[12], dst, size));
 		else
 			return (inet_ntop6(src, dst, size));
-
-
-#endif
 	default:
 		return (NULL);
 	}
@@ -1457,7 +1437,6 @@ inet_pton4(const char *src, unsigned char *dst)
 	return (1);
 }
 
-#ifdef RB_IPV6
 /* int
  * inet_pton6(src, dst)
  *	convert presentation level address to network order binary form.
@@ -1570,7 +1549,7 @@ inet_pton6(const char *src, unsigned char *dst)
 	memcpy(dst, tmp, IN6ADDRSZ);
 	return (1);
 }
-#endif
+
 int
 rb_inet_pton(int af, const char *src, void *dst)
 {
@@ -1578,7 +1557,6 @@ rb_inet_pton(int af, const char *src, void *dst)
 	{
 	case AF_INET:
 		return (inet_pton4(src, dst));
-#ifdef RB_IPV6
 	case AF_INET6:
 		/* Somebody might have passed as an IPv4 address this is sick but it works */
 		if(inet_pton4(src, dst))
@@ -1589,7 +1567,6 @@ rb_inet_pton(int af, const char *src, void *dst)
 		}
 		else
 			return (inet_pton6(src, dst));
-#endif
 	default:
 		return (-1);
 	}
@@ -2257,7 +2234,6 @@ rb_send_fd_buf(rb_fde_t *xF, rb_fde_t **F, int count, void *data, size_t datasiz
 #endif /* _WIN32 */
 #endif /* defined(HAVE_SENDMSG) && !defined(WIN32) */
 
-#ifdef RB_IPV6
 int
 rb_ipv4_from_ipv6(const struct sockaddr_in6 *restrict ip6, struct sockaddr_in *restrict ip4)
 {
@@ -2282,10 +2258,3 @@ rb_ipv4_from_ipv6(const struct sockaddr_in6 *restrict ip6, struct sockaddr_in *r
 	ip4->sin_port = 0;
 	return 1;
 }
-#else
-int
-rb_ipv4_from_ipv6(const struct sockaddr_in6 *restrict ip6, struct sockaddr_in *restrict ip4)
-{
-	return 0;
-}
-#endif /* RB_IPV6 */

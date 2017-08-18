@@ -226,11 +226,9 @@ bandb_check_kline(struct ConfItem *aconf)
 
 	if(aftype != HM_HOST)
 	{
-#ifdef RB_IPV6
 		if(aftype == HM_IPV6)
 			aftype = AF_INET6;
 		else
-#endif
 			aftype = AF_INET;
 
 		kconf = find_conf_by_address(aconf->host, NULL, NULL, (struct sockaddr *)&daddr,
