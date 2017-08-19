@@ -43,11 +43,6 @@
 #include "s_assert.h"
 #include "logger.h"
 
-#if defined(NO_IN6ADDR_ANY)
-static const struct in6_addr in6addr_any =
-{ { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } };
-#endif
-
 static struct Listener *ListenerPollList = NULL;
 static int accept_precallback(rb_fde_t *F, struct sockaddr *addr, rb_socklen_t addrlen, void *data);
 static void accept_callback(rb_fde_t *F, int status, struct sockaddr *addr, rb_socklen_t addrlen, void *data);
@@ -61,7 +56,7 @@ make_listener(struct rb_sockaddr_storage *addr)
 	listener->name = me.name;
 	listener->F = NULL;
 
-	memcpy(&listener->addr, addr, sizeof(struct rb_sockaddr_storage));
+	memcpy(&listener->addr, addr, sizeof(listener->addr));
 	listener->next = NULL;
 	return listener;
 }
@@ -102,21 +97,16 @@ free_listener(struct Listener *listener)
 static uint16_t
 get_listener_port(const struct Listener *listener)
 {
-	return ntohs(GET_SS_PORT(&listener->addr));
+	return ntohs(GET_SS_PORT(&listener->addr[0]));
 }
 
 /*
  * get_listener_name - return displayable listener name and port
- * returns "host.foo.org:6667" for a given listener
  */
 const char *
 get_listener_name(const struct Listener *listener)
 {
-	static char buf[HOSTLEN + HOSTLEN + PORTNAMELEN + 4];
-
-	s_assert(NULL != listener);
-	if(listener == NULL)
-		return NULL;
+	static char buf[BUFSIZE];
 
 	snprintf(buf, sizeof(buf), "%s[%s/%u]",
 			me.name, listener->name, get_listener_port(listener));
@@ -141,6 +131,7 @@ show_ports(struct Client *source_p)
 			   get_listener_port(listener),
 			   IsOperAdmin(source_p) ? listener->name : me.name,
 			   listener->ref_count, (listener->active) ? "active" : "disabled",
+			   listener->sctp ? " sctp" : " tcp",
 			   listener->ssl ? " ssl" : "");
 	}
 }
@@ -155,79 +146,69 @@ static int
 inetport(struct Listener *listener)
 {
 	rb_fde_t *F;
-	int opt = 1;
 	const char *errstr;
+	int ret;
 
-	/*
-	 * At first, open a new socket
-	 */
-
-	F = rb_socket(GET_SS_FAMILY(&listener->addr), SOCK_STREAM, 0, "Listener socket");
-
-	if(GET_SS_FAMILY(&listener->addr) == AF_INET6)
-	{
-		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)&listener->addr;
-		if(!IN6_ARE_ADDR_EQUAL(&in6->sin6_addr, &in6addr_any))
-		{
-			rb_inet_ntop(AF_INET6, &in6->sin6_addr, listener->vhost, sizeof(listener->vhost));
-			listener->name = listener->vhost;
-		}
+	if (listener->sctp) {
+#ifdef HAVE_LIBSCTP
+		/* only AF_INET6 sockets can have both AF_INET and AF_INET6 addresses */
+		F = rb_socket(AF_INET6, SOCK_STREAM, IPPROTO_SCTP, "Listener socket");
+#else
+		F = NULL;
+#endif
 	} else {
-		struct sockaddr_in *in = (struct sockaddr_in *)&listener->addr;
-		if(in->sin_addr.s_addr != INADDR_ANY)
-		{
-			rb_inet_ntop(AF_INET, &in->sin_addr, listener->vhost, sizeof(listener->vhost));
-			listener->name = listener->vhost;
-		}
+		F = rb_socket(GET_SS_FAMILY(&listener->addr[0]), SOCK_STREAM, IPPROTO_TCP, "Listener socket");
 	}
 
-	if(F == NULL)
-	{
+	memset(listener->vhost, 0, sizeof(listener->vhost));
+
+	if (GET_SS_FAMILY(&listener->addr[0]) == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)&listener->addr[0];
+		rb_inet_ntop(AF_INET6, &in6->sin6_addr, listener->vhost, sizeof(listener->vhost));
+	} else if (GET_SS_FAMILY(&listener->addr[0]) == AF_INET) {
+		struct sockaddr_in *in = (struct sockaddr_in *)&listener->addr[0];
+		rb_inet_ntop(AF_INET, &in->sin_addr, listener->vhost, sizeof(listener->vhost));
+	}
+
+	if (GET_SS_FAMILY(&listener->addr[1]) == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)&listener->addr[1];
+		strncat(listener->vhost, "&", sizeof(listener->vhost));
+		rb_inet_ntop(AF_INET6, &in6->sin6_addr, &listener->vhost[strlen(listener->vhost)], sizeof(listener->vhost) - strlen(listener->vhost));
+	} else if (GET_SS_FAMILY(&listener->addr[1]) == AF_INET) {
+		struct sockaddr_in *in = (struct sockaddr_in *)&listener->addr[1];
+		strncat(listener->vhost, "&", sizeof(listener->vhost));
+		rb_inet_ntop(AF_INET, &in->sin_addr, &listener->vhost[strlen(listener->vhost)], sizeof(listener->vhost) - strlen(listener->vhost));
+	}
+
+	if (listener->vhost[0] != '\0') {
+		listener->name = listener->vhost;
+	}
+
+	if (F == NULL) {
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
-				"Cannot open socket for listener on port %d",
+				"Cannot open socket for listener on %s port %d",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_port(listener));
-		ilog(L_MAIN, "Cannot open socket for listener %s",
+		ilog(L_MAIN, "Cannot open socket for %s listener %s",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_name(listener));
 		return 0;
 	}
-	else if((maxconnections - 10) < rb_get_fd(F)) /* XXX this is kinda bogus*/
-	{
-		ilog_error("no more connections left for listener");
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
-				"No more connections left for listener on port %d",
-				get_listener_port(listener));
-		ilog(L_MAIN, "No more connections left for listener %s",
-				get_listener_name(listener));
-		rb_close(F);
-		return 0;
+
+	if (listener->sctp) {
+		ret = rb_sctp_bindx(F, listener->addr, ARRAY_SIZE(listener->addr));
+	} else {
+		ret = rb_bind(F, (struct sockaddr *)&listener->addr[0]);
 	}
 
-	/*
-	 * XXX - we don't want to do all this crap for a listener
-	 * set_sock_opts(listener);
-	 *
-	 * FIXME - doesn't this belong in librb? --Elizafox
-	 */
-	if(setsockopt(rb_get_fd(F), SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)))
-	{
+	if (ret) {
 		errstr = strerror(rb_get_sockerr(F));
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
-				"Cannot set SO_REUSEADDR for listener on port %d: %s",
+				"Cannot bind for listener on %s port %d: %s",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_port(listener), errstr);
-		ilog(L_MAIN, "Cannot set SO_REUSEADDR for listener %s: %s",
-				get_listener_name(listener), errstr);
-		rb_close(F);
-		return 0;
-	}
-
-	/* FIXME - doesn't this belong in librb? --Elizafox */
-	if(bind(rb_get_fd(F), (struct sockaddr *) &listener->addr, GET_SS_LEN(&listener->addr)))
-	{
-		errstr = strerror(rb_get_sockerr(F));
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
-				"Cannot bind for listener on port %d: %s",
-				get_listener_port(listener), errstr);
-		ilog(L_MAIN, "Cannot bind for listener %s: %s",
+		ilog(L_MAIN, "Cannot bind for %s listener %s: %s",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_name(listener), errstr);
 		rb_close(F);
 		return 0;
@@ -237,9 +218,11 @@ inetport(struct Listener *listener)
 	{
 		errstr = strerror(rb_get_sockerr(F));
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
-				"Cannot listen() for listener on port %d: %s",
+				"Cannot listen() for listener on %s port %d: %s",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_port(listener), errstr);
-		ilog(L_MAIN, "Cannot listen() for listener %s: %s",
+		ilog(L_MAIN, "Cannot listen() for %s listener %s: %s",
+				listener->sctp ? "SCTP" : "TCP",
 				get_listener_name(listener), errstr);
 		rb_close(F);
 		return 0;
@@ -252,126 +235,124 @@ inetport(struct Listener *listener)
 }
 
 static struct Listener *
-find_listener(struct rb_sockaddr_storage *addr)
+find_listener(struct rb_sockaddr_storage *addr, int sctp)
 {
 	struct Listener *listener = NULL;
 	struct Listener *last_closed = NULL;
 
-	for (listener = ListenerPollList; listener; listener = listener->next)
-	{
-		if(GET_SS_FAMILY(addr) != GET_SS_FAMILY(&listener->addr))
+	for (listener = ListenerPollList; listener; listener = listener->next) {
+		if (listener->sctp != sctp)
 			continue;
 
-		switch(GET_SS_FAMILY(addr))
-		{
-			case AF_INET:
-			{
-				struct sockaddr_in *in4 = (struct sockaddr_in *)addr;
-				struct sockaddr_in *lin4 = (struct sockaddr_in *)&listener->addr;
-				if(in4->sin_addr.s_addr == lin4->sin_addr.s_addr &&
-					in4->sin_port == lin4->sin_port )
-				{
-					if(listener->F == NULL)
-						last_closed = listener;
-					else
-						return(listener);
-				}
-				break;
-			}
-			case AF_INET6:
-			{
-				struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)addr;
-				struct sockaddr_in6 *lin6 =(struct sockaddr_in6 *)&listener->addr;
-				if(IN6_ARE_ADDR_EQUAL(&in6->sin6_addr, &lin6->sin6_addr) &&
-				  in6->sin6_port == lin6->sin6_port)
-				{
-					if(listener->F == NULL)
-						last_closed = listener;
-					else
-						return(listener);
-				}
-				break;
+		for (int i = 0; i < ARRAY_SIZE(listener->addr); i++) {
+			if (GET_SS_FAMILY(&addr[i]) != GET_SS_FAMILY(&listener->addr[i]))
+				goto next;
 
-			}
+			switch (GET_SS_FAMILY(&addr[i])) {
+				case AF_INET:
+				{
+					struct sockaddr_in *in4 = (struct sockaddr_in *)&addr[i];
+					struct sockaddr_in *lin4 = (struct sockaddr_in *)&listener->addr[i];
+					if(in4->sin_addr.s_addr != lin4->sin_addr.s_addr ||
+						in4->sin_port != lin4->sin_port)
+					{
+						goto next;
+					}
+					break;
+				}
 
-			default:
-				break;
+				case AF_INET6:
+				{
+					struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)&addr[i];
+					struct sockaddr_in6 *lin6 =(struct sockaddr_in6 *)&listener->addr[i];
+					if (!IN6_ARE_ADDR_EQUAL(&in6->sin6_addr, &lin6->sin6_addr) ||
+						in6->sin6_port != lin6->sin6_port)
+					{
+						goto next;
+					}
+					break;
+				}
+
+				default:
+					break;
+			}
 		}
+
+		if (listener->F == NULL) {
+			last_closed = listener;
+		} else {
+			return listener;
+		}
+
+next:
+		continue;
 	}
 	return last_closed;
 }
 
 
 /*
- * add_listener- create a new listener
+ * add_tcp_listener- create a new listener
  * port - the port number to listen on
  * vhost_ip - if non-null must contain a valid IP address string in
  * the format "255.255.255.255"
  */
 void
-add_listener(int port, const char *vhost_ip, int family, int ssl, int defer_accept, int wsock)
+add_tcp_listener(int port, const char *vhost_ip, int family, int ssl, int defer_accept, int wsock)
 {
 	struct Listener *listener;
-	struct rb_sockaddr_storage vaddr;
+	struct rb_sockaddr_storage vaddr[ARRAY_SIZE(listener->addr)];
 
 	/*
 	 * if no port in conf line, don't bother
 	 */
-	if(port == 0)
+	if (port == 0)
 		return;
 	memset(&vaddr, 0, sizeof(vaddr));
-	SET_SS_FAMILY(&vaddr, family);
+	SET_SS_FAMILY(&vaddr[0], AF_UNSPEC);
+	SET_SS_LEN(&vaddr[0], sizeof(struct sockaddr_storage));
+	SET_SS_FAMILY(&vaddr[1], AF_UNSPEC);
+	SET_SS_LEN(&vaddr[1], sizeof(struct sockaddr_storage));
 
-	if(vhost_ip != NULL)
-	{
-		if(family == AF_INET)
-		{
-			if(rb_inet_pton(family, vhost_ip, &((struct sockaddr_in *)&vaddr)->sin_addr) <= 0)
+	if (vhost_ip != NULL) {
+		if (family == AF_INET) {
+			if (rb_inet_pton(family, vhost_ip, &((struct sockaddr_in *)&vaddr[0])->sin_addr) <= 0)
+				return;
+		} else {
+			if (rb_inet_pton(family, vhost_ip, &((struct sockaddr_in6 *)&vaddr[0])->sin6_addr) <= 0)
 				return;
 		}
-		else
-		{
-			if(rb_inet_pton(family, vhost_ip, &((struct sockaddr_in6 *)&vaddr)->sin6_addr) <= 0)
-				return;
-
-		}
-	} else
-	{
-		switch(family)
-		{
+	} else {
+		switch(family) {
 			case AF_INET:
-				((struct sockaddr_in *)&vaddr)->sin_addr.s_addr = INADDR_ANY;
+				((struct sockaddr_in *)&vaddr[0])->sin_addr.s_addr = INADDR_ANY;
 				break;
 			case AF_INET6:
-				memcpy(&((struct sockaddr_in6 *)&vaddr)->sin6_addr, &in6addr_any, sizeof(struct in6_addr));
+				memcpy(&((struct sockaddr_in6 *)&vaddr[0])->sin6_addr, &in6addr_any, sizeof(struct in6_addr));
 				break;
 			default:
 				return;
 		}
 	}
-	switch(family)
-	{
+	switch(family) {
 		case AF_INET:
-			SET_SS_LEN(&vaddr, sizeof(struct sockaddr_in));
-			SET_SS_FAMILY(&vaddr, AF_INET);
-			SET_SS_PORT(&vaddr, htons(port));
+			SET_SS_LEN(&vaddr[0], sizeof(struct sockaddr_in));
+			SET_SS_FAMILY(&vaddr[0], AF_INET);
+			SET_SS_PORT(&vaddr[0], htons(port));
 			break;
 		case AF_INET6:
-			SET_SS_LEN(&vaddr, sizeof(struct sockaddr_in6));
-			SET_SS_FAMILY(&vaddr, AF_INET6);
-			SET_SS_PORT(&vaddr, htons(port));
+			SET_SS_LEN(&vaddr[0], sizeof(struct sockaddr_in6));
+			SET_SS_FAMILY(&vaddr[0], AF_INET6);
+			SET_SS_PORT(&vaddr[0], htons(port));
 			break;
 		default:
 			break;
 	}
-	if((listener = find_listener(&vaddr)))
-	{
-		if(listener->F != NULL)
+	if ((listener = find_listener(vaddr, 0))) {
+		if (listener->F != NULL)
 			return;
-	}
-	else
-	{
-		listener = make_listener(&vaddr);
+	} else {
+		listener = make_listener(vaddr);
 		listener->next = ListenerPollList;
 		ListenerPollList = listener;
 	}
@@ -379,12 +360,85 @@ add_listener(int port, const char *vhost_ip, int family, int ssl, int defer_acce
 	listener->F = NULL;
 	listener->ssl = ssl;
 	listener->defer_accept = defer_accept;
+	listener->sctp = 0;
 	listener->wsock = wsock;
 
-	if(inetport(listener))
+	if (inetport(listener)) {
 		listener->active = 1;
-	else
+	} else {
 		close_listener(listener);
+	}
+}
+
+/*
+ * add_sctp_listener- create a new listener
+ * port - the port number to listen on
+ * vhost_ip1/2 - if non-null must contain a valid IP address string
+ */
+void
+add_sctp_listener(int port, const char *vhost_ip1, const char *vhost_ip2, int ssl, int wsock)
+{
+	struct Listener *listener;
+	struct rb_sockaddr_storage vaddr[ARRAY_SIZE(listener->addr)];
+
+	/*
+	 * if no port in conf line, don't bother
+	 */
+	if (port == 0)
+		return;
+	memset(&vaddr, 0, sizeof(vaddr));
+
+	if (vhost_ip1 != NULL) {
+		if (rb_inet_pton_sock(vhost_ip1, (struct sockaddr *)&vaddr[0]) <= 0)
+			return;
+
+		if (vhost_ip2 != NULL) {
+			if (rb_inet_pton_sock(vhost_ip2, (struct sockaddr *)&vaddr[1]) <= 0)
+				return;
+		} else {
+			SET_SS_FAMILY(&vaddr[1], AF_UNSPEC);
+			SET_SS_LEN(&vaddr[1], sizeof(struct sockaddr_storage));
+		}
+
+		if (GET_SS_FAMILY(&vaddr[0]) == AF_INET && GET_SS_FAMILY(&vaddr[1]) == AF_INET6) {
+			/* always put INET6 first */
+			struct rb_sockaddr_storage tmp;
+			tmp = vaddr[0];
+			vaddr[0] = vaddr[1];
+			vaddr[1] = tmp;
+		}
+	} else {
+		memcpy(&((struct sockaddr_in6 *)&vaddr[0])->sin6_addr, &in6addr_any, sizeof(struct in6_addr));
+		SET_SS_FAMILY(&vaddr[0], AF_INET6);
+		SET_SS_LEN(&vaddr[0], sizeof(struct sockaddr_in6));
+
+		SET_SS_FAMILY(&vaddr[1], AF_UNSPEC);
+		SET_SS_LEN(&vaddr[1], sizeof(struct sockaddr_storage));
+	}
+
+	SET_SS_PORT(&vaddr[0], htons(port));
+	SET_SS_PORT(&vaddr[1], htons(port));
+
+	if ((listener = find_listener(vaddr, 1))) {
+		if(listener->F != NULL)
+			return;
+	} else {
+		listener = make_listener(vaddr);
+		listener->next = ListenerPollList;
+		ListenerPollList = listener;
+	}
+
+	listener->F = NULL;
+	listener->ssl = ssl;
+	listener->defer_accept = 0;
+	listener->sctp = 1;
+	listener->wsock = wsock;
+
+	if (inetport(listener)) {
+		listener->active = 1;
+	} else {
+		close_listener(listener);
+	}
 }
 
 /*
@@ -459,6 +513,10 @@ add_connection(struct Listener *listener, rb_fde_t *F, struct sockaddr *sai, str
 		sizeof(new_client->sockhost));
 
 	rb_strlcpy(new_client->host, new_client->sockhost, sizeof(new_client->host));
+
+	if (listener->sctp) {
+		SetSCTP(new_client);
+	}
 
 	if (listener->ssl)
 	{

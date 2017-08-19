@@ -340,6 +340,26 @@ AC_CHECK_HEADER(zlib.h, [
 
 fi
 
+AC_ARG_WITH(sctp-path,
+AC_HELP_STRING([--with-sctp-path=DIR],[Path to libsctp.so for SCTP support.]),
+[LIBS="$LIBS -L$withval"],)
+
+AC_ARG_ENABLE(sctp,
+AC_HELP_STRING([--disable-sctp],[Disable SCTP support]),
+[sctp=$enableval],[sctp=yes])
+
+if test "$sctp" = yes; then
+
+AC_CHECK_HEADER(netinet/sctp.h, [
+	AC_CHECK_LIB(sctp, sctp_bindx,
+	[
+		AC_SUBST(LIBSCTP_LD, -lsctp)
+		AC_DEFINE(HAVE_LIBSCTP, 1, [Define to 1 if libsctp (-lsctp) is available.])
+	], sctp=no)
+], sctp=no)
+
+fi
+
 dnl Check for shared sqlite
 dnl ======================
 AC_ARG_WITH(shared-sqlite,
@@ -679,6 +699,7 @@ Configuration of ${BRANDING_NAME}-${BRANDING_VERSION}:
 
 	Ziplinks           : $zlib
 	OpenSSL            : $openssl
+	SCTP               : $sctp
 
 	Nickname length    : $NICKLEN
 	Topic length       : $TOPICLEN

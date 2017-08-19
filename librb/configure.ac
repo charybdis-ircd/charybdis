@@ -104,7 +104,7 @@ AC_TYPE_UID_T
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS([crypt.h unistd.h sys/socket.h sys/stat.h sys/time.h time.h netinet/in.h netinet/tcp.h arpa/inet.h errno.h sys/uio.h spawn.h sys/poll.h sys/epoll.h sys/select.h sys/devpoll.h sys/event.h port.h signal.h sys/signalfd.h sys/timerfd.h])
+AC_CHECK_HEADERS([crypt.h unistd.h sys/socket.h sys/stat.h sys/time.h time.h netinet/in.h netinet/tcp.h netinet/sctp.h arpa/inet.h errno.h sys/uio.h spawn.h sys/poll.h sys/epoll.h sys/select.h sys/devpoll.h sys/event.h port.h signal.h sys/signalfd.h sys/timerfd.h])
 AC_HEADER_TIME
 
 dnl Networking Functions
@@ -392,6 +392,27 @@ dnl End OpenSSL detection
 
 
 
+AC_ARG_WITH(sctp-path,
+AC_HELP_STRING([--with-sctp-path=DIR],[Path to libsctp.so for SCTP support.]),
+[LIBS="$LIBS -L$withval"],)
+
+AC_ARG_ENABLE(sctp,
+AC_HELP_STRING([--disable-sctp],[Disable SCTP support]),
+[sctp=$enableval],[sctp=yes])
+
+if test "$sctp" = yes; then
+
+AC_CHECK_HEADER(netinet/sctp.h, [
+	AC_CHECK_LIB(sctp, sctp_bindx,
+	[
+		AC_SUBST(LIBSCTP_LD, -lsctp)
+		AC_DEFINE(HAVE_LIBSCTP, 1, [Define to 1 if libsctp (-lsctp) is available.])
+	], sctp=no)
+], sctp=no)
+
+fi
+
+
 
 dnl Debug-related options
 dnl =====================
@@ -525,6 +546,10 @@ if test "x$rb_netinet_tcp_h" == "xyes"; then
 	echo '#include <netinet/tcp.h>' >> $outfile
 fi
 
+if test "x$rb_netinet_sctp_h" == "xyes"; then
+	echo '#include <netinet/sctp.h>' >> $outfile
+fi
+
 if test "x$rb_arpa_inet_h" = "xyes"; then
 	echo '#include <arpa/inet.h>' >> $outfile
 fi
@@ -614,6 +639,9 @@ fi
 	if test x$ac_cv_header_netinet_tcp_h = xyes; then
 		rb_netinet_tcp_h=yes
 	fi
+	if test x$ac_cv_header_netinet_sctp_h = xyes; then
+		rb_netinet_sctp_h=yes
+	fi
 
 	if test x$ac_cv_header_crypt_h = xyes; then
 		rb_crypt_h=yes
@@ -666,4 +694,5 @@ echo "Installing into: $prefix"
 
 echo "Assert debugging ............... $assert"
 echo "SSL Type........................ $SSL_TYPE"
+echo "SCTP............................ $sctp"
 echo

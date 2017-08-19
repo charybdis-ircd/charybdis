@@ -294,7 +294,7 @@ accept_client(struct auth_client *auth)
 
 /* Begin authenticating user */
 static void
-start_auth(const char *cid, const char *l_ip, const char *l_port, const char *c_ip, const char *c_port)
+start_auth(const char *cid, const char *l_ip, const char *l_port, const char *c_ip, const char *c_port, const char *protocol)
 {
 	struct auth_client *auth;
 	unsigned long long lcid = strtoull(cid, NULL, 16);
@@ -314,6 +314,8 @@ start_auth(const char *cid, const char *l_ip, const char *l_port, const char *c_
 		warn_opers(L_CRIT, "provider: duplicate client added via start_auth: %s", cid);
 		exit(EX_PROVIDER_ERROR);
 	}
+
+	auth->protocol = strtoull(protocol, NULL, 16);
 
 	rb_strlcpy(auth->l_ip, l_ip, sizeof(auth->l_ip));
 	auth->l_port = (uint16_t)atoi(l_port);	/* should be safe */
@@ -362,13 +364,12 @@ done:
 void
 handle_new_connection(int parc, char *parv[])
 {
-	if(parc < 6)
-	{
+	if (parc < 6) {
 		warn_opers(L_CRIT, "provider: received too few params for new connection (6 expected, got %d)", parc);
 		exit(EX_PROVIDER_ERROR);
 	}
 
-	start_auth(parv[1], parv[2], parv[3], parv[4], parv[5]);
+	start_auth(parv[1], parv[2], parv[3], parv[4], parv[5], parc > 6 ? parv[6] : "0");
 }
 
 void

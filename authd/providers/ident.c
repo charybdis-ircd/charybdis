@@ -310,7 +310,7 @@ ident_start(struct auth_client *auth)
 	set_provider_data(auth, SELF_PID, query);
 	set_provider_timeout_relative(auth, SELF_PID, ident_timeout);
 
-	if((query->F = rb_socket(family, SOCK_STREAM, 0, "ident")) == NULL)
+	if((query->F = rb_socket(family, SOCK_STREAM, auth->protocol, "ident")) == NULL)
 	{
 		warn_opers(L_DEBUG, "Could not create ident socket: %s", strerror(errno));
 		client_fail(auth, REPORT_FAIL);

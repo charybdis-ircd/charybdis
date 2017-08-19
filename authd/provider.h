@@ -46,6 +46,8 @@ struct auth_client
 {
 	uint32_t cid;				/* Client ID */
 
+	int protocol;				/* IP protocol (TCP/SCTP) */
+
 	char l_ip[HOSTIPLEN + 1];		/* Listener IP address */
 	uint16_t l_port;			/* Listener port */
 	struct rb_sockaddr_storage l_addr;	/* Listener address/port */

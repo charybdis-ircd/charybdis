@@ -71,6 +71,9 @@ enum
 #define	RB_FD_LISTEN		0x10
 #define RB_FD_SSL		0x20
 #define RB_FD_UNKNOWN		0x40
+#define RB_FD_SCTP		0x80
+
+#define RB_FD_INHERIT_TYPES	(RB_FD_SCTP)
 
 #define RB_RW_IO_ERROR		-1	/* System call error */
 #define RB_RW_SSL_ERROR		-2	/* SSL Error */
@@ -129,6 +132,10 @@ const char *rb_errstr(int status);
 rb_fde_t *rb_socket(int family, int sock_type, int proto, const char *note);
 int rb_socketpair(int family, int sock_type, int proto, rb_fde_t **F1, rb_fde_t **F2,
 		  const char *note);
+
+int rb_bind(rb_fde_t *F, struct sockaddr *addr);
+int rb_sctp_bindx(rb_fde_t *F, struct sockaddr_storage *addrs, size_t len);
+int rb_inet_get_proto(rb_fde_t *F);
 
 void rb_accept_tcp(rb_fde_t *, ACPRE * precb, ACCB * callback, void *data);
 ssize_t rb_write(rb_fde_t *, const void *buf, int count);

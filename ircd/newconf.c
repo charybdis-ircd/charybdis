@@ -352,6 +352,7 @@ static struct mode_table auth_table[] = {
 	{"need_ssl", 		CONF_FLAGS_NEED_SSL		},
 	{"need_sasl",		CONF_FLAGS_NEED_SASL		},
 	{"extend_chans",	CONF_FLAGS_EXTEND_CHANS		},
+	{"allow_sctp",		CONF_FLAGS_ALLOW_SCTP		},
 	{NULL, 0}
 };
 
@@ -830,13 +831,15 @@ conf_set_class_sendq(void *data)
 	yy_class->max_sendq = *(unsigned int *) data;
 }
 
-static char *listener_address;
+static char *listener_address[2];
 
 static int
 conf_begin_listen(struct TopConf *tc)
 {
-	rb_free(listener_address);
-	listener_address = NULL;
+	for (int i = 0; i < ARRAY_SIZE(listener_address); i++) {
+		rb_free(listener_address[i]);
+		listener_address[i] = NULL;
+	}
 	yy_wsock = 0;
 	yy_defer_accept = 0;
 	return 0;
@@ -845,8 +848,10 @@ conf_begin_listen(struct TopConf *tc)
 static int
 conf_end_listen(struct TopConf *tc)
 {
-	rb_free(listener_address);
-	listener_address = NULL;
+	for (int i = 0; i < ARRAY_SIZE(listener_address); i++) {
+		rb_free(listener_address[i]);
+		listener_address[i] = NULL;
+	}
 	yy_wsock = 0;
 	yy_defer_accept = 0;
 	return 0;
@@ -865,31 +870,35 @@ conf_set_listen_wsock(void *data)
 }
 
 static void
-conf_set_listen_port_both(void *data, int ssl)
+conf_set_listen_port_both(void *data, int ssl, int sctp)
 {
 	conf_parm_t *args = data;
 	for (; args; args = args->next)
 	{
 		if(CF_TYPE(args->type) != CF_INT)
 		{
-			conf_report_error
-				("listener::port argument is not an integer " "-- ignoring.");
+			conf_report_error("listener::port argument is not an integer -- ignoring.");
 			continue;
 		}
-                if(listener_address == NULL)
+                if(listener_address[0] == NULL)
                 {
 			if (!ssl)
 			{
 				conf_report_warning("listener 'ANY/%d': support for plaintext listeners may be removed in a future release per RFCs 7194 & 7258.  "
                                                     "It is suggested that users be migrated to SSL/TLS connections.", args->v.number);
 			}
-			add_listener(args->v.number, listener_address, AF_INET, ssl, ssl || yy_defer_accept, yy_wsock);
-			add_listener(args->v.number, listener_address, AF_INET6, ssl, ssl || yy_defer_accept, yy_wsock);
+
+			if (sctp) {
+				conf_report_error("listener::sctp_port has no addresses -- ignoring.");
+			} else {
+				add_tcp_listener(args->v.number, NULL, AF_INET, ssl, ssl || yy_defer_accept, yy_wsock);
+				add_tcp_listener(args->v.number, NULL, AF_INET6, ssl, ssl || yy_defer_accept, yy_wsock);
+			}
                 }
 		else
                 {
 			int family;
-			if(strchr(listener_address, ':') != NULL)
+			if(strchr(listener_address[0], ':') != NULL)
 				family = AF_INET6;
 			else
 				family = AF_INET;
@@ -900,7 +909,15 @@ conf_set_listen_port_both(void *data, int ssl)
                                                     "It is suggested that users be migrated to SSL/TLS connections.", listener_address, args->v.number);
 			}
 
-			add_listener(args->v.number, listener_address, family, ssl, ssl || yy_defer_accept, yy_wsock);
+			if (sctp) {
+#ifdef HAVE_LIBSCTP
+				add_sctp_listener(args->v.number, listener_address[0], listener_address[1], ssl, yy_wsock);
+#else
+				conf_report_error("Warning -- ignoring listener::sctp_port -- SCTP support not available.");
+#endif
+			} else {
+				add_tcp_listener(args->v.number, listener_address[0], family, ssl, ssl || yy_defer_accept, yy_wsock);
+			}
                 }
 	}
 }
@@ -908,20 +925,33 @@ conf_set_listen_port_both(void *data, int ssl)
 static void
 conf_set_listen_port(void *data)
 {
-	conf_set_listen_port_both(data, 0);
+	conf_set_listen_port_both(data, 0, 0);
 }
 
 static void
 conf_set_listen_sslport(void *data)
 {
-	conf_set_listen_port_both(data, 1);
+	conf_set_listen_port_both(data, 1, 0 );
+}
+
+static void
+conf_set_listen_sctp_port(void *data)
+{
+	conf_set_listen_port_both(data, 0, 1);
+}
+
+static void
+conf_set_listen_sctp_sslport(void *data)
+{
+	conf_set_listen_port_both(data, 1, 1);
 }
 
 static void
 conf_set_listen_address(void *data)
 {
-	rb_free(listener_address);
-	listener_address = rb_strdup(data);
+	rb_free(listener_address[1]);
+	listener_address[1] = listener_address[0];
+	listener_address[0] = rb_strdup(data);
 }
 
 static int
@@ -2849,6 +2879,8 @@ newconf_init()
 	add_conf_item("listen", "wsock", CF_YESNO, conf_set_listen_wsock);
 	add_conf_item("listen", "port", CF_INT | CF_FLIST, conf_set_listen_port);
 	add_conf_item("listen", "sslport", CF_INT | CF_FLIST, conf_set_listen_sslport);
+	add_conf_item("listen", "sctp_port", CF_INT | CF_FLIST, conf_set_listen_sctp_port);
+	add_conf_item("listen", "sctp_sslport", CF_INT | CF_FLIST, conf_set_listen_sctp_sslport);
 	add_conf_item("listen", "ip", CF_QSTRING, conf_set_listen_address);
 	add_conf_item("listen", "host", CF_QSTRING, conf_set_listen_address);
 

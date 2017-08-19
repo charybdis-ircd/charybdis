@@ -256,7 +256,7 @@ check_client(struct Client *client_p, struct Client *source_p, const char *usern
 	case NOT_AUTHORISED:
 		{
 			int port = -1;
-			port = ntohs(GET_SS_PORT(&source_p->localClient->listener->addr));
+			port = ntohs(GET_SS_PORT(&source_p->localClient->listener->addr[0]));
 
 			ServerStats.is_ref++;
 			/* jdc - lists server name & port connections are on */

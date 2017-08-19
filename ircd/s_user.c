@@ -447,6 +447,14 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 		return (CLIENT_EXITED);
 	}
 
+	if(IsSCTP(source_p) && !IsConfAllowSCTP(aconf))
+	{
+		ServerStats.is_ref++;
+		sendto_one_notice(source_p, ":*** Notice -- You are not allowed to use SCTP on this server");
+		exit_client(client_p, source_p, &me, "SCTP not allowed");
+		return (CLIENT_EXITED);
+	}
+
 	if(!IsGotId(source_p))
 	{
 		const char *p;

@@ -64,6 +64,8 @@
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
+#define ARRAY_SIZE(array)       (sizeof(array) / sizeof((array)[0]))
+
 #define HOSTLEN         63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
 

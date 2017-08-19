@@ -474,7 +474,12 @@ authd_initiate_client(struct Client *client_p, bool defer)
 	/* Add a bit of a fudge factor... */
 	client_p->preClient->auth.timeout = rb_current_time() + ConfigFileEntry.connect_timeout + 10;
 
-	rb_helper_write(authd_helper, "C %x %s %hu %s %hu", authd_cid, listen_ipaddr, listen_port, client_ipaddr, client_port);
+	rb_helper_write(authd_helper, "C %x %s %hu %s %hu %x", authd_cid, listen_ipaddr, listen_port, client_ipaddr, client_port,
+#ifdef HAVE_LIBSCTP
+		IsSCTP(client_p) ? IPPROTO_SCTP : IPPROTO_TCP);
+#else
+		IPPROTO_TCP);
+#endif
 }
 
 static inline void

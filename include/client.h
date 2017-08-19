@@ -436,6 +436,7 @@ struct ListClient
 #define LFLAGS_SSL		0x00000001
 #define LFLAGS_FLUSH		0x00000002
 #define LFLAGS_CORK		0x00000004
+#define LFLAGS_SCTP		0x00000008
 
 /* umodes, settable flags */
 /* lots of this moved to snomask -- jilles */
@@ -505,6 +506,10 @@ struct ListClient
 #define IsFlush(x)		((x)->localClient->localflags & LFLAGS_FLUSH)
 #define SetFlush(x)		((x)->localClient->localflags |= LFLAGS_FLUSH)
 #define ClearFlush(x)		((x)->localClient->localflags &= ~LFLAGS_FLUSH)
+
+#define IsSCTP(x)		((x)->localClient->localflags & LFLAGS_SCTP)
+#define SetSCTP(x)		((x)->localClient->localflags |= LFLAGS_SCTP)
+#define ClearSCTP(x)		((x)->localClient->localflags &= ~LFLAGS_SCTP)
 
 /* oper flags */
 #define MyOper(x)               (MyConnect(x) && IsOper(x))

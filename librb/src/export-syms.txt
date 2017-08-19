@@ -11,6 +11,7 @@ rb_bh_free
 rb_bh_total_usage
 rb_bh_usage
 rb_bh_usage_all
+rb_bind
 rb_checktimeouts
 rb_clear_patricia
 rb_close
@@ -77,6 +78,7 @@ rb_helper_start
 rb_helper_write
 rb_helper_write_queue
 rb_ignore_errno
+rb_inet_get_proto
 rb_inet_ntop
 rb_inet_ntop_sock
 rb_inet_pton
@@ -146,6 +148,7 @@ rb_rawbuf_length
 rb_read
 rb_recv_fd_buf
 rb_run_one_event
+rb_sctp_bindx
 rb_select
 rb_send_fd_buf
 rb_set_buffers

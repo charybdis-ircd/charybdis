@@ -410,22 +410,14 @@ rb_setup_fd_win32(rb_fde_t *F)
 		return 0;
 
 	SetHandleInformation((HANDLE) F->fd, HANDLE_FLAG_INHERIT, 0);
-	switch (F->type)
-	{
-	case RB_FD_SOCKET:
-		{
-			unsigned long nonb = 1;
-			if(ioctlsocket((SOCKET) F->fd, FIONBIO, &nonb) == -1)
-			{
-				rb_get_errno();
-				return 0;
-			}
-			return 1;
+	if (F->type & RB_FD_SOCKET) {
+		unsigned long nonb = 1;
+		if (ioctlsocket((SOCKET) F->fd, FIONBIO, &nonb) == -1) {
+			rb_get_errno();
+			return 0;
 		}
-	default:
-		return 1;
-
 	}
+	return 1;
 }
 
 void

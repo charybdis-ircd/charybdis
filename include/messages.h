@@ -54,7 +54,7 @@
 #define NUMERIC_STR_217      "%c %d %s :%s"
 #define NUMERIC_STR_218      "Y %s %d %d %d %u %d.%d %d.%d %u"
 #define NUMERIC_STR_219      "%c :End of /STATS report"
-#define NUMERIC_STR_220      "%c %d %s %d :%s%s"
+#define NUMERIC_STR_220      "%c %d %s %d :%s%s%s"
 #define NUMERIC_STR_221      "%s"
 #define NUMERIC_STR_225      "%c %s :%s%s%s"
 #define NUMERIC_STR_241      "L %s * %s 0 -1"

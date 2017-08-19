@@ -339,9 +339,165 @@ rb_checktimeouts(void *notused)
 	}
 }
 
-static void
-rb_accept_tryaccept(rb_fde_t *F, void *data)
+static int
+rb_setsockopt_reuseaddr(rb_fde_t *F)
 {
+	int opt_one = 1;
+	int ret;
+
+	ret = setsockopt(F->fd, SOL_SOCKET, SO_REUSEADDR, &opt_one, sizeof(opt_one));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_reuseaddr: Cannot set SO_REUSEADDR for FD %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	return 0;
+}
+
+#ifdef HAVE_LIBSCTP
+static int
+rb_setsockopt_sctp(rb_fde_t *F)
+{
+	int opt_zero = 0;
+	int opt_one = 1;
+	int ret;
+	struct sctp_initmsg initmsg;
+	struct sctp_rtoinfo rtoinfo;
+	struct sctp_paddrparams paddrparams;
+	struct sctp_assocparams assocparams;
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_NODELAY, &opt_one, sizeof(opt_one));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot set SCTP_NODELAY for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_I_WANT_MAPPED_V4_ADDR, &opt_zero, sizeof(opt_zero));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot unset SCTP_I_WANT_MAPPED_V4_ADDR for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	/* Configure INIT message to specify that we only want one stream */
+	memset(&initmsg, 0, sizeof(initmsg));
+	initmsg.sinit_num_ostreams = 1;
+	initmsg.sinit_max_instreams = 1;
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_INITMSG, &initmsg, sizeof(initmsg));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot set SCTP_INITMSG for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	/* Configure RTO values to reduce the maximum timeout */
+	memset(&rtoinfo, 0, sizeof(rtoinfo));
+	rtoinfo.srto_initial = 3000;
+	rtoinfo.srto_min = 1000;
+	rtoinfo.srto_max = 10000;
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_RTOINFO, &rtoinfo, sizeof(rtoinfo));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot set SCTP_RTOINFO for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	/*
+	 * Configure peer address parameters to ensure that we monitor the connection
+	 * more often than the default and don't timeout retransmit attempts before
+	 * the ping timeout does.
+	 *
+	 * Each peer address will timeout reachability in about 750s.
+	 */
+	memset(&paddrparams, 0, sizeof(paddrparams));
+	paddrparams.spp_assoc_id = 0;
+	memcpy(&paddrparams.spp_address, &in6addr_any, sizeof(in6addr_any));
+	paddrparams.spp_pathmaxrxt = 50;
+	paddrparams.spp_hbinterval = 5000;
+	paddrparams.spp_flags |= SPP_HB_ENABLE;
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_PEER_ADDR_PARAMS, &paddrparams, sizeof(paddrparams));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot set SCTP_PEER_ADDR_PARAMS for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	/* Configure association parameters for retransmit attempts as above */
+	memset(&assocparams, 0, sizeof(assocparams));
+	assocparams.sasoc_assoc_id = 0;
+	assocparams.sasoc_asocmaxrxt = 50;
+
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_ASSOCINFO, &assocparams, sizeof(assocparams));
+	if (ret) {
+		rb_lib_log("rb_setsockopt_sctp: Cannot set SCTP_ASSOCINFO for fd %d: %s",
+				F->fd, strerror(rb_get_sockerr(F)));
+		return ret;
+	}
+
+	return 0;
+}
+#endif
+
+int
+rb_bind(rb_fde_t *F, struct sockaddr *addr)
+{
+	int ret;
+
+	ret = rb_setsockopt_reuseaddr(F);
+	if (ret)
+		return ret;
+
+	ret = bind(F->fd, addr, GET_SS_LEN(addr));
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
+int
+rb_sctp_bindx(rb_fde_t *F, struct sockaddr_storage *addrs, size_t len)
+{
+#ifdef HAVE_LIBSCTP
+	int ret;
+
+	if ((F->type & RB_FD_SCTP) == 0)
+		return -1;
+
+	ret = rb_setsockopt_reuseaddr(F);
+	if (ret)
+		return ret;
+
+	for (size_t i = 0; i < len; i++) {
+		if (GET_SS_FAMILY(&addrs[i]) == AF_UNSPEC)
+			continue;
+
+		ret = sctp_bindx(F->fd, (struct sockaddr *)&addrs[i], 1, SCTP_BINDX_ADD_ADDR);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+#else
+	return -1;
+#endif
+}
+
+int
+rb_inet_get_proto(rb_fde_t *F)
+{
+#ifdef HAVE_LIBSCTP
+	if (F->type & RB_FD_SCTP)
+		return IPPROTO_SCTP;
+#endif
+	return IPPROTO_TCP;
+}
+
+static void rb_accept_tryaccept(rb_fde_t *F, void *data) {
 	struct rb_sockaddr_storage st;
 	rb_fde_t *new_F;
 	rb_socklen_t addrlen;
@@ -362,12 +518,12 @@ rb_accept_tryaccept(rb_fde_t *F, void *data)
 
 		rb_fd_hack(&new_fd);
 
-		new_F = rb_open(new_fd, RB_FD_SOCKET, "Incoming Connection");
+		new_F = rb_open(new_fd, RB_FD_SOCKET | (F->type & RB_FD_INHERIT_TYPES), "Incoming Connection");
 
 		if(new_F == NULL)
 		{
 			rb_lib_log
-				("rb_accept: new_F == NULL on incoming connection. Closing new_fd == %d\n",
+				("rb_accept: new_F == NULL on incoming connection. Closing new_fd == %d",
 				 new_fd);
 			close(new_fd);
 			continue;
@@ -714,15 +870,19 @@ rb_socket(int family, int sock_type, int proto, const char *note)
 
 	/*
 	 * Make sure we can take both IPv4 and IPv6 connections
-	 * on an AF_INET6 socket
+	 * on an AF_INET6 SCTP socket, otherwise keep them separate
 	 */
 	if(family == AF_INET6)
 	{
-		int off = 1;
-		if(setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &off, sizeof(off)) == -1)
+#ifdef HAVE_LIBSCTP
+		int v6only = (proto == IPPROTO_SCTP) ? 0 : 1;
+#else
+		int v6only = 1;
+#endif
+		if(setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &v6only, sizeof(v6only)) == -1)
 		{
-			rb_lib_log("rb_socket: Could not set IPV6_V6ONLY option to 1 on FD %d: %s",
-				   fd, strerror(errno));
+			rb_lib_log("rb_socket: Could not set IPV6_V6ONLY option to %d on FD %d: %s",
+				   v6only, fd, strerror(errno));
 			close(fd);
 			return NULL;
 		}
@@ -736,6 +896,20 @@ rb_socket(int family, int sock_type, int proto, const char *note)
 		close(fd);
 		return NULL;
 	}
+
+#ifdef HAVE_LIBSCTP
+	if (proto == IPPROTO_SCTP) {
+		F->type |= RB_FD_SCTP;
+
+		if (rb_setsockopt_sctp(F)) {
+			rb_lib_log("rb_socket: Could not set SCTP socket options on FD %d: %s",
+				fd, strerror(errno));
+			close(fd);
+			return NULL;
+		}
+	}
+#endif
+
 	/* Set the socket non-blocking, and other wonderful bits */
 	if(rb_unlikely(!rb_set_nb(F)))
 	{
@@ -775,7 +949,7 @@ rb_listen(rb_fde_t *F, int backlog, int defer_accept)
 {
 	int result;
 
-	F->type = RB_FD_SOCKET | RB_FD_LISTEN;
+	F->type = RB_FD_SOCKET | RB_FD_LISTEN | (F->type & RB_FD_INHERIT_TYPES);
 	result = listen(F->fd, backlog);
 
 #ifdef TCP_DEFER_ACCEPT
@@ -878,6 +1052,11 @@ rb_close(rb_fde_t *F)
 		lrb_assert(F->read_handler == NULL);
 		lrb_assert(F->write_handler == NULL);
 	}
+
+	if (type & RB_FD_LISTEN) {
+		listen(F->fd, 0);
+	}
+
 	rb_setselect(F, RB_SELECT_WRITE | RB_SELECT_READ, NULL, NULL);
 	rb_settimeout(F, 0, NULL, NULL);
 	rb_free(F->accept);
