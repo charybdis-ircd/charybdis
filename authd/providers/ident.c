@@ -299,7 +299,7 @@ ident_start(struct auth_client *auth)
 	{
 		rb_free(query);
 		notice_client(auth->cid, messages[REPORT_DISABLED]);
-		set_provider_done(auth, SELF_PID);
+		provider_done(auth, SELF_PID);
 		return true;
 	}
 
@@ -328,8 +328,6 @@ ident_start(struct auth_client *auth)
 			(struct sockaddr *)&l_addr,
 			ident_connected,
 			auth, ident_timeout);
-
-	set_provider_running(auth, SELF_PID);
 
 	return true;
 }

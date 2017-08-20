@@ -62,6 +62,29 @@ static rb_dlink_list free_pids;
 static uint32_t allocated_pids;
 static struct ev_entry *timeout_ev;
 
+/* Set a provider's raw status */
+static inline void
+set_provider_status(struct auth_client *auth, uint32_t provider, provider_status_t status)
+{
+	auth->data[provider].status = status;
+}
+
+/* Set the provider as running */
+static inline void
+set_provider_running(struct auth_client *auth, uint32_t provider)
+{
+	auth->providers_active++;
+	set_provider_status(auth, provider, PROVIDER_STATUS_RUNNING);
+}
+
+/* Provider is no longer operating on this auth client */
+static inline void
+set_provider_done(struct auth_client *auth, uint32_t provider)
+{
+	set_provider_status(auth, provider, PROVIDER_STATUS_DONE);
+	auth->providers_active--;
+}
+
 /* Initalise all providers */
 void
 init_providers(void)
@@ -69,10 +92,13 @@ init_providers(void)
 	auth_clients = rb_dictionary_create("pending auth clients", rb_uint32cmp);
 	timeout_ev = rb_event_addish("provider_timeout_event", provider_timeout_event, NULL, 1);
 
-	load_provider(&rdns_provider);
-	load_provider(&ident_provider);
+	/* FIXME must be started before rdns/ident to receive completion notification from them */
 	load_provider(&blacklist_provider);
 	load_provider(&opm_provider);
+
+	/* FIXME must be started after blacklist/opm in case of early completion notifications */
+	load_provider(&rdns_provider);
+	load_provider(&ident_provider);
 }
 
 /* Terminate all providers */
@@ -314,6 +340,7 @@ start_auth(const char *cid, const char *l_ip, const char *l_port, const char *c_
 		lrb_assert(provider->start != NULL);
 
 		/* Execute providers */
+		set_provider_running(auth, provider->id);
 		if(!provider->start(auth))
 			/* Rejected immediately */
 			goto done;

@@ -369,9 +369,11 @@ blacklists_start(struct auth_client *auth)
 
 	lrb_assert(get_provider_data(auth, SELF_PID) == NULL);
 
-	if(!rb_dlink_list_length(&blacklist_list))
+	if(!rb_dlink_list_length(&blacklist_list)) {
 		/* Nothing to do... */
+		provider_done(auth, SELF_PID);
 		return true;
+	}
 
 	auth_client_ref(auth);
 
@@ -388,7 +390,6 @@ blacklists_start(struct auth_client *auth)
 		}
 	}
 
-	set_provider_running(auth, SELF_PID);
 	return true;
 }
 
