@@ -177,31 +177,6 @@ get_provider_status(struct auth_client *auth, uint32_t provider)
 	return auth->data[provider].status;
 }
 
-/* Set a provider's raw status */
-static inline void
-set_provider_status(struct auth_client *auth, uint32_t provider, provider_status_t status)
-{
-	auth->data[provider].status = status;
-}
-
-/* Set the provider as running
- * If you're doing asynchronous work call this */
-static inline void
-set_provider_running(struct auth_client *auth, uint32_t provider)
-{
-	auth->providers_active++;
-	set_provider_status(auth, provider, PROVIDER_STATUS_RUNNING);
-}
-
-/* Provider is no longer operating on this auth client
- * You should use provider_done and not this */
-static inline void
-set_provider_done(struct auth_client *auth, uint32_t provider)
-{
-	set_provider_status(auth, provider, PROVIDER_STATUS_DONE);
-	auth->providers_active--;
-}
-
 /* Check if provider is operating on this auth client */
 static inline bool
 is_provider_running(struct auth_client *auth, uint32_t provider)
