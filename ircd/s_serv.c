@@ -1046,7 +1046,7 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	SET_SS_FAMILY(&sa_bind, AF_UNSPEC);
 
 #ifdef RB_IPV6
-	if(server_p->aftype != AF_UNSPEC
+	if(server_p->aftype == AF_UNSPEC
 		&& GET_SS_FAMILY(&server_p->connect4) == AF_INET
 		&& GET_SS_FAMILY(&server_p->connect6) == AF_INET6)
 	{
