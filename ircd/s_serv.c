@@ -1031,8 +1031,8 @@ int
 serv_connect(struct server_conf *server_p, struct Client *by)
 {
 	struct Client *client_p;
-	struct rb_sockaddr_storage sa_connect;
-	struct rb_sockaddr_storage sa_bind;
+	struct sockaddr_storage sa_connect[2];
+	struct sockaddr_storage sa_bind[ARRAY_SIZE(sa_connect)];
 	char note[HOSTLEN + 10];
 	rb_fde_t *F;
 
@@ -1040,8 +1040,10 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	if(server_p == NULL)
 		return 0;
 
-	SET_SS_FAMILY(&sa_connect, AF_UNSPEC);
-	SET_SS_FAMILY(&sa_bind, AF_UNSPEC);
+	for (int i = 0; i < ARRAY_SIZE(sa_connect); i++) {
+		SET_SS_FAMILY(&sa_connect[i], AF_UNSPEC);
+		SET_SS_FAMILY(&sa_bind[i], AF_UNSPEC);
+	}
 
 	if(server_p->aftype == AF_UNSPEC
 		&& GET_SS_FAMILY(&server_p->connect4) == AF_INET
@@ -1049,30 +1051,48 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	{
 		if(rand() % 2 == 0)
 		{
-			sa_connect = server_p->connect4;
-			sa_bind = server_p->bind4;
+			sa_connect[0] = server_p->connect4;
+			sa_connect[1] = server_p->connect6;
+			sa_bind[0] = server_p->bind4;
+			sa_bind[1] = server_p->bind6;
 		}
 		else
 		{
-			sa_connect = server_p->connect6;
-			sa_bind = server_p->bind6;
+			sa_connect[0] = server_p->connect6;
+			sa_connect[1] = server_p->connect4;
+			sa_bind[0] = server_p->bind6;
+			sa_bind[1] = server_p->bind4;
 		}
 	}
 	else if(server_p->aftype == AF_INET || GET_SS_FAMILY(&server_p->connect4) == AF_INET)
 	{
-		sa_connect = server_p->connect4;
-		sa_bind = server_p->bind4;
+		sa_connect[0] = server_p->connect4;
+		sa_bind[0] = server_p->bind4;
 	}
 	else if(server_p->aftype == AF_INET6 || GET_SS_FAMILY(&server_p->connect6) == AF_INET6)
 	{
-		sa_connect = server_p->connect6;
-		sa_bind = server_p->bind6;
+		sa_connect[0] = server_p->connect6;
+		sa_bind[0] = server_p->bind6;
 	}
 
 	/* log */
-	buf[0] = 0;
-	rb_inet_ntop_sock((struct sockaddr *)&sa_connect, buf, sizeof(buf));
-	ilog(L_SERVER, "Connect to *[%s] @%s", server_p->name, buf);
+#ifdef HAVE_LIBSCTP
+	if (ServerConfSCTP(server_p) && GET_SS_FAMILY(&sa_connect[1]) != AF_UNSPEC) {
+		char buf2[HOSTLEN + 1];
+
+		buf[0] = 0;
+		buf2[0] = 0;
+		rb_inet_ntop_sock((struct sockaddr *)&sa_connect[0], buf, sizeof(buf));
+		rb_inet_ntop_sock((struct sockaddr *)&sa_connect[1], buf2, sizeof(buf2));
+		ilog(L_SERVER, "Connect to *[%s] @%s&%s", server_p->name, buf, buf2);
+	} else {
+#else
+	{
+#endif
+		buf[0] = 0;
+		rb_inet_ntop_sock((struct sockaddr *)&sa_connect[0], buf, sizeof(buf));
+		ilog(L_SERVER, "Connect to *[%s] @%s", server_p->name, buf);
+	}
 
 	/*
 	 * Make sure this server isn't already connected
@@ -1099,13 +1119,17 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	}
 
 	/* create a socket for the server connection */
-	if(GET_SS_FAMILY(&sa_connect) == AF_UNSPEC)
-	{
+	if(GET_SS_FAMILY(&sa_connect[0]) == AF_UNSPEC) {
 		ilog_error("unspecified socket address family");
 		return 0;
-	}
-	else if((F = rb_socket(GET_SS_FAMILY(&sa_connect), SOCK_STREAM, 0, NULL)) == NULL)
-	{
+#ifdef HAVE_LIBSCTP
+	} else if (ServerConfSCTP(server_p)) {
+		if ((F = rb_socket(AF_INET6, SOCK_STREAM, IPPROTO_SCTP, NULL)) == NULL) {
+			ilog_error("opening a stream socket");
+			return 0;
+		}
+#endif
+	} else if ((F = rb_socket(GET_SS_FAMILY(&sa_connect[0]), SOCK_STREAM, IPPROTO_TCP, NULL)) == NULL) {
 		ilog_error("opening a stream socket");
 		return 0;
 	}
@@ -1126,7 +1150,8 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	rb_strlcpy(client_p->sockhost, buf, sizeof(client_p->sockhost));
 	client_p->localClient->F = F;
 	/* shove the port number into the sockaddr */
-	SET_SS_PORT(&sa_connect, htons(server_p->port));
+	SET_SS_PORT(&sa_connect[0], htons(server_p->port));
+	SET_SS_PORT(&sa_connect[1], htons(server_p->port));
 
 	/*
 	 * Set up the initial server evilness, ripped straight from
@@ -1161,19 +1186,31 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	SetConnecting(client_p);
 	rb_dlinkAddTail(client_p, &client_p->node, &global_client_list);
 
-	if(GET_SS_FAMILY(&sa_bind) == AF_UNSPEC)
-	{
-		if(GET_SS_FAMILY(&sa_connect) == GET_SS_FAMILY(&ServerInfo.bind4))
-			sa_bind = ServerInfo.bind4;
-		if(GET_SS_FAMILY(&sa_connect) == GET_SS_FAMILY(&ServerInfo.bind6))
-			sa_bind = ServerInfo.bind6;
+	for (int i = 0; i < ARRAY_SIZE(sa_connect); i++) {
+		if (GET_SS_FAMILY(&sa_bind[i]) == AF_UNSPEC) {
+			if (GET_SS_FAMILY(&sa_connect[i]) == GET_SS_FAMILY(&ServerInfo.bind4))
+				sa_bind[i] = ServerInfo.bind4;
+			if (GET_SS_FAMILY(&sa_connect[i]) == GET_SS_FAMILY(&ServerInfo.bind6))
+				sa_bind[i] = ServerInfo.bind6;
+		}
 	}
 
-	rb_connect_tcp(client_p->localClient->F,
-		(struct sockaddr *)&sa_connect,
-		GET_SS_FAMILY(&sa_bind) == AF_UNSPEC ? NULL : (struct sockaddr *)&sa_bind,
-		ServerConfSSL(server_p) ? serv_connect_ssl_callback : serv_connect_callback,
-		client_p, ConfigFileEntry.connect_timeout);
+#ifdef HAVE_LIBSCTP
+	if (ServerConfSCTP(server_p)) {
+		rb_connect_sctp(client_p->localClient->F,
+			sa_connect, ARRAY_SIZE(sa_connect), sa_bind, ARRAY_SIZE(sa_bind),
+			ServerConfSSL(server_p) ? serv_connect_ssl_callback : serv_connect_callback,
+			client_p, ConfigFileEntry.connect_timeout);
+	} else {
+#else
+	{
+#endif
+		rb_connect_tcp(client_p->localClient->F,
+			(struct sockaddr *)&sa_connect[0],
+			GET_SS_FAMILY(&sa_bind[0]) == AF_UNSPEC ? NULL : (struct sockaddr *)&sa_bind[0],
+			ServerConfSSL(server_p) ? serv_connect_ssl_callback : serv_connect_callback,
+			client_p, ConfigFileEntry.connect_timeout);
+	}
 	return 1;
 }
 

@@ -18,6 +18,7 @@ rb_close
 rb_connect_sockaddr
 rb_connect_tcp
 rb_connect_tcp_ssl
+rb_connect_sctp
 rb_count_rb_linebuf_memory
 rb_crypt
 rb_ctime

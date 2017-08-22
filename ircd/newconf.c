@@ -361,6 +361,7 @@ static struct mode_table connect_table[] = {
 	{ "compressed",	SERVER_COMPRESSED	},
 	{ "encrypted",	SERVER_ENCRYPTED	},
 	{ "topicburst",	SERVER_TB		},
+	{ "sctp",	SERVER_SCTP		},
 	{ "ssl",	SERVER_SSL		},
 	{ "no-export",	SERVER_NO_EXPORT	},
 	{ NULL,		0			},

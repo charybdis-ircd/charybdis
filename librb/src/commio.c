@@ -459,6 +459,25 @@ rb_bind(rb_fde_t *F, struct sockaddr *addr)
 	return 0;
 }
 
+#ifdef HAVE_LIBSCTP
+static int
+rb_sctp_bindx_only(rb_fde_t *F, struct sockaddr_storage *addrs, size_t len)
+{
+	int ret;
+
+	for (size_t i = 0; i < len; i++) {
+		if (GET_SS_FAMILY(&addrs[i]) == AF_UNSPEC)
+			continue;
+
+		ret = sctp_bindx(F->fd, (struct sockaddr *)&addrs[i], 1, SCTP_BINDX_ADD_ADDR);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+#endif
+
 int
 rb_sctp_bindx(rb_fde_t *F, struct sockaddr_storage *addrs, size_t len)
 {
@@ -472,14 +491,9 @@ rb_sctp_bindx(rb_fde_t *F, struct sockaddr_storage *addrs, size_t len)
 	if (ret)
 		return ret;
 
-	for (size_t i = 0; i < len; i++) {
-		if (GET_SS_FAMILY(&addrs[i]) == AF_UNSPEC)
-			continue;
-
-		ret = sctp_bindx(F->fd, (struct sockaddr *)&addrs[i], 1, SCTP_BINDX_ADD_ADDR);
-		if (ret)
-			return ret;
-	}
+	ret = rb_sctp_bindx_only(F, addrs, len);
+	if (ret)
+		return ret;
 
 	return 0;
 #else
@@ -645,6 +659,81 @@ rb_connect_tcp(rb_fde_t *F, struct sockaddr *dest,
 	}
 	/* If we get here, we've succeeded, so call with RB_OK */
 	rb_connect_callback(F, RB_OK);
+}
+
+void
+rb_connect_sctp(rb_fde_t *F, struct sockaddr_storage *dest, size_t dest_len,
+	struct sockaddr_storage *clocal, size_t clocal_len,
+	CNCB *callback, void *data, int timeout)
+{
+#ifdef HAVE_LIBSCTP
+	uint8_t packed_dest[sizeof(struct sockaddr_storage) * dest_len];
+	uint8_t *p = &packed_dest[0];
+	size_t n = 0;
+	int retval;
+
+	if (F == NULL)
+		return;
+
+	lrb_assert(callback);
+	F->connect = rb_malloc(sizeof(struct conndata));
+	F->connect->callback = callback;
+	F->connect->data = data;
+
+	if ((F->type & RB_FD_SCTP) == 0) {
+		rb_connect_callback(F, RB_ERR_CONNECT);
+		return;
+	}
+
+	for (size_t i = 0; i < dest_len; i++) {
+		if (GET_SS_FAMILY(&dest[i]) == AF_INET6) {
+			memcpy(p, &dest[i], sizeof(struct sockaddr_in6));
+			n++;
+			p += sizeof(struct sockaddr_in6);
+		} else if (GET_SS_FAMILY(&dest[i]) == AF_INET) {
+			memcpy(p, &dest[i], sizeof(struct sockaddr_in));
+			n++;
+			p += sizeof(struct sockaddr_in);
+		}
+	}
+	dest_len = n;
+
+	memcpy(&F->connect->hostaddr, &dest[0], sizeof(F->connect->hostaddr));
+
+	if ((clocal_len > 0) && (rb_sctp_bindx_only(F, clocal, clocal_len) < 0)) {
+		/* Failure, call the callback with RB_ERR_BIND */
+		rb_connect_callback(F, RB_ERR_BIND);
+		/* ... and quit */
+		return;
+	}
+
+	rb_settimeout(F, timeout, rb_connect_timeout, NULL);
+
+	retval = sctp_connectx(F->fd, (struct sockaddr *)packed_dest, dest_len, NULL);
+	/* Error? */
+	if (retval < 0) {
+		/*
+		 * If we get EISCONN, then we've already connect()ed the socket,
+		 * which is a good thing.
+		 *   -- adrian
+		 */
+		rb_get_errno();
+		if (errno == EISCONN) {
+			rb_connect_callback(F, RB_OK);
+		} else if (rb_ignore_errno(errno)) {
+			/* Ignore error? Reschedule */
+			rb_setselect(F, RB_SELECT_CONNECT, rb_connect_outcome, NULL);
+		} else {
+			/* Error? Fail with RB_ERR_CONNECT */
+			rb_connect_callback(F, RB_ERR_CONNECT);
+		}
+		return;
+	}
+	/* If we get here, we've succeeded, so call with RB_OK */
+	rb_connect_callback(F, RB_OK);
+#else
+	rb_connect_callback(F, RB_ERR_CONNECT);
+#endif
 }
 
 /*

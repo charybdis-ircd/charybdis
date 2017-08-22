@@ -210,12 +210,14 @@ struct server_conf
 #define SERVER_AUTOCONN		0x0020
 #define SERVER_SSL		0x0040
 #define SERVER_NO_EXPORT	0x0080
+#define SERVER_SCTP		0x0100
 
 #define ServerConfIllegal(x)	((x)->flags & SERVER_ILLEGAL)
 #define ServerConfEncrypted(x)	((x)->flags & SERVER_ENCRYPTED)
 #define ServerConfCompressed(x)	((x)->flags & SERVER_COMPRESSED)
 #define ServerConfTb(x)		((x)->flags & SERVER_TB)
 #define ServerConfAutoconn(x)	((x)->flags & SERVER_AUTOCONN)
+#define ServerConfSCTP(x)	((x)->flags & SERVER_SCTP)
 #define ServerConfSSL(x)	((x)->flags & SERVER_SSL)
 #define ServerConfNoExport(x)	((x)->flags & SERVER_NO_EXPORT)
 
