@@ -1307,6 +1307,7 @@ inet_ntop6(const unsigned char *src, char *dst, unsigned int size)
 int
 rb_inet_pton_sock(const char *src, struct sockaddr *dst)
 {
+	memset(dst, 0, sizeof(*dst));
 	if(rb_inet_pton(AF_INET, src, &((struct sockaddr_in *)dst)->sin_addr))
 	{
 		SET_SS_FAMILY(dst, AF_INET);
