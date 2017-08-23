@@ -361,6 +361,9 @@ rb_setsockopt_sctp(rb_fde_t *F)
 {
 	int opt_zero = 0;
 	int opt_one = 1;
+	/* workaround for https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/net/sctp?id=299ee123e19889d511092347f5fc14db0f10e3a6 */
+	char *env_mapped = getenv("SCTP_I_WANT_MAPPED_V4_ADDR");
+	int opt_mapped = env_mapped != NULL ? atoi(env_mapped) : opt_zero;
 	int ret;
 	struct sctp_initmsg initmsg;
 	struct sctp_rtoinfo rtoinfo;
@@ -374,7 +377,7 @@ rb_setsockopt_sctp(rb_fde_t *F)
 		return ret;
 	}
 
-	ret = setsockopt(F->fd, SOL_SCTP, SCTP_I_WANT_MAPPED_V4_ADDR, &opt_zero, sizeof(opt_zero));
+	ret = setsockopt(F->fd, SOL_SCTP, SCTP_I_WANT_MAPPED_V4_ADDR, &opt_mapped, sizeof(opt_mapped));
 	if (ret) {
 		rb_lib_log("rb_setsockopt_sctp: Cannot unset SCTP_I_WANT_MAPPED_V4_ADDR for fd %d: %s",
 				F->fd, strerror(rb_get_sockerr(F)));
