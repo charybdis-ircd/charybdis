@@ -68,7 +68,7 @@ static int number_fd = 0;
 int rb_maxconnections = 0;
 
 static PF rb_connect_timeout;
-static PF rb_connect_tryconnect;
+static PF rb_connect_outcome;
 static void mangle_mapped_sockaddr(struct sockaddr *in);
 
 #ifndef HAVE_SOCKETPAIR
@@ -434,7 +434,9 @@ void
 rb_connect_tcp(rb_fde_t *F, struct sockaddr *dest,
 	       struct sockaddr *clocal, CNCB * callback, void *data, int timeout)
 {
-	if(F == NULL)
+	int retval;
+
+	if (F == NULL)
 		return;
 
 	lrb_assert(callback);
@@ -462,9 +464,32 @@ rb_connect_tcp(rb_fde_t *F, struct sockaddr *dest,
 	/* We have a valid IP, so we just call tryconnect */
 	/* Make sure we actually set the timeout here .. */
 	rb_settimeout(F, timeout, rb_connect_timeout, NULL);
-	rb_connect_tryconnect(F, NULL);
-}
 
+	retval = connect(F->fd,
+			 (struct sockaddr *)&F->connect->hostaddr,
+			 GET_SS_LEN(&F->connect->hostaddr));
+	/* Error? */
+	if (retval < 0) {
+		/*
+		 * If we get EISCONN, then we've already connect()ed the socket,
+		 * which is a good thing.
+		 *   -- adrian
+		 */
+		rb_get_errno();
+		if (errno == EISCONN) {
+			rb_connect_callback(F, RB_OK);
+		} else if (rb_ignore_errno(errno)) {
+			/* Ignore error? Reschedule */
+			rb_setselect(F, RB_SELECT_CONNECT, rb_connect_outcome, NULL);
+		} else {
+			/* Error? Fail with RB_ERR_CONNECT */
+			rb_connect_callback(F, RB_ERR_CONNECT);
+		}
+		return;
+	}
+	/* If we get here, we've succeeded, so call with RB_OK */
+	rb_connect_callback(F, RB_OK);
+}
 
 /*
  * rb_connect_callback() - call the callback, and continue with life
@@ -505,45 +530,28 @@ rb_connect_timeout(rb_fde_t *F, void *notused)
 	rb_connect_callback(F, RB_ERR_TIMEOUT);
 }
 
-/* static void rb_connect_tryconnect(rb_platform_fd_t fd, void *notused)
- * Input: The fd, the handler data(unused).
- * Output: None.
- * Side-effects: Try and connect with pending connect data for the FD. If
- *               we succeed or get a fatal error, call the callback.
- *               Otherwise, it is still blocking or something, so register
- *               to select for a write event on this FD.
- */
 static void
-rb_connect_tryconnect(rb_fde_t *F, void *notused)
+rb_connect_outcome(rb_fde_t *F, void *notused)
 {
 	int retval;
+	int err = 0;
+	socklen_t len = sizeof(err);
 
 	if(F == NULL || F->connect == NULL || F->connect->callback == NULL)
 		return;
-	/* Try the connect() */
-	retval = connect(F->fd,
-			 (struct sockaddr *)&F->connect->hostaddr,
-			 GET_SS_LEN(&F->connect->hostaddr));
-	/* Error? */
-	if(retval < 0)
-	{
-		/*
-		 * If we get EISCONN, then we've already connect()ed the socket,
-		 * which is a good thing.
-		 *   -- adrian
-		 */
+	retval = getsockopt(F->fd, SOL_SOCKET, SO_ERROR, &err, &len);
+	if (retval < 0) {
 		rb_get_errno();
-		if(errno == EISCONN)
-			rb_connect_callback(F, RB_OK);
-		else if(rb_ignore_errno(errno))
-			/* Ignore error? Reschedule */
-			rb_setselect(F, RB_SELECT_CONNECT, rb_connect_tryconnect, NULL);
-		else
-			/* Error? Fail with RB_ERR_CONNECT */
-			rb_connect_callback(F, RB_ERR_CONNECT);
+	} else if (err != 0) {
+		errno = err;
+		retval = -1;
+	}
+	if (retval < 0) {
+		/* Error? Fail with RB_ERR_CONNECT */
+		rb_connect_callback(F, RB_ERR_CONNECT);
 		return;
 	}
-	/* If we get here, we've suceeded, so call with RB_OK */
+	/* If we get here, we've succeeded, so call with RB_OK */
 	rb_connect_callback(F, RB_OK);
 }
 
