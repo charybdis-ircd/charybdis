@@ -4,7 +4,7 @@ dnl said functions need to be just about as complex as they already are.
 
 AC_PREREQ(2.60)
 
-AC_INIT([charybdis], [4-rc6])
+AC_INIT([charybdis], [4-rc7])
 
 AC_LANG(C)
 AC_USE_SYSTEM_EXTENSIONS
