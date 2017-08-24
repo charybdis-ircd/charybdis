@@ -4,4 +4,5 @@ rb_dictionary1
 rb_snprintf_append1
 rb_snprintf_try_append1
 send1
+serv_connect1
 substitution1

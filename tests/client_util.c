@@ -105,6 +105,8 @@ struct Client *make_remote_server_full(struct Client *uplink, const char *name, 
 	SetServer(client);
 
 	add_to_client_hash(client->name, client);
+	if (strlen(id))
+		add_to_id_hash(client->id, client);
 
 	return client;
 }
