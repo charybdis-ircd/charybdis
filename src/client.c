@@ -1322,7 +1322,8 @@ exit_unknown_client(struct Client *client_p, struct Client *source_p, struct Cli
 		del_from_id_hash(source_p->id, source_p);
 
 	del_from_hostname_hash(source_p->host, source_p);
-	del_from_client_hash(source_p->name, source_p);
+	if (!IsAnyServer(source_p))
+		del_from_client_hash(source_p->name, source_p);
 	remove_client_from_list(source_p);
 	SetDead(source_p);
 	rb_dlinkAddAlloc(source_p, &dead_list);
