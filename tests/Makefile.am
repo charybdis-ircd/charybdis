@@ -5,11 +5,12 @@ check_PROGRAMS = runtests \
 	rb_snprintf_append1 \
 	rb_snprintf_try_append1 \
 	send1 \
+	serv_connect1 \
 	substitution1
 AM_CFLAGS=$(WARNFLAGS)
 AM_CPPFLAGS = $(DEFAULT_INCLUDES) -I../librb/include -I..
 AM_LDFLAGS = -no-install
-LDADD = tap/libtap.a ../librb/src/librb.la ../ircd/libircd.la
+LDADD = tap/libtap.a ../librb/src/librb.la ../ircd/libircd.la -ldl
 
 # Override -rpath or programs will be linked to installed libraries
 libdir=$(abs_top_builddir)
@@ -26,6 +27,7 @@ rb_dictionary1_SOURCES = rb_dictionary1.c
 rb_snprintf_append1_SOURCES = rb_snprintf_append1.c
 rb_snprintf_try_append1_SOURCES = rb_snprintf_try_append1.c
 send1_SOURCES = send1.c ircd_util.c client_util.c
+serv_connect1_SOURCES = serv_connect1.c ircd_util.c client_util.c
 substitution1_SOURCES = substitution1.c
 
 check-local: $(check_PROGRAMS) \
