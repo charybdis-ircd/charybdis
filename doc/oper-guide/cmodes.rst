@@ -1,6 +1,17 @@
 Channel modes
 =============
 
+Channel modes are determined by the various plugins loaded by the
+server. The following consists only of a base list of common modes:
+your server may have more plugins available, which you can see with
+the following server command, depending on your IRC client::
+
+  /QUOTE HELP CMODE
+
+or::
+
+  /RAW HELP CMODE
+
 ``+b``, channel ban
 -------------------
 
