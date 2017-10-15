@@ -30,7 +30,7 @@ cat > static_modules.c <<EOF
 #include "stdinc.h"
 #include "modules.h"
 #include "hash.h"
-#include "s_log.h"
+#include "logger.h"
 
 EOF
 
