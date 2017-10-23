@@ -1020,26 +1020,33 @@ if test "$shared_modules" = yes; then
 	],
 	dnl !shl_load:
 	[
-          dnl standard dlopen
-          AC_SEARCH_LIBS(dlopen, [dl c_r],
-	  [
-	    AC_DEFINE(HAVE_DLOPEN, 1, [Define if the dlopen function is available.])
-	    SUFFIX=".so"
-	    MOD_TARGET=shared_modules
-	    SEDOBJ="s/\.o/.so/g"
-	    if test "$AppleGCC" = yes; then
-              AC_CHECK_HEADERS([mach-o/dyld.h])
-            fi
-	    AC_CHECK_FUNC(dlsym, ,
-	    [
-	      AC_MSG_WARN([dlsym is not available, shared modules disabled])
-	      shared_modules=no
-	    ])
-	    AC_CHECK_FUNCS(dlfunc)
-	  ],
-	  [
-	    shared_modules=no
-	  ])
+		dnl standard dlopen
+		AC_SEARCH_LIBS(dlopen, [dl c_r],
+		[
+			AC_SEARCH_LIBS(dlsym, [dl c_r],
+			[
+				if
+					test "$ac_cv_search_dlopen" != "none required" &&
+					test "$ac_cv_search_dlsym" != "none required" &&
+					test "$ac_cv_search_dlopen" != "$ac_cv_search_dlsym"; then
+					AC_MSG_WARN([dlopen and dlsym from different sources])
+				fi
+				AC_DEFINE(HAVE_DLOPEN, 1, [Define if the dlopen function is available.])
+				SUFFIX=".so"
+				MOD_TARGET=shared_modules
+				SEDOBJ="s/\.o/.so/g"
+				if test "$AppleGCC" = yes; then
+					AC_CHECK_HEADERS([mach-o/dyld.h])
+				fi
+				AC_CHECK_FUNCS(dlfunc)
+			],
+			[
+				shared_modules=no
+			])
+		],
+		[
+			shared_modules=no
+		])
 	])
 fi
 
