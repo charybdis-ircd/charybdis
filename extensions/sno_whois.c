@@ -1,5 +1,5 @@
 /*
- * +W snomask: Displays if a local user has done a WHOIS request on you.
+ * +W snomask: Displays if a local WHOIS request has been done on you.
  * derived from spy_whois_notice.c.
  *
  * If #define OPERONLY is removed, then any user can use this snomask
