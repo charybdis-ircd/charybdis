@@ -1,5 +1,8 @@
 MODE <nick> +s <+|-><modes>
 
+? designates that the snomask is provided by an extension
+and may not be present on this server.
+
 Server notice masks:
 
     SNOMASK     DESCRIPTION
@@ -9,11 +12,15 @@ Server notice masks:
        +C     - Extended local client connections and exits
        +d     - Server debug messages
        +f     - Clients refused due to limits
+    ?  +F     - Remote client connections and exits
        +k     - Server and service kill messages
-       +n     - Local client nick changes
+    ?  +l     - Channel creation messages
+       +n     - Local (and possibly global) client nick changes
        +r     - Invalid usernames and DNSBL listings
-       +s     - Generic server messages and oper kills
+       +s     - Generic server messages and oper kills (and
+                possibly client exits due to k/dlines)
        +u     - Client connections without auth{} block
+    ?  +W     - Local WHOIS requests on you
        +x     - New server introduction and split messages
        +y     - Juped channel join attempts, etc
        +Z     - Operspy usage
