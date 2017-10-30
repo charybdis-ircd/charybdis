@@ -15,7 +15,7 @@ SYMLINKS=	topic accept cmode admin names links away whowas \
 		user help pass error challenge knock ping pong \
 		map trace chantrace extban monitor
 
-all:
+all: index
 build:
 clean:
 depend:
@@ -23,7 +23,7 @@ lint:
 
 index:
 	@echo building index files
-	rm -f users/index.tmp
+	@rm -f users/index.tmp
 	@for help in users/*; do \
 		if [ -f $$help ]; then \
 			echo $$help >> users/index.tmp; \
@@ -32,32 +32,32 @@ index:
 	@for help in $(SYMLINKS); do \
 		echo $$help >> users/index.tmp; \
 	done
-	echo 'Help topics available to users:' > users/index
-	echo '' >> users/index
-	cat users/index.tmp \
+	@echo 'Help topics available to users:' > users/index
+	@echo '' >> users/index
+	@cat users/index.tmp \
 		| sed -e 's|^users/||' \
 		| sort -u \
 		| tr a-z A-Z \
 		| column -c 65 -x \
 		| expand \
 		>> users/index
-	rm -f users/index.tmp
-	rm -f opers/index.tmp
+	@rm -f users/index.tmp
+	@rm -f opers/index.tmp
 	@for help in opers/*; do \
 		if [ -f $$help ]; then \
 			echo $$help >> opers/index.tmp; \
 		fi \
 	done
-	echo 'Help topics available to opers:' > opers/index
-	echo '' >> opers/index
-	cat opers/index.tmp \
+	@echo 'Help topics available to opers:' > opers/index
+	@echo '' >> opers/index
+	@cat opers/index.tmp \
 		| sed -e 's|^opers/||' \
 		| sort -u \
 		| tr a-z A-Z \
 		| column -c 65 -s ' ' -x \
 		| expand \
 		>> opers/index
-	rm -f opers/index.tmp
+	@rm -f opers/index.tmp
 
 install:
 	-@if test -d $(DESTDIR)$(helpdir)-old; then \
