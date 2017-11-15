@@ -17,6 +17,6 @@ include/serno.h:
 	fi
 
 clean-local:
-	rm -f include/serno.h
-	rm -f src/version.c
-	rm -f src/version.c.last
+	@rm -f include/serno.h
+	@rm -f src/version.c
+	@rm -f src/version.c.last

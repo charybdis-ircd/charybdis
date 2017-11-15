@@ -15,14 +15,8 @@ SYMLINKS=	topic accept cmode admin names links away whowas \
 		user help pass error challenge knock ping pong \
 		map trace chantrace extban monitor
 
-all: index
-build:
-clean:
-depend:
-lint:
-
-index:
-	@echo building index files
+all:
+	@echo "Building index files"
 	@rm -f users/index.tmp
 	@for help in users/*; do \
 		if [ -f $$help ]; then \
@@ -32,8 +26,8 @@ index:
 	@for help in $(SYMLINKS); do \
 		echo $$help >> users/index.tmp; \
 	done
-	@echo 'Help topics available to users:' > users/index
-	@echo '' >> users/index
+	@echo "Help topics available to users:" > users/index
+	@echo "" >> users/index
 	@cat users/index.tmp \
 		| sed -e 's|^users/||' \
 		| sort -u \
@@ -48,8 +42,8 @@ index:
 			echo $$help >> opers/index.tmp; \
 		fi \
 	done
-	@echo 'Help topics available to opers:' > opers/index
-	@echo '' >> opers/index
+	@echo "Help topics available to opers:" > opers/index
+	@echo "" >> opers/index
 	@cat opers/index.tmp \
 		| sed -e 's|^opers/||' \
 		| sort -u \
@@ -64,24 +58,22 @@ install:
 		rm -rf $(DESTDIR)$(helpdir)-old; \
 	fi
 	-@if test -d $(DESTDIR)$(helpdir); then \
-		echo "ircd: backing up old help files"; \
+		echo "Backing up old help files"; \
 		mv $(DESTDIR)$(helpdir) $(DESTDIR)$(helpdir)-old; \
 	fi
-
-	@echo "ircd: setting up help directory structure"
+	@echo "Setting up help directory structure"
 	@mkdir -p -m 755 $(DESTDIR)$(helpdir)
 	@mkdir -p -m 755 $(DESTDIR)$(helpdir)/opers
 	@mkdir -p -m 755 $(DESTDIR)$(helpdir)/users
-
 	@for help in opers/*; do \
-	if [ -f $$help ]; then \
-		${INSTALL_DATA} $$help $(DESTDIR)$(ohelpdir); \
-	fi \
+		if [ -f $$help ]; then \
+			${INSTALL_DATA} $$help $(DESTDIR)$(ohelpdir); \
+		fi \
 	done
 	@for help in users/*; do \
-	if [ -f $$help ]; then \
-		$(INSTALL_DATA) $$help $(DESTDIR)$(uhelpdir); \
-	fi \
+		if [ -f $$help ]; then \
+			$(INSTALL_DATA) $$help $(DESTDIR)$(uhelpdir); \
+		fi \
 	done
 	@for link in $(SYMLINKS); do \
 		rm -f $(DESTDIR)$(uhelpdir)/$$link; \

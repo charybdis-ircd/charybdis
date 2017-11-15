@@ -10,9 +10,9 @@ AM_YFLAGS = -d
 BUILT_SOURCES = ircd_parser.h version.c
 
 version.c: version.c.SH ../CREDITS ../include/patchlevel.h ../include/serno.h
-	$(SHELL) version.c.SH
-	$(CP) version.c version.c.last
-	touch version.c.SH
+	@$(SHELL) version.c.SH
+	@$(CP) version.c version.c.last
+	@touch version.c.SH
 
 if MINGW
 EXTRA_FLAGS = -Wl,--enable-runtime-pseudo-reloc -export-symbols-regex '*'
@@ -75,4 +75,4 @@ charybdis_LDFLAGS = $(EXTRA_FLAGS) -dlopen self
 charybdis_LDADD = libircd.la -L$(top_srcdir)/librb/src -lrb
 
 install-exec-hook: install-libircdLTLIBRARIES
-	$(RM) -f version.c
+	@$(RM) -f version.c
