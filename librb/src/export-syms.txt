@@ -1,3 +1,5 @@
+make_and_lookup
+make_and_lookup_ip
 rb_accept_tcp
 rb_base64_decode
 rb_base64_encode
@@ -163,6 +165,7 @@ rb_set_nb
 rb_set_time
 rb_set_type
 rb_setenv
+rb_setselect
 rb_settimeout
 rb_setup_ssl_server
 rb_sleep
