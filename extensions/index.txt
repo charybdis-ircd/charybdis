@@ -23,7 +23,7 @@ m_identify.c - Identifies to NickServ or ChanServ
 m_mkpasswd.c   - MKPASSWD - generate a DES or MD5 encryption of a password
                  Syntax:  MKPASSWD <plaintext> [MD5|DES]
 
-m_ojoin.c      - OJOIN - Join a channel through any modes or limits with 
+m_ojoin.c      - OJOIN - Join a channel through any modes or limits with
                          an optional status (@+)
                  Syntax: OJOIN [status]<channel>
 
