@@ -31,8 +31,9 @@ run_or_die ()
 
    # run or die
    $COMMAND $@ ;
-   if test $? -ne 0 ; then
-      echo "$COMMAND failed. (exit code = $?)"
+   result=$?
+   if test $result -ne 0 ; then
+      echo "$COMMAND failed. (exit code = $result)"
       exit 1
    fi
 
