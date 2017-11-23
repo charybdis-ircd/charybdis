@@ -28,6 +28,8 @@ config.log
 config.status
 configure
 stamp-h1
+shtool
+install-sh
 libltdl/
 librb/configure
 librb/compile
