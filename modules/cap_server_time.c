@@ -52,17 +52,22 @@ mapi_cap_list_av2 cap_server_time_cap_list[] = {
 static void
 cap_server_time_process(hook_data *data)
 {
-	static char buf[BUFSIZE];
-	struct MsgBuf *msgbuf = data->arg1;
 	struct timeval tv;
 
 	if (!rb_gettimeofday(&tv, NULL)) {
-		if (strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S.", gmtime(&tv.tv_sec)) < 0)
+
+		// 2/4-digit year + '-' + 1/2-digit month + '-' + 1/2-digit day + 'T' +
+		// 1/2-digit hours + ':' + 1/2-digit minutes + ':' + 1/2-digit seconds
+		// == 12
+		char tmp[BUFSIZE];
+		if (strftime(tmp, BUFSIZE, "%Y-%m-%dT%H:%M:%S", gmtime(&tv.tv_sec)) < 12)
 			return;
 
-		if (rb_snprintf_append(buf, sizeof(buf), "%03uZ", (int)tv.tv_usec / 1000) < 0)
+		static char buf[BUFSIZE];
+		if (snprintf(buf, BUFSIZE, "%s.%03uZ", tmp, (unsigned int) (tv.tv_usec / 1000)) >= BUFSIZE)
 			return;
 
+		struct MsgBuf *msgbuf = data->arg1;
 		msgbuf_append_tag(msgbuf, "time", buf, CLICAP_SERVER_TIME);
 	}
 }
