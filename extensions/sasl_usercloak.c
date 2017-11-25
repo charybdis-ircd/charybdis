@@ -22,41 +22,6 @@ mapi_hfn_list_av1 sasl_usercloak_hfnlist[] = {
 DECLARE_MODULE_AV1(sasl_usercloak, NULL, NULL, NULL, NULL,
 			sasl_usercloak_hfnlist, "$Revision: 3526 $");
 
-enum
-{
-	D_LINED,
-	K_LINED
-};
-
-static void
-notify_banned_client(struct Client *client_p, struct ConfItem *aconf, int ban)
-{
-	static const char conn_closed[] = "Connection closed";
-	static const char d_lined[] = "D-lined";
-	static const char k_lined[] = "K-lined";
-	const char *reason = NULL;
-	const char *exit_reason = conn_closed;
-
-	if(ConfigFileEntry.kline_with_reason)
-	{
-		reason = get_user_ban_reason(aconf);
-		exit_reason = reason;
-	}
-	else
-	{
-		reason = aconf->status == D_LINED ? d_lined : k_lined;
-	}
-
-	if(ban == D_LINED && !IsPerson(client_p))
-		sendto_one(client_p, "NOTICE DLINE :*** You have been D-lined");
-	else
-		sendto_one(client_p, form_str(ERR_YOUREBANNEDCREEP),
-			   me.name, client_p->name, reason);
-
-	exit_client(client_p, client_p, &me,
-			EmptyString(ConfigFileEntry.kline_reason) ? exit_reason :
-			 ConfigFileEntry.kline_reason);
-}
 
 unsigned int fnv_hash_string(char *str)
 {
