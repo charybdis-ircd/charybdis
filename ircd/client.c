@@ -80,12 +80,6 @@ static uint32_t current_connid = 0;
 
 rb_dictionary *nd_dict = NULL;
 
-enum
-{
-	D_LINED,
-	K_LINED
-};
-
 rb_dlink_list dead_list;
 #ifdef DEBUG_EXITED_CLIENTS
 static rb_dlink_list dead_remote_list;
@@ -487,7 +481,7 @@ check_unknowns_list(rb_dlink_list * list)
 	}
 }
 
-static void
+void
 notify_banned_client(struct Client *client_p, struct ConfItem *aconf, int ban)
 {
 	static const char conn_closed[] = "Connection closed";
@@ -586,6 +580,72 @@ check_klines(void)
 		}
 	}
 }
+
+
+/* check_one_kline()
+ *
+ * inputs       - pointer to kline to check
+ * outputs      -
+ * side effects - all clients will be checked against given kline
+ */
+void
+check_one_kline(struct ConfItem *kline)
+{
+	struct Client *client_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+
+	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, lclient_list.head)
+	{
+		client_p = ptr->data;
+
+		if(IsMe(client_p) || !IsPerson(client_p))
+			continue;
+
+		if(!match(kline->user, client_p->username))
+			continue;
+
+		/* match one kline */
+		{
+			int matched = 0;
+			int masktype;
+			int bits;
+			struct rb_sockaddr_storage sockaddr;
+
+			masktype = parse_netmask(kline->host, (struct sockaddr *)&sockaddr, &bits);
+
+			switch (masktype) {
+			case HM_IPV4:
+			case HM_IPV6:
+				if(comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
+						(struct sockaddr *)&sockaddr, bits))
+					matched = 1;
+			case HM_HOST:
+				if (match(kline->host, client_p->orighost))
+					matched = 1;
+			}
+
+			if (!matched)
+				continue;
+		}
+
+		if(IsExemptKline(client_p))
+		{
+			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+						 "KLINE over-ruled for %s, client is kline_exempt [%s@%s]",
+						 get_client_name(client_p, HIDE_IP),
+						 kline->user, kline->host);
+			continue;
+		}
+
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+					 "KLINE active for %s",
+					 get_client_name(client_p, HIDE_IP));
+
+		notify_banned_client(client_p, kline, K_LINED);
+	}
+}
+
 
 /* check_dlines()
  *
