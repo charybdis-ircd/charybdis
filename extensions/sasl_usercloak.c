@@ -2,6 +2,7 @@
 #include "modules.h"
 #include "hook.h"
 #include "client.h"
+#include "hostmask.h"
 #include "ircd.h"
 #include "send.h"
 #include "hash.h"
@@ -20,6 +21,42 @@ mapi_hfn_list_av1 sasl_usercloak_hfnlist[] = {
 
 DECLARE_MODULE_AV1(sasl_usercloak, NULL, NULL, NULL, NULL,
 			sasl_usercloak_hfnlist, "$Revision: 3526 $");
+
+enum
+{
+	D_LINED,
+	K_LINED
+};
+
+static void
+notify_banned_client(struct Client *client_p, struct ConfItem *aconf, int ban)
+{
+	static const char conn_closed[] = "Connection closed";
+	static const char d_lined[] = "D-lined";
+	static const char k_lined[] = "K-lined";
+	const char *reason = NULL;
+	const char *exit_reason = conn_closed;
+
+	if(ConfigFileEntry.kline_with_reason)
+	{
+		reason = get_user_ban_reason(aconf);
+		exit_reason = reason;
+	}
+	else
+	{
+		reason = aconf->status == D_LINED ? d_lined : k_lined;
+	}
+
+	if(ban == D_LINED && !IsPerson(client_p))
+		sendto_one(client_p, "NOTICE DLINE :*** You have been D-lined");
+	else
+		sendto_one(client_p, form_str(ERR_YOUREBANNEDCREEP),
+			   me.name, client_p->name, reason);
+
+	exit_client(client_p, client_p, &me,
+			EmptyString(ConfigFileEntry.kline_reason) ? exit_reason :
+			 ConfigFileEntry.kline_reason);
+}
 
 unsigned int fnv_hash_string(char *str)
 {
@@ -59,7 +96,7 @@ check_new_user(void *vdata)
 
 	for (char *src = source_p->user->suser; *src ; src++ )
 	{
-		if (dst > buf + sizeof(buf))
+		if (dst >= buf + sizeof(buf))
 		{
 			/* Doesn't fit. Warn opers and bail. */
 			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
@@ -105,4 +142,26 @@ check_new_user(void *vdata)
 	if (0 == irccmp(source_p->host, source_p->orighost))
 		change_nick_user_host(source_p, source_p->name, source_p->username, buf, 0, "Changing host");
 	strncpy(source_p->orighost, buf, HOSTLEN);
+
+	{
+		struct ConfItem *aconf = find_kline(source_p);
+
+		if(aconf == NULL)
+			return;
+
+		if(IsExemptKline(source_p))
+		{
+			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+						 "KLINE over-ruled for %s, client is kline_exempt [%s@%s]",
+						 get_client_name(source_p, HIDE_IP),
+						 aconf->user, aconf->host);
+			return;
+		}
+
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+					 "KLINE active for %s",
+					 get_client_name(source_p, HIDE_IP));
+
+		notify_banned_client(source_p, aconf, K_LINED);
+	}
 }
