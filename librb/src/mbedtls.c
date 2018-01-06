@@ -484,6 +484,12 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		rb_mbedtls_cfg_decref(newcfg);
 		return 0;
 	}
+	if((ret = mbedtls_pk_check_pair(&newcfg->crt.pk, &newcfg->key)) != 0)
+	{
+		rb_lib_log("%s: pk_check_pair: public/private key mismatch", __func__);
+		rb_mbedtls_cfg_decref(newcfg);
+		return 0;
+	}
 	if((ret = mbedtls_ssl_conf_own_cert(&newcfg->server_cfg, &newcfg->crt, &newcfg->key)) != 0)
 	{
 		rb_lib_log("%s: ssl_conf_own_cert (server): %s", __func__, rb_ssl_strerror(ret));
