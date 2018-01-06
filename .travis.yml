@@ -37,8 +37,8 @@ matrix:
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
-          packages: ['clang-3.7', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev']
-      env: COMPILER=clang-3.7
+          packages: ['clang', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev']
+      env: COMPILER=clang
 
     - os: osx
       compiler: clang
