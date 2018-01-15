@@ -184,6 +184,7 @@ rb_set_time(void)
 }
 
 extern const char *librb_serno;
+extern const char *librb_generation;
 
 const char *
 rb_lib_version(void)
@@ -191,7 +192,7 @@ rb_lib_version(void)
 	static char version_info[512];
 	char ssl_info[512];
 	rb_get_ssl_info(ssl_info, sizeof(ssl_info));
-	snprintf(version_info, sizeof(version_info), "librb version: %s - %s", librb_serno, ssl_info);
+	snprintf(version_info, sizeof(version_info), "librb version: %s, compile # %s - %s", librb_serno, librb_generation, ssl_info);
 	return version_info;
 }
 
