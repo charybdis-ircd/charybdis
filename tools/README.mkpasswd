@@ -4,7 +4,7 @@ This is documentation for the updated mkpasswd.c included with a number
 of ircd, irc services, and non-IRC related programs
 
 This version of mkpasswd can create Blowfish, MD5, SHA256, and SHA512 crypted
-passwords, with either randomly generated or user provided salts.  
+passwords, with either randomly generated or user provided salts.
 
 Options:
 -x Generate a SHA256 password

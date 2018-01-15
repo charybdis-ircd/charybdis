@@ -20,7 +20,7 @@ SET <option> <value>
   SPLITMODE   - Sets splitmode to <value>:
                  ON   - splitmode is permanently on
                  OFF  - splitmode is permanently off
-                 AUTO - ircd chooses splitmode based on 
+                 AUTO - ircd chooses splitmode based on
                         SPLITUSERS and SPLITNUM
   SPLITUSERS  - Sets the minimum amount of users needed to
                 deactivate automatic splitmode.

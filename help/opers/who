@@ -1,9 +1,9 @@
 WHO <#channel|nick|mask> [o][%format]
 
-The WHO command displays information about a user, 
-such as their GECOS information, their user@host, 
+The WHO command displays information about a user,
+such as their GECOS information, their user@host,
 whether they are an IRC operator or not, etc.  A
-sample WHO result from a command issued like 
+sample WHO result from a command issued like
 "WHO pokey" may look something like this:
 
 #lamers ~pokey ppp.example.net irc.example.com pokey H :0 Jim Jones
@@ -26,11 +26,11 @@ G       -       The user is set away.
                 in the first field.
 +       -       The user is voiced in the channel listed.
 
-The final field displays the number of server hops and 
+The final field displays the number of server hops and
 the user's GECOS information.
 
 This command may be executed on a channel, such as
-"WHO #lamers".  The output will consist of WHO 
+"WHO #lamers".  The output will consist of WHO
 listings for each user on the channel.  If you are
 not on the channel, it must not have cmode +s set
 and users with umode +i are not shown.

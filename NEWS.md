@@ -745,7 +745,7 @@ See LICENSE for licensing details (GPL v2).
 ## charybdis-1.0
 
 - Implement channel mode +L for channel list limit exemptions.
-- Implement channel mode +P primarily as a status mode, permanant 
+- Implement channel mode +P primarily as a status mode, permanant
   channel -- this is usually enforced via services registrations.
 - Change behaviour of /stats p: now displays all staff members instead
   of local ones only.

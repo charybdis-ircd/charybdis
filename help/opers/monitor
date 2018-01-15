@@ -9,9 +9,9 @@ Manages the online-notification list (similar to WATCH elsewhere). The
 
   -   removes the given list of nicknames from the monitor list, does
       not return anything
-  
+
   C   clears the monitor list, does not return anything
-  
+
   L   returns the current monitor list as RPL_MONLIST numerics,
       terminated with RPL_ENDOFMONLIST
 
