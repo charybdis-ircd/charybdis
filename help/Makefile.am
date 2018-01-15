@@ -1,29 +1,24 @@
-# Generated automatically from Makefile.in by configure.
-# makefile for include/
+prefix = @prefix@
+exec_prefix = @execprefix@
+helpdir = @helpdir@
+uhelpdir = @helpdir@/users
+ohelpdir = @helpdir@/opers
 
-AUTOMAKE_OPTIONS = foreign 
-
-prefix=		@prefix@
-exec_prefix=	@execprefix@
-helpdir=	@helpdir@
-uhelpdir=	${helpdir}/users
-ohelpdir=	${helpdir}/opers
-
-SYMLINKS=	topic accept cmode admin names links away whowas \
-		version kick who invite quit join list nick oper part \
-		time credits motd userhost users whois ison lusers \
-		user help pass error challenge knock ping pong \
-		map trace chantrace extban monitor
+SYMLINKS = topic accept cmode admin names links away whowas \
+	version kick who invite quit join list nick oper part \
+	time credits motd userhost users whois ison lusers \
+	user help pass error challenge knock ping pong \
+	map trace chantrace extban monitor
 
 all:
 	@echo "Building index files"
-	@rm -f users/index.tmp
+	@${RM} users/index.tmp
 	@for help in users/*; do \
-		if [ -f $$help ]; then \
+		if [ -f "$$help" ]; then \
 			echo $$help >> users/index.tmp; \
 		fi \
 	done
-	@for help in $(SYMLINKS); do \
+	@for help in ${SYMLINKS}; do \
 		echo $$help >> users/index.tmp; \
 	done
 	@echo "Help topics available to users:" > users/index
@@ -35,10 +30,10 @@ all:
 		| column -c 65 -x \
 		| expand \
 		>> users/index
-	@rm -f users/index.tmp
-	@rm -f opers/index.tmp
+	@${RM} users/index.tmp
+	@${RM} opers/index.tmp
 	@for help in opers/*; do \
-		if [ -f $$help ]; then \
+		if [ -f "$$help" ]; then \
 			echo $$help >> opers/index.tmp; \
 		fi \
 	done
@@ -51,31 +46,31 @@ all:
 		| column -c 65 -s ' ' -x \
 		| expand \
 		>> opers/index
-	@rm -f opers/index.tmp
+	@${RM} opers/index.tmp
 
 install:
-	-@if test -d $(DESTDIR)$(helpdir)-old; then \
-		rm -rf $(DESTDIR)$(helpdir)-old; \
+	-@if test -d ${DESTDIR}${helpdir}-old; then \
+		${RM} -r ${DESTDIR}${helpdir}-old; \
 	fi
-	-@if test -d $(DESTDIR)$(helpdir); then \
+	-@if test -d ${DESTDIR}${helpdir}; then \
 		echo "Backing up old help files"; \
-		mv $(DESTDIR)$(helpdir) $(DESTDIR)$(helpdir)-old; \
+		${MV} ${DESTDIR}${helpdir} ${DESTDIR}${helpdir}-old; \
 	fi
 	@echo "Setting up help directory structure"
-	@mkdir -p -m 755 $(DESTDIR)$(helpdir)
-	@mkdir -p -m 755 $(DESTDIR)$(helpdir)/opers
-	@mkdir -p -m 755 $(DESTDIR)$(helpdir)/users
+	@mkdir -p -m 755 ${DESTDIR}${helpdir}
+	@mkdir -p -m 755 ${DESTDIR}${helpdir}/opers
+	@mkdir -p -m 755 ${DESTDIR}${helpdir}/users
 	@for help in opers/*; do \
-		if [ -f $$help ]; then \
-			${INSTALL_DATA} $$help $(DESTDIR)$(ohelpdir); \
+		if [ -f "$$help" ]; then \
+			${INSTALL_DATA} $$help ${DESTDIR}${ohelpdir}; \
 		fi \
 	done
 	@for help in users/*; do \
-		if [ -f $$help ]; then \
-			$(INSTALL_DATA) $$help $(DESTDIR)$(uhelpdir); \
+		if [ -f "$$help" ]; then \
+			${INSTALL_DATA} $$help ${DESTDIR}${uhelpdir}; \
 		fi \
 	done
-	@for link in $(SYMLINKS); do \
-		rm -f $(DESTDIR)$(uhelpdir)/$$link; \
-		ln -s $(ohelpdir)/$$link $(DESTDIR)$(uhelpdir); \
+	@for link in ${SYMLINKS}; do \
+		${RM} ${DESTDIR}${uhelpdir}/$$link; \
+		${LN} -s ${ohelpdir}/$$link ${DESTDIR}${uhelpdir}; \
 	done

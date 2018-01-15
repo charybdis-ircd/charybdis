@@ -7,19 +7,21 @@ check_PROGRAMS = runtests \
 	send1 \
 	serv_connect1 \
 	substitution1
-AM_CFLAGS=$(WARNFLAGS)
-AM_CPPFLAGS = $(DEFAULT_INCLUDES) -I../librb/include -I..
+
+AM_CFLAGS = ${WARNFLAGS}
+AM_CPPFLAGS = ${DEFAULT_INCLUDES} -I../librb/include -I..
 AM_LDFLAGS = -no-install
 LDADD = tap/libtap.a ../librb/src/librb.la ../ircd/libircd.la -ldl
 
 # Override -rpath or programs will be linked to installed libraries
-libdir=$(abs_top_builddir)
+libdir = ${abs_top_builddir}
 
-runtests_CPPFLAGS = -DC_TAP_SOURCE='"$(abs_top_srcdir)/tests"' \
-	-DC_TAP_BUILD='"$(abs_top_builddir)/tests"'
+runtests_CPPFLAGS = -DC_TAP_SOURCE='"${abs_top_srcdir}/tests"' \
+	-DC_TAP_BUILD='"${abs_top_builddir}/tests"'
+
 check_LIBRARIES = tap/libtap.a
-tap_libtap_a_SOURCES = tap/basic.c tap/basic.h \
-	tap/float.c tap/float.h tap/macros.h
+
+tap_libtap_a_SOURCES = tap/basic.c tap/basic.h tap/float.c tap/float.h tap/macros.h
 
 msgbuf_parse1_SOURCES = msgbuf_parse1.c
 msgbuf_unparse1_SOURCES = msgbuf_unparse1.c
@@ -30,13 +32,13 @@ send1_SOURCES = send1.c ircd_util.c client_util.c
 serv_connect1_SOURCES = serv_connect1.c ircd_util.c client_util.c
 substitution1_SOURCES = substitution1.c
 
-check-local: $(check_PROGRAMS) \
+check-local: ${check_PROGRAMS} \
 	../authd/authd \
 	../bandb/bandb \
 	../ssld/ssld \
 	../wsockd/wsockd \
-	$(patsubst ../modules/%.c,../modules/.libs/%.so,$(wildcard ../modules/*.c)) \
-	$(patsubst ../modules/core/%.c,../modules/core/.libs/%.so,$(wildcard ../modules/core/*.c)) \
-	$(patsubst ../extensions/%.c,../extensions/.libs/%.so,$(wildcard ../extensions/*.c))
+	${patsubst ../modules/%.c,../modules/.libs/%.so,${wildcard ../modules/*.c}} \
+	${patsubst ../modules/core/%.c,../modules/core/.libs/%.so,${wildcard ../modules/core/*.c}} \
+	${patsubst ../extensions/%.c,../extensions/.libs/%.so,${wildcard ../extensions/*.c}}
 
-	./runtests -l $(abs_top_srcdir)/tests/TESTS
+	./runtests -l ${abs_top_srcdir}/tests/TESTS
