@@ -1,7 +1,14 @@
 # News
 
-This is charybdis 4.0, Copyright (c) 2005-2017 Charybdis team.
+This is charybdis 4.0.1, Copyright (c) 2005-2017 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-4.0.1
+
+### server protocol
+- SJOIN messages were being constructed in a 1024 byte buffer and truncated to 512 bytes
+  when sending. This caused channels with more than 50 users to fail to propagate all of
+  them during a net join.
 
 ## charybdis-4.0
 
