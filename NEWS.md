@@ -1,9 +1,21 @@
 # News
 
-This is charybdis 4-dev, Copyright (c) 2005-2016 Charybdis team.
+This is charybdis 4.1, Copyright (c) 2005-2018 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
-## charybdis-4
+## charybdis-4.1
+
+### misc
+- SCTP is now supported for server connections (and optionally, user connections)
+
+## charybdis-4.0.1
+
+### server protocol
+- SJOIN messages were being constructed in a 1024 byte buffer and truncated to 512 bytes
+  when sending. This caused channels with more than 50 users to fail to propagate all of
+  them during a net join.
+
+## charybdis-4.0
 
 ### build
 - Build system has been converted to libtool + automake for sanity reasons.
