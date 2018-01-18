@@ -57,7 +57,7 @@ int MaxConnectionCount = 1;
 int MaxClientCount = 1;
 int refresh_user_links = 0;
 
-static char buf[EXT_BUFSIZE];
+static char buf[BUFSIZE];
 
 /*
  * list of recognized server capabilities.  "TS" is not on the list
@@ -504,7 +504,7 @@ burst_ban(struct Client *client_p)
 			 * to other servers, so rewrite to our server
 			 * name.
 			 */
-			rb_strlcpy(operbuf, aconf->info.oper, sizeof buf);
+			rb_strlcpy(operbuf, aconf->info.oper, sizeof operbuf);
 			p = strrchr(operbuf, '{');
 			if (p != NULL &&
 					operbuf + sizeof operbuf - p > (ptrdiff_t)(melen + 2))
@@ -557,7 +557,7 @@ burst_modes_TS6(struct Client *client_p, struct Channel *chptr,
 		tlen = strlen(banptr->banstr) + (banptr->forward ? strlen(banptr->forward) + 1 : 0) + 1;
 
 		/* uh oh */
-		if(cur_len + tlen > EXT_BUFSIZE - 3)
+		if(cur_len + tlen > BUFSIZE - 3)
 		{
 			/* the one we're trying to send doesnt fit at all! */
 			if(cur_len == mlen)
@@ -599,7 +599,7 @@ burst_modes_TS6(struct Client *client_p, struct Channel *chptr,
 static void
 burst_TS6(struct Client *client_p)
 {
-	char ubuf[EXT_BUFSIZE];
+	char ubuf[BUFSIZE];
 	struct Client *target_p;
 	struct Channel *chptr;
 	struct membership *msptr;
@@ -696,7 +696,7 @@ burst_TS6(struct Client *client_p)
 			if(is_voiced(msptr))
 				tlen++;
 
-			if(cur_len + tlen >= EXT_BUFSIZE - 3)
+			if(cur_len + tlen >= BUFSIZE - 3)
 			{
 				*(t-1) = '\0';
 				sendto_one(client_p, "%s", buf);
@@ -762,7 +762,7 @@ burst_TS6(struct Client *client_p)
 const char *
 show_capabilities(struct Client *target_p)
 {
-	static char msgbuf[EXT_BUFSIZE];
+	static char msgbuf[BUFSIZE];
 
 	*msgbuf = '\0';
 
