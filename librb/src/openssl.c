@@ -542,6 +542,7 @@ rb_get_ssl_certfp(rb_fde_t *const F, uint8_t certfp[const RB_SSL_CERTFP_LEN], co
 	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
 	case X509_V_ERR_CERT_UNTRUSTED:
 		len = make_certfp(peer_cert, certfp, method);
+		// fallthrough
 	default:
 		X509_free(peer_cert);
 		return len;
