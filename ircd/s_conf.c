@@ -1267,7 +1267,7 @@ char *
 get_oper_name(struct Client *client_p)
 {
 	/* +5 for !,@,{,} and null */
-	static char buffer[NICKLEN + USERLEN + HOSTLEN + HOSTLEN + 5];
+	static char buffer[NAMELEN + USERLEN + HOSTLEN + HOSTLEN + 5];
 
 	if(MyOper(client_p))
 	{

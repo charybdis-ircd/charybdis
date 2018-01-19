@@ -32,10 +32,10 @@ _moddeinit(void)
 static int
 eb_hostmask(const char *banstr, struct Client *client_p, struct Channel *chptr, long mode_type)
 {
-	char src_host[NICKLEN + USERLEN + HOSTLEN + 6];
-	char src_iphost[NICKLEN + USERLEN + HOSTLEN + 6];
-	char src_althost[NICKLEN + USERLEN + HOSTLEN + 6];
-	char src_ip4host[NICKLEN + USERLEN + HOSTLEN + 6];
+	char src_host[NAMELEN + USERLEN + HOSTLEN + 6];
+	char src_iphost[NAMELEN + USERLEN + HOSTLEN + 6];
+	char src_althost[NAMELEN + USERLEN + HOSTLEN + 6];
+	char src_ip4host[NAMELEN + USERLEN + HOSTLEN + 6];
 	struct sockaddr_in ip4;
 	char *s = src_host, *s2 = src_iphost, *s3 = NULL, *s4 = NULL;
 

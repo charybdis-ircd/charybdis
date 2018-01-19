@@ -414,13 +414,13 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	/* Apply nick override */
 	if(*source_p->preClient->spoofnick)
 	{
-		char note[NICKLEN + 10];
+		char note[NAMELEN + 10];
 
 		del_from_client_hash(source_p->name, source_p);
 		rb_strlcpy(source_p->name, source_p->preClient->spoofnick, NICKLEN + 1);
 		add_to_client_hash(source_p->name, source_p);
 
-		snprintf(note, NICKLEN + 10, "Nick: %s", source_p->name);
+		snprintf(note, sizeof(note), "Nick: %s", source_p->name);
 		rb_note(source_p->localClient->F, note);
 	}
 

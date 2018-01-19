@@ -160,7 +160,7 @@ me_rsfnc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	struct Client *target_p;
 	struct Client *exist_p;
 	time_t newts, curts;
-	char note[NICKLEN + 10];
+	char note[NAMELEN + 10];
 
 	if(!(source_p->flags & FLAGS_SERVICE))
 	{
@@ -252,7 +252,7 @@ doit:
 
 	del_all_accepts(target_p);
 
-	snprintf(note, NICKLEN + 10, "Nick: %s", target_p->name);
+	snprintf(note, sizeof(note), "Nick: %s", target_p->name);
 	rb_note(target_p->localClient->F, note);
 }
 

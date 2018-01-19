@@ -59,7 +59,7 @@ static void
 m_userhost(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
-	char response[NICKLEN * 2 + USERLEN + HOSTLEN + 30];
+	char response[NAMELEN * 2 + USERLEN + HOSTLEN + 30];
 	char *t;
 	int i;			/* loop counter */
 	int cur_len;
