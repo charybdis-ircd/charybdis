@@ -97,7 +97,9 @@
 #define EXT_BUFSIZE     (TAGSLEN + DATALEN + 1)
 #define OPERNICKLEN     (NICKLEN*2)	/* Length of OPERNICKs. */
 
-#define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)
+#define NAMELEN	        (MAX(NICKLEN, HOSTLEN))
+
+#define USERHOST_REPLYLEN       (NAMELEN+HOSTLEN+USERLEN+5)
 #define MAX_DATE_STRING 32	/* maximum string length for a date string */
 
 #define HELPLEN         400
