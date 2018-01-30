@@ -79,7 +79,7 @@ m_oper(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 	if(!IsFloodDone(source_p))
 		flood_endgrace(source_p);
 
-	oper_p = find_oper_conf(source_p->username, source_p->orighost,
+	oper_p = find_oper_conf(source_p->username, source_p->orighost, source_p->host,
 				source_p->sockhost, name);
 
 	if(oper_p == NULL)

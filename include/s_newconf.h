@@ -139,11 +139,13 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 			int cap, const char *format, ...);
 
 #define OPER_ENCRYPTED	0x00001
+#define OPER_VHOSTAUTH	0x00002
 #define OPER_NEEDSSL    0x80000
 
 #define OPER_FLAGS	0	 /* no oper privs in Client.flags/oper_conf.flags currently */
 
 #define IsOperConfEncrypted(x)	((x)->flags & OPER_ENCRYPTED)
+#define IsOperConfVHostAuth(x)	((x)->flags & OPER_VHOSTAUTH)
 #define IsOperConfNeedSSL(x)	((x)->flags & OPER_NEEDSSL)
 
 #define HasPrivilege(x, y)	((x)->localClient != NULL && (x)->localClient->privset != NULL && privilegeset_in_set((x)->localClient->privset, (y)))
@@ -170,7 +172,7 @@ extern struct oper_conf *make_oper_conf(void);
 extern void free_oper_conf(struct oper_conf *);
 extern void clear_oper_conf(void);
 
-extern struct oper_conf *find_oper_conf(const char *username, const char *host,
+extern struct oper_conf *find_oper_conf(const char *username, const char *host, const char *vhost,
 					const char *locip, const char *oname);
 
 extern const char *get_oper_privs(int flags);
