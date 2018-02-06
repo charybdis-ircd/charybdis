@@ -69,7 +69,7 @@ We no longer supply a prebuilt configure script in git, due to use of automake a
   * LibreSSL (--enable-openssl);
   * mbedTLS (--enable-mbedtls);
   * GnuTLS (--enable-gnutls).
-* For certificate-based oper CHALLENGE - OpenSSL 1.0.0 or newer  
+* For certificate-based oper CHALLENGE - OpenSSL 1.0.0 or newer
 (Using CHALLENGE is not recommended for new deployments, so if you want to use a different TLS library, feel free.)
 * For ECDHE under OpenSSL, on Solaris and RHEL/Fedora (and its derivatives such as CentOS) - you will need to compile your own OpenSSL on these systems, as they have removed support for ECC/ECDHE. Alternatively, consider using another library (see above).
 
@@ -86,6 +86,6 @@ We no longer supply a prebuilt configure script in git, due to use of automake a
 
 # git access
 
-* the charybdis git repository can be checked-out using the following command:  
+* the charybdis git repository can be checked-out using the following command:
   `git clone https://github.com/charybdis-ircd/charybdis.git`
 * the charybdis git repository depot can be browsed over the Internet at https://github.com/charybdis-ircd/charybdis
