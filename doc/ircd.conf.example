@@ -31,6 +31,7 @@
 #loadmodule "extensions/m_identify";
 #loadmodule "extensions/m_locops";
 #loadmodule "extensions/no_oper_invis";
+#loadmodule "extensions/sno_channelcreate";
 #loadmodule "extensions/sno_farconnect";
 #loadmodule "extensions/sno_globalkline";
 #loadmodule "extensions/sno_globalnickchange";
