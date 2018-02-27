@@ -273,6 +273,7 @@ struct config_channel_entry
 	unsigned int autochanmodes;
 	int displayed_usercount;
 	int strip_topic_colors;
+	int opmod_send_statusmsg;
 };
 
 struct config_server_hide
