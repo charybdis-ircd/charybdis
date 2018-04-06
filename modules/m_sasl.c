@@ -131,6 +131,7 @@ m_authenticate(struct Client *client_p, struct Client *source_p,
 		if (!strcmp(parv[1], "*"))
 		{
 			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
+			source_p->localClient->sasl_out = 0;
 			return 0;
 		}
 
@@ -156,6 +157,7 @@ m_authenticate(struct Client *client_p, struct Client *source_p,
 		{
 			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
 			sendto_one(agent_p, ":%s ENCAP %s SASL %s %s D A", me.id, agent_p->servptr->name, source_p->id, agent_p->id);
+			source_p->localClient->sasl_out = 0;
 			return 0;
 		}
 
