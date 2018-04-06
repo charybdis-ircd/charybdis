@@ -180,6 +180,12 @@ m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 
 	if(agent_p == NULL)
 	{
+		if (!strcmp(parv[1], "*"))
+		{
+			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
+			return 0;
+		}
+
 		sendto_one(saslserv_p, ":%s ENCAP %s SASL %s %s H %s %s %c",
 					me.id, saslserv_p->servptr->name, source_p->id, saslserv_p->id,
 					source_p->host, source_p->sockhost,
@@ -197,9 +203,19 @@ m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 		rb_strlcpy(source_p->localClient->sasl_agent, saslserv_p->id, IDLEN);
 	}
 	else
+	{
+		if (!strcmp(parv[1], "*"))
+		{
+			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
+			sendto_one(agent_p, ":%s ENCAP %s SASL %s %s D A", me.id, agent_p->servptr->name, source_p->id, agent_p->id);
+			return 0;
+		}
+
 		sendto_one(agent_p, ":%s ENCAP %s SASL %s %s C %s",
 				me.id, agent_p->servptr->name, source_p->id, agent_p->id,
 				parv[1]);
+	}
+
 	source_p->localClient->sasl_out++;
 }
 
