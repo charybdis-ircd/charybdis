@@ -183,7 +183,7 @@ m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 		if (!strcmp(parv[1], "*"))
 		{
 			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
-			return 0;
+			return;
 		}
 
 		sendto_one(saslserv_p, ":%s ENCAP %s SASL %s %s H %s %s %c",
@@ -208,7 +208,7 @@ m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 		{
 			sendto_one(source_p, form_str(ERR_SASLABORTED), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
 			sendto_one(agent_p, ":%s ENCAP %s SASL %s %s D A", me.id, agent_p->servptr->name, source_p->id, agent_p->id);
-			return 0;
+			return;
 		}
 
 		sendto_one(agent_p, ":%s ENCAP %s SASL %s %s C %s",
