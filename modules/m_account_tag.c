@@ -1,6 +1,6 @@
 /*
  * charybdis: an advanced ircd.
- * cap_server_time.c: implement the server-time IRCv3.2 capability
+ * m_account_tag.c: implement the account-tag IRCv3.2 capability
  *
  * Copyright (c) 2016 William Pitcock <nenolod@dereferenced.org>
  *
@@ -34,42 +34,27 @@
 #include "chmode.h"
 #include "inline/stringops.h"
 
-static const char cap_server_time_desc[] =
-	"Provides the server-time client capability";
+static const char cap_account_tag_desc[] =
+	"Provides the account-tag client capability";
 
-static void cap_server_time_process(hook_data *);
-unsigned int CLICAP_SERVER_TIME = 0;
+static void cap_account_tag_process(hook_data *);
+unsigned int CLICAP_ACCOUNT_TAG = 0;
 
-mapi_hfn_list_av1 cap_server_time_hfnlist[] = {
-	{ "outbound_msgbuf", (hookfn) cap_server_time_process },
+mapi_hfn_list_av1 cap_account_tag_hfnlist[] = {
+	{ "outbound_msgbuf", (hookfn) cap_account_tag_process },
 	{ NULL, NULL }
 };
-mapi_cap_list_av2 cap_server_time_cap_list[] = {
-	{ MAPI_CAP_CLIENT, "server-time", NULL, &CLICAP_SERVER_TIME },
-	{ 0, NULL, NULL, NULL }
+mapi_cap_list_av2 cap_account_tag_cap_list[] = {
+	{ MAPI_CAP_CLIENT, "account-tag", NULL, &CLICAP_ACCOUNT_TAG },
+	{ 0, NULL, NULL, NULL },
 };
-
 static void
-cap_server_time_process(hook_data *data)
+cap_account_tag_process(hook_data *data)
 {
-	struct timeval tv;
+	struct MsgBuf *msgbuf = data->arg1;
 
-	if (!rb_gettimeofday(&tv, NULL)) {
-
-		// 2/4-digit year + '-' + 1/2-digit month + '-' + 1/2-digit day + 'T' +
-		// 1/2-digit hours + ':' + 1/2-digit minutes + ':' + 1/2-digit seconds
-		// == 12
-		char tmp[BUFSIZE];
-		if (strftime(tmp, BUFSIZE, "%Y-%m-%dT%H:%M:%S", gmtime(&tv.tv_sec)) < 12)
-			return;
-
-		static char buf[BUFSIZE];
-		if (snprintf(buf, BUFSIZE, "%s.%03uZ", tmp, (unsigned int) (tv.tv_usec / 1000)) >= BUFSIZE)
-			return;
-
-		struct MsgBuf *msgbuf = data->arg1;
-		msgbuf_append_tag(msgbuf, "time", buf, CLICAP_SERVER_TIME);
-	}
+	if (data->client != NULL && IsPerson(data->client) && *data->client->user->suser)
+		msgbuf_append_tag(msgbuf, "account", data->client->user->suser, CLICAP_ACCOUNT_TAG);
 }
 
-DECLARE_MODULE_AV2(cap_server_time, NULL, NULL, NULL, NULL, cap_server_time_hfnlist, cap_server_time_cap_list, NULL, cap_server_time_desc);
+DECLARE_MODULE_AV2(cap_account_tag, NULL, NULL, NULL, NULL, cap_account_tag_hfnlist, cap_account_tag_cap_list, NULL, cap_account_tag_desc);

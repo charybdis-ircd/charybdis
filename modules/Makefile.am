@@ -9,11 +9,10 @@ endif
 
 auto_load_moddir = @moduledir@/autoload
 
-auto_load_mod_LTLIBRARIES = cap_account_tag.la \
-	cap_server_time.la \
-	chm_nocolour.la \
+auto_load_mod_LTLIBRARIES = chm_nocolour.la \
 	chm_noctcp.la \
 	m_accept.la \
+	m_account_tag.la \
 	m_admin.la \
 	m_alias.la \
 	m_away.la \
@@ -53,6 +52,7 @@ auto_load_mod_LTLIBRARIES = cap_account_tag.la \
 	m_resv.la \
 	m_sasl.la \
 	m_scan.la \
+	m_server_time.la \
 	m_services.la \
 	m_set.la \
 	m_signon.la \

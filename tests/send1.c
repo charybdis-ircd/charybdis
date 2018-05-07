@@ -47,9 +47,9 @@ int rb_gettimeofday(struct timeval *tv, void *tz)
 	return 0;
 }
 
-unsigned int CAP_ACCOUNT_TAG;
-unsigned int CAP_SERVER_TIME;
-unsigned int CAP_INVITE_NOTIFY;
+unsigned int CLICAP_ACCOUNT_TAG;
+unsigned int CLICAP_SERVER_TIME;
+unsigned int CLICAP_INVITE_NOTIFY;
 
 static struct Client *user;
 static struct Client *server;
@@ -88,12 +88,12 @@ static void standard_init(void)
 	remote3 = make_remote_person_nick(server3, TEST_REMOTE3_NICK);
 
 	// Expose potential bugs in overlapping capabilities
-	server->localClient->caps |= CAP_ACCOUNT_TAG;
-	server->localClient->caps |= CAP_SERVER_TIME;
-	server2->localClient->caps |= CAP_ACCOUNT_TAG;
-	server2->localClient->caps |= CAP_SERVER_TIME;
-	server3->localClient->caps |= CAP_ACCOUNT_TAG;
-	server3->localClient->caps |= CAP_SERVER_TIME;
+	server->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	server->localClient->caps |= CLICAP_SERVER_TIME;
+	server2->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	server2->localClient->caps |= CLICAP_SERVER_TIME;
+	server3->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	server3->localClient->caps |= CLICAP_SERVER_TIME;
 
 	local_chan_o = make_local_person_nick("LChanOp");
 	local_chan_ov = make_local_person_nick("LChanOpVoice");
@@ -223,10 +223,10 @@ static void sendto_one1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_one(local_chan_o, "Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_o, MSG);
@@ -297,10 +297,10 @@ static void sendto_one_prefix1__tags(void)
 
 	strcpy(user->user->suser, "test");
 	strcpy(remote->user->suser, "rtest");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_one_prefix(user, &me, "TEST", ":Hello %s!", "World");
 	is_client_sendq(":" TEST_ME_NAME " TEST " TEST_NICK " :Hello World!" CRLF, user, MSG);
@@ -399,10 +399,10 @@ static void sendto_one_notice1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_one_notice(local_chan_o, ":Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME " :" TEST_ME_NAME " NOTICE LChanOp :Hello World!" CRLF, local_chan_o, MSG);
@@ -466,10 +466,10 @@ static void sendto_one_numeric1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_one_numeric(local_chan_o, 1, "Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME " :" TEST_ME_NAME " 001 LChanOp Hello World!" CRLF, local_chan_o, MSG);
@@ -735,10 +735,10 @@ static void sendto_channel_flags__local__all_members__tags(void)
 	standard_init();
 
 	strcpy(local_chan_p->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_channel_flags(local_chan_p, ALL_MEMBERS, local_chan_p, channel, "TEST #placeholder :Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
@@ -770,10 +770,10 @@ static void sendto_channel_flags__remote__all_members__tags(void)
 	standard_init();
 
 	strcpy(remote_chan_p->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_channel_flags(server, ALL_MEMBERS, remote_chan_p, channel, "TEST #placeholder :Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test :RChanPeon" TEST_ID_SUFFIX " TEST #placeholder :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
@@ -1218,9 +1218,9 @@ static void sendto_channel_opmod__local__tags(void)
 	standard_init();
 
 	strcpy(local_chan_p->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
 
 	// This function does not support TS5...
 	standard_ids();
@@ -1254,10 +1254,10 @@ static void sendto_channel_opmod__local__tags(void)
 	// Moderated channel
 	channel->mode.mode |= MODE_MODERATED;
 
-	local_chan_o->localClient->caps &= ~CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps &= ~CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_ov->localClient->caps &= ~CAP_SERVER_TIME;
+	local_chan_o->localClient->caps &= ~CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps &= ~CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_ov->localClient->caps &= ~CLICAP_SERVER_TIME;
 
 	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
@@ -1344,9 +1344,9 @@ static void sendto_channel_opmod__remote__tags(void)
 	standard_init();
 
 	strcpy(remote2_chan_d->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
 
 	// This function does not support TS5...
 	standard_ids();
@@ -1376,10 +1376,10 @@ static void sendto_channel_opmod__remote__tags(void)
 	// Moderated channel
 	channel->mode.mode |= MODE_MODERATED;
 
-	local_chan_o->localClient->caps &= ~CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps &= ~CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_ov->localClient->caps &= ~CAP_SERVER_TIME;
+	local_chan_o->localClient->caps &= ~CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps &= ~CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_ov->localClient->caps &= ~CLICAP_SERVER_TIME;
 
 	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
 	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
@@ -1493,10 +1493,10 @@ static void sendto_channel_local1__tags(void)
 	standard_init();
 
 	strcpy(user->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_channel_local(user, ALL_MEMBERS, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
@@ -1559,8 +1559,8 @@ static void sendto_channel_local1__tags(void)
 	add_user_to_channel(lchannel, oper1, CHFL_PEON);
 	add_user_to_channel(lchannel, oper2, CHFL_PEON);
 
-	oper1->localClient->caps |= CAP_ACCOUNT_TAG;
-	oper2->localClient->caps |= CAP_SERVER_TIME;
+	oper1->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	oper2->localClient->caps |= CLICAP_SERVER_TIME;
 
 	sendto_channel_local(user, ALL_MEMBERS, lchannel, "Hello %s!", "World");
 	is_client_sendq("Hello World!" CRLF, user, "On channel; " MSG);
@@ -1578,8 +1578,8 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	oper1->localClient->caps &= ~CAP_ACCOUNT_TAG;
-	oper2->localClient->caps |= CAP_ACCOUNT_TAG;
+	oper1->localClient->caps &= ~CLICAP_ACCOUNT_TAG;
+	oper2->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_channel_local(user, ALL_MEMBERS, lchannel, "Hello %s!", "World");
 	is_client_sendq("Hello World!" CRLF, user, "On channel; " MSG);
@@ -1604,10 +1604,10 @@ static void sendto_channel_local_with_capability1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1617,7 +1617,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1637,7 +1637,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1647,7 +1647,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1667,7 +1667,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1677,7 +1677,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1697,7 +1697,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1707,7 +1707,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1734,16 +1734,16 @@ static void sendto_channel_local_with_capability1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
 	strcpy(user->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1753,7 +1753,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1773,7 +1773,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1783,7 +1783,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1803,7 +1803,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1813,7 +1813,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1833,7 +1833,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1843,7 +1843,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1870,10 +1870,10 @@ static void sendto_channel_local_with_capability_butone1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1883,7 +1883,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1903,7 +1903,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1913,7 +1913,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1933,7 +1933,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1943,7 +1943,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1970,17 +1970,17 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_chan_p->user->suser, "test_p");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1990,7 +1990,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2010,7 +2010,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2020,7 +2020,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2040,7 +2040,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CLICAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test_p Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2050,7 +2050,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CLICAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2178,10 +2178,10 @@ static void sendto_channel_local_butone1__tags(void)
 	strcpy(local_chan_ov->user->suser, "test_ov");
 	strcpy(local_chan_v->user->suser, "test_v");
 	strcpy(local_chan_p->user->suser, "test_p");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_channel_local_butone(NULL, ALL_MEMBERS, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
@@ -2280,10 +2280,10 @@ static void sendto_common_channels_local1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_common_channels_local(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2294,7 +2294,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2316,7 +2316,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2326,7 +2326,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2346,9 +2346,9 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2358,7 +2358,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2385,17 +2385,17 @@ static void sendto_common_channels_local1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_no_chan->user->suser, "test_n");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test_o Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2406,7 +2406,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2428,9 +2428,9 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_SERVER_TIME;
+	local_no_chan->localClient->caps |= CLICAP_SERVER_TIME;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2440,7 +2440,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2460,10 +2460,10 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_no_chan->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_no_chan->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2473,7 +2473,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2493,9 +2493,9 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps &= ~CAP_SERVER_TIME;
+	local_no_chan->localClient->caps &= ~CLICAP_SERVER_TIME;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2505,7 +2505,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2532,10 +2532,10 @@ static void sendto_common_channels_local_butone1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_common_channels_local_butone(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2546,7 +2546,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2568,7 +2568,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2578,7 +2578,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2598,9 +2598,9 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2610,7 +2610,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2637,17 +2637,17 @@ static void sendto_common_channels_local_butone1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_no_chan->user->suser, "test_n");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local_butone(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2658,7 +2658,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2680,9 +2680,9 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_SERVER_TIME;
+	local_no_chan->localClient->caps |= CLICAP_SERVER_TIME;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2692,40 +2692,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
-	is_client_sendq_empty(user, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
-	is_client_sendq_empty(server, MSG);
-	is_client_sendq_empty(server2, MSG);
-
-	sendto_common_channels_local_butone(local_no_chan, 0, 0, "Hello %s!", "World");
-	is_client_sendq_empty(user, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
-	is_client_sendq_empty(server, MSG);
-	is_client_sendq_empty(server2, MSG);
-
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_no_chan->localClient->caps |= CAP_ACCOUNT_TAG;
-
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
-	is_client_sendq_empty(user, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
-	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
-	is_client_sendq_empty(server, MSG);
-	is_client_sendq_empty(server2, MSG);
-
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2745,9 +2712,10 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps &= ~CAP_SERVER_TIME;
+	local_no_chan->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2757,7 +2725,39 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
+	is_client_sendq_empty(user, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
+	is_client_sendq_empty(server, MSG);
+	is_client_sendq_empty(server2, MSG);
+
+	sendto_common_channels_local_butone(local_no_chan, 0, 0, "Hello %s!", "World");
+	is_client_sendq_empty(user, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
+	is_client_sendq_empty(server, MSG);
+	is_client_sendq_empty(server2, MSG);
+
+	local_no_chan->localClient->caps &= ~CLICAP_SERVER_TIME;
+
+	sendto_common_channels_local_butone(local_no_chan, CLICAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	is_client_sendq_empty(user, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_p, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_chan_d, "Not on common channel; " MSG);
+	is_client_sendq_empty(local_no_chan, "Is the one (neo); " MSG);
+	is_client_sendq_empty(server, MSG);
+	is_client_sendq_empty(server2, MSG);
+
+	sendto_common_channels_local_butone(local_no_chan, 0, CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2886,10 +2886,10 @@ static void sendto_match_butone__host__tags(void)
 
 	strcpy(user->user->suser, "test");
 	strcpy(remote->user->suser, "rtest");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	// This function does not support TS5...
 	standard_ids();
@@ -3093,10 +3093,10 @@ static void sendto_match_butone__server__tags(void)
 
 	strcpy(user->user->suser, "test");
 	strcpy(remote->user->suser, "rtest");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	// This function does not support TS5...
 	standard_ids();
@@ -3198,10 +3198,10 @@ static void sendto_local_clients_with_capability1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
-	sendto_local_clients_with_capability(CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_local_clients_with_capability(CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Doesn't have cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -3218,8 +3218,8 @@ static void sendto_local_clients_with_capability1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CLICAP_INVITE_NOTIFY;
+	local_chan_v->localClient->caps |= CLICAP_INVITE_NOTIFY;
 
 	strcpy(user->user->suser, "test");
 	strcpy(local_chan_o->user->suser, "test_o");
@@ -3227,12 +3227,12 @@ static void sendto_local_clients_with_capability1__tags(void)
 	strcpy(local_chan_v->user->suser, "test_v");
 	strcpy(local_chan_p->user->suser, "test_p");
 	strcpy(local_chan_d->user->suser, "test_d");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
-	sendto_local_clients_with_capability(CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_local_clients_with_capability(CLICAP_INVITE_NOTIFY, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Doesn't have cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -3277,10 +3277,10 @@ static void sendto_monitor1__tags(void)
 	standard_init();
 
 	strcpy(user->user->suser, "test");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	monptr = find_monitor(TEST_NICK, 1);
 	rb_dlinkAddAlloc(local_chan_o, &monptr->users);
@@ -3370,10 +3370,10 @@ static void sendto_anywhere1__tags(void)
 	strcpy(local_chan_ov->user->suser, "test_ov");
 	strcpy(local_chan_v->user->suser, "test_v");
 	strcpy(local_chan_p->user->suser, "test_p");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	// This function does not support TS5...
 	standard_ids();
@@ -3482,10 +3482,10 @@ static void sendto_anywhere_echo1__tags(void)
 	strcpy(local_chan_ov->user->suser, "test_ov");
 	strcpy(local_chan_v->user->suser, "test_v");
 	strcpy(local_chan_p->user->suser, "test_p");
-	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
-	local_chan_o->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
-	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	local_chan_o->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_ov->localClient->caps |= CLICAP_SERVER_TIME;
+	local_chan_v->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	sendto_anywhere_echo(local_chan_o, local_chan_o, "TEST", "Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test_o :LChanOp" TEST_ID_SUFFIX " TEST LChanOp Hello World!" CRLF, local_chan_o, MSG);
@@ -3739,8 +3739,8 @@ static void sendto_match_servs1__tags(void)
 
 	strcpy(user->user->suser, "test");
 	strcpy(remote->user->suser, "rtest");
-	user->localClient->caps |= CAP_ACCOUNT_TAG;
-	user->localClient->caps |= CAP_SERVER_TIME;
+	user->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	user->localClient->caps |= CLICAP_SERVER_TIME;
 
 	server->localClient->caps = CAP_ENCAP;
 	server2->localClient->caps = CAP_ENCAP;
@@ -4110,10 +4110,10 @@ static void sendto_realops_snomask1__tags(void)
 	strcpy(oper3->user->suser, "test3");
 	strcpy(oper4->user->suser, "test4");
 
-	oper1->localClient->caps |= CAP_ACCOUNT_TAG;
-	oper1->localClient->caps |= CAP_SERVER_TIME;
-	oper2->localClient->caps |= CAP_SERVER_TIME;
-	oper3->localClient->caps |= CAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_SERVER_TIME;
+	oper2->localClient->caps |= CLICAP_SERVER_TIME;
+	oper3->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	make_local_person_oper(oper1);
 	make_local_person_oper(oper2);
@@ -4445,10 +4445,10 @@ static void sendto_realops_snomask_from1__tags(void)
 	strcpy(oper3->user->suser, "test3");
 	strcpy(oper4->user->suser, "test4");
 
-	oper1->localClient->caps |= CAP_ACCOUNT_TAG;
-	oper1->localClient->caps |= CAP_SERVER_TIME;
-	oper2->localClient->caps |= CAP_SERVER_TIME;
-	oper3->localClient->caps |= CAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_SERVER_TIME;
+	oper2->localClient->caps |= CLICAP_SERVER_TIME;
+	oper3->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	make_local_person_oper(oper1);
 	make_local_person_oper(oper2);
@@ -4622,10 +4622,10 @@ static void sendto_wallops_flags1__tags(void)
 	strcpy(oper3->user->suser, "test3");
 	strcpy(oper4->user->suser, "test4");
 
-	oper1->localClient->caps |= CAP_ACCOUNT_TAG;
-	oper1->localClient->caps |= CAP_SERVER_TIME;
-	oper2->localClient->caps |= CAP_SERVER_TIME;
-	oper3->localClient->caps |= CAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CLICAP_SERVER_TIME;
+	oper2->localClient->caps |= CLICAP_SERVER_TIME;
+	oper3->localClient->caps |= CLICAP_ACCOUNT_TAG;
 
 	make_local_person_oper(oper1);
 	make_local_person_oper(oper2);
@@ -4784,17 +4784,17 @@ int main(int argc, char *argv[])
 	client_util_init();
 
 	// Load modules in a predictable order so that tags are added in the same order every time
-	ircd_util_reload_module("cap_account_tag");
-	ircd_util_reload_module("cap_server_time");
+	ircd_util_reload_module("CLICAP_ACCOUNT_TAG");
+	ircd_util_reload_module("CLICAP_SERVER_TIME");
 
-	CAP_ACCOUNT_TAG = capability_get(cli_capindex, "account-tag", NULL);
-	ok(CAP_ACCOUNT_TAG != 0, "CAP_ACCOUNT_TAG missing; " MSG);
+	CLICAP_ACCOUNT_TAG = capability_get(cli_capindex, "account-tag", NULL);
+	ok(CLICAP_ACCOUNT_TAG != 0, "CLICAP_ACCOUNT_TAG missing; " MSG);
 
-	CAP_SERVER_TIME = capability_get(cli_capindex, "server-time", NULL);
-	ok(CAP_SERVER_TIME != 0, "CAP_SERVER_TIME missing; " MSG);
+	CLICAP_SERVER_TIME = capability_get(cli_capindex, "server-time", NULL);
+	ok(CLICAP_SERVER_TIME != 0, "CLICAP_SERVER_TIME missing; " MSG);
 
-	CAP_INVITE_NOTIFY = capability_get(cli_capindex, "invite-notify", NULL);
-	ok(CAP_INVITE_NOTIFY != 0, "CAP_INVITE_NOTIFY missing; " MSG);
+	CLICAP_INVITE_NOTIFY = capability_get(cli_capindex, "invite-notify", NULL);
+	ok(CLICAP_INVITE_NOTIFY != 0, "CLICAP_INVITE_NOTIFY missing; " MSG);
 
 	sendto_one1();
 	sendto_one1__tags();

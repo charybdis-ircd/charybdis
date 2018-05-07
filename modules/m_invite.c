@@ -41,7 +41,7 @@
 static const char invite_desc[] = "Provides facilities for invite and related notifications";
 
 static void m_invite(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
-static unsigned int CAP_INVITE_NOTIFY = 0;
+static unsigned int CLICAP_INVITE_NOTIFY = 0;
 
 struct Message invite_msgtab = {
 	"INVITE", 0, 0, 0, 0,
@@ -51,7 +51,7 @@ struct Message invite_msgtab = {
 mapi_clist_av1 invite_clist[] = { &invite_msgtab, NULL };
 
 mapi_cap_list_av2 invite_cap_list[] = {
-	{ MAPI_CAP_CLIENT, "invite-notify", NULL, &CAP_INVITE_NOTIFY },
+	{ MAPI_CAP_CLIENT, "invite-notify", NULL, &CLICAP_INVITE_NOTIFY },
 	{ 0, NULL, NULL, NULL }
 };
 
@@ -224,10 +224,10 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			if (!add_invite(chptr, target_p))
 				return;
 
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, chptr,
+			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, 0, CLICAP_INVITE_NOTIFY, chptr,
 				":%s NOTICE %s :%s is inviting %s to %s.",
 				me.name, chptr->chname, source_p->name, target_p->name, chptr->chname);
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, chptr,
+			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, CLICAP_INVITE_NOTIFY, 0, chptr,
 				":%s!%s@%s INVITE %s %s", source_p->name, source_p->username,
 				source_p->host, target_p->name, chptr->chname);
 		}
