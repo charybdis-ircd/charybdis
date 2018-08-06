@@ -320,6 +320,18 @@ dnl End OpenSSL detection
 dnl Specialized functions and libraries
 dnl ===================================
 
+AC_ARG_ENABLE(hyperscan,
+AC_HELP_STRING([--disable-hyperscan],[Disable hyperscan support]),
+[hyperscan=$enableval],[hyperscan=yes])
+
+if test "$hyperscan" = yes; then
+
+CPPFLAGS="$CPPFLAGS $(pkg-config --cflags libhs)"
+LIBS="$LIBS $(pkg-config --libs libhs)"
+AC_CHECK_HEADER(hs_common.h)
+
+fi
+
 AC_ARG_WITH(zlib-path,
 AC_HELP_STRING([--with-zlib-path=DIR],[Path to libz.so for ziplinks support.]),
 [LIBS="$LIBS -L$withval"],)
