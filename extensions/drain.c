@@ -2,13 +2,7 @@
 #include "modules.h"
 #include "hook.h"
 #include "client.h"
-#include "ircd.h"
-#include "send.h"
-#include "hash.h"
 #include "s_conf.h"
-#include "s_user.h"
-#include "s_serv.h"
-#include "numeric.h"
 
 static void check_new_user(void *data);
 mapi_hfn_list_av1 drain_hfnlist[] = {
