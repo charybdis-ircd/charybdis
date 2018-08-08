@@ -312,13 +312,13 @@ filter_msg_user(void *data_)
 	if (r & ACT_DROP) {
 		data->approved = 1;
 	}
-	if (r & ACT_KILL) {
-		exit_client(NULL, s, s, "Excess flood");
-	}
 	if (MyClient(s) && r & ACT_ALARM) {
-		sendto_realops_snomask_from(SNO_GENERAL, L_ALL | L_NETWIDE, s->servptr,
+		sendto_realops_snomask(SNO_GENERAL, L_ALL | L_NETWIDE,
 			"FILTER: %s!%s@%s [%s]",
 			s->name, s->username, s->host, s->sockhost);
+	}
+	if (r & ACT_KILL) {
+		exit_client(NULL, s, s, "Excess flood");
 	}
 }
 
@@ -345,13 +345,13 @@ filter_msg_channel(void *data_)
 	if (r & ACT_DROP) {
 		data->approved = 1;
 	}
-	if (r & ACT_KILL) {
-		exit_client(NULL, s, s, "Excess flood");
-	}
 	if (MyClient(s) && r & ACT_ALARM) {
-		sendto_realops_snomask_from(SNO_GENERAL, L_ALL | L_NETWIDE, s->servptr,
+		sendto_realops_snomask(SNO_GENERAL, L_ALL | L_NETWIDE,
 			"FILTER: %s!%s@%s [%s]",
 			s->name, s->username, s->host, s->sockhost);
+	}
+	if (r & ACT_KILL) {
+		exit_client(NULL, s, s, "Excess flood");
 	}
 }
 
