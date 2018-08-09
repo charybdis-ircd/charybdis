@@ -293,6 +293,10 @@ filter_msg_user(void *data_)
 {
 	hook_data_privmsg_user *data = data_;
 	struct Client *s = data->source_p;
+	/* we only need to filter once */
+	if (!MyClient(s)) {
+		return;
+	}
 	/* opers are immune to checking, for obvious reasons
 	 * anything sent to an oper is also immune, because that should make it
 	 * less impossible to deal with reports. */
@@ -312,7 +316,7 @@ filter_msg_user(void *data_)
 	if (r & ACT_DROP) {
 		data->approved = 1;
 	}
-	if (MyClient(s) && r & ACT_ALARM) {
+	if (r & ACT_ALARM) {
 		sendto_realops_snomask(SNO_GENERAL, L_ALL | L_NETWIDE,
 			"FILTER: %s!%s@%s [%s]",
 			s->name, s->username, s->host, s->sockhost);
@@ -327,6 +331,10 @@ filter_msg_channel(void *data_)
 {
 	hook_data_privmsg_channel *data = data_;
 	struct Client *s = data->source_p;
+	/* we only need to filter once */
+	if (!MyClient(s)) {
+		return;
+	}
 	/* just normal oper immunity for channels. i'd like to have a mode that
 	 * disables the filter per-channel, but that's for the future */
 	if (IsOper(s)) {
@@ -345,7 +353,7 @@ filter_msg_channel(void *data_)
 	if (r & ACT_DROP) {
 		data->approved = 1;
 	}
-	if (MyClient(s) && r & ACT_ALARM) {
+	if (r & ACT_ALARM) {
 		sendto_realops_snomask(SNO_GENERAL, L_ALL | L_NETWIDE,
 			"FILTER: %s!%s@%s [%s]",
 			s->name, s->username, s->host, s->sockhost);
