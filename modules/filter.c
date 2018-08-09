@@ -313,7 +313,7 @@ filter_msg_user(void *data_)
 	         text);
 	unsigned r = match_message(check_buffer);
 	rb_free(text);
-	if (r & ACT_DROP) {
+	if (r & (ACT_DROP | ACT_KILL)) {
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
@@ -350,7 +350,7 @@ filter_msg_channel(void *data_)
 	         text);
 	unsigned r = match_message(check_buffer);
 	rb_free(text);
-	if (r & ACT_DROP) {
+	if (r & (ACT_DROP | ACT_KILL)) {
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
