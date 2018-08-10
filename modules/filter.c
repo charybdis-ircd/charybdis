@@ -291,6 +291,7 @@ unsigned match_message(const char *msg)
 }
 
 static char check_buffer[2000];
+static char clean_buffer[BUFSIZE];
 
 void
 filter_msg_user(void *data_)
@@ -307,7 +308,7 @@ filter_msg_user(void *data_)
 	if (IsOper(s) || IsOper(data->target_p)) {
 		return;
 	}
-	char *text = rb_strdup(data->text);
+	char *text = strcpy(clean_buffer, data->text);
 	strip_colour(text);
 	strip_unprintable(text);
 	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s 0 :%s",
@@ -330,7 +331,6 @@ filter_msg_user(void *data_)
 	         cmdname[data->msgtype],
 	         text);
 	unsigned r = match_message(check_buffer);
-	rb_free(text);
 	if (r & ACT_DROP) {
 		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
 		                   form_str(ERR_CANNOTSENDTOCHAN),
@@ -362,7 +362,7 @@ filter_msg_channel(void *data_)
 	if (IsOper(s)) {
 		return;
 	}
-	char *text = rb_strdup(data->text);
+	char *text = strcpy(clean_buffer, data->text);
 	strip_colour(text);
 	strip_unprintable(text);
 	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s %s :%s",
@@ -386,7 +386,6 @@ filter_msg_channel(void *data_)
 	         data->chptr->chname,
 	         text);
 	unsigned r = match_message(check_buffer);
-	rb_free(text);
 	if (r & ACT_DROP) {
 		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
 		                   form_str(ERR_CANNOTSENDTOCHAN),
