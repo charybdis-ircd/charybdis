@@ -106,7 +106,7 @@ moddeinit(void)
 
 mapi_clist_av1 filter_clist[] = { &setfilter_msgtab, NULL };
 
-DECLARE_MODULE_AV1(filter, NULL, moddeinit, filter_clist, NULL, filter_hfnlist, "$Revision$");
+DECLARE_MODULE_AV1(filter, NULL, moddeinit, filter_clist, NULL, filter_hfnlist, "0.2");
 
 static int
 setfilter(const char *check, const char *data, const char **error)
