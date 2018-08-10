@@ -331,7 +331,10 @@ filter_msg_user(void *data_)
 	         text);
 	unsigned r = match_message(check_buffer);
 	rb_free(text);
-	if (r & (ACT_DROP | ACT_KILL)) {
+	if (r & ACT_DROP) {
+		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
+		                   form_str(ERR_CANNOTSENDTOCHAN),
+		                   data->target_p->name);
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
@@ -340,6 +343,7 @@ filter_msg_user(void *data_)
 			s->name, s->username, s->host, s->sockhost);
 	}
 	if (r & ACT_KILL) {
+		data->approved = 1;
 		exit_client(NULL, s, s, "Excess flood");
 	}
 }
@@ -383,7 +387,10 @@ filter_msg_channel(void *data_)
 	         text);
 	unsigned r = match_message(check_buffer);
 	rb_free(text);
-	if (r & (ACT_DROP | ACT_KILL)) {
+	if (r & ACT_DROP) {
+		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
+		                   form_str(ERR_CANNOTSENDTOCHAN),
+		                   data->chptr->chname);
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
@@ -392,6 +399,7 @@ filter_msg_channel(void *data_)
 			s->name, s->username, s->host, s->sockhost);
 	}
 	if (r & ACT_KILL) {
+		data->approved = 1;
 		exit_client(NULL, s, s, "Excess flood");
 	}
 }
