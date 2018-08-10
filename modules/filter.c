@@ -306,11 +306,10 @@ filter_msg_user(void *data_)
 	char *text = rb_strdup(data->text);
 	strip_colour(text);
 	strip_unprintable(text);
-	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s %s :%s",
+	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s 0 :%s",
 	         s->name, s->username, s->host,
 	         s->user && s->user->suser[0] != '\0' ? '1' : '0',
 	         cmdname[data->msgtype],
-	         data->target_p->name,
 	         text);
 	unsigned r = match_message(check_buffer);
 	rb_free(text);
