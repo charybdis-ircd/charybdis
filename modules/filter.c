@@ -43,6 +43,10 @@
 #include <hs_common.h>
 #include <hs_runtime.h>
 
+#define FILTER_NICK     0
+#define FILTER_USER     0
+#define FILTER_HOST     0
+
 static void filter_msg_user(void *data);
 static void filter_msg_channel(void *data);
 static void on_client_exit(void *data);
@@ -307,7 +311,21 @@ filter_msg_user(void *data_)
 	strip_colour(text);
 	strip_unprintable(text);
 	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s 0 :%s",
-	         s->name, s->username, s->host,
+#if FILTER_NICK
+	         s->name,
+#else
+	         "*",
+#endif
+#if FILTER_USER
+	         s->username,
+#else
+	         "*",
+#endif
+#if FILTER_HOST
+	         s->host,
+#else
+	         "*",
+#endif
 	         s->user && s->user->suser[0] != '\0' ? '1' : '0',
 	         cmdname[data->msgtype],
 	         text);
@@ -344,7 +362,21 @@ filter_msg_channel(void *data_)
 	strip_colour(text);
 	strip_unprintable(text);
 	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s %s :%s",
-	         s->name, s->username, s->host,
+#if FILTER_NICK
+	         s->name,
+#else
+	         "*",
+#endif
+#if FILTER_USER
+	         s->username,
+#else
+	         "*",
+#endif
+#if FILTER_HOST
+	         s->host,
+#else
+	         "*",
+#endif
 	         s->user && s->user->suser[0] != '\0' ? '1' : '0',
 	         cmdname[data->msgtype],
 	         data->chptr->chname,
