@@ -64,7 +64,7 @@ parseargs(int *argc, char * const **argv, struct lgetopt *opts)
 				switch (opts[i].argtype)
 				{
 				case YESNO:
-					*((int *) opts[i].argloc) = 1;
+					*((bool *) opts[i].argloc) = TRUE;
 					break;
 				case INTEGER:
 					if(*argc < 2)
