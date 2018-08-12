@@ -35,7 +35,7 @@ optionally preceded by a tilde (``~``) to negate the comparison. data
 depends on type.  Each type is loaded as a module. The available types
 (if any) are listed in the ``EXTBAN`` token of the 005
 (``RPL_ISUPPORT``) numeric. See ``doc/extban.txt`` in the source
-distribution for more information.
+distribution or ``HELP EXTBAN`` for more information.
 
 If no parameter is given, the list of bans is returned. All users can
 use this form. The plus sign should also be omitted.
