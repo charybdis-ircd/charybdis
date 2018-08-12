@@ -560,7 +560,7 @@ read_auth_reply(rb_fde_t *F, void *data)
 	char *t = NULL;
 	int len;
 	int count;
-	char buf[AUTH_BUFSIZ + 1];	/* buffer to read auth reply into */
+	char buf[AUTH_BUFSIZ + 1] = { 0 }; /* buffer to read auth reply into */
 
 	len = rb_read(F, buf, AUTH_BUFSIZ);
 
