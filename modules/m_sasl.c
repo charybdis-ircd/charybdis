@@ -1,6 +1,7 @@
 /* modules/m_sasl.c
  *   Copyright (C) 2006 Michael Tharp <gxti@partiallystapled.com>
  *   Copyright (C) 2006 charybdis development team
+ *   Copyright (C) 2016 ChatLounge IRC Network Development Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -49,8 +50,12 @@ static int me_sasl(struct Client *, struct Client *, int, const char **);
 static void abort_sasl(struct Client *);
 static void abort_sasl_exit(hook_data_client_exit *);
 
-static void advertise_sasl(struct Client *);
-static void advertise_sasl_exit(hook_data_client_exit *);
+static void advertise_sasl_cap(int);
+static void advertise_sasl_new(struct Client *);
+static void advertise_sasl_exit(void *);
+static void advertise_sasl_config(void *);
+
+static int sasl_agent_present = 0;
 
 struct Message authenticate_msgtab = {
 	"AUTHENTICATE", 0, 0, 0, MFLG_SLOW,
@@ -67,12 +72,38 @@ mapi_clist_av1 sasl_clist[] = {
 mapi_hfn_list_av1 sasl_hfnlist[] = {
 	{ "new_local_user",	(hookfn) abort_sasl },
 	{ "client_exit",	(hookfn) abort_sasl_exit },
-	{ "new_remote_user",	(hookfn) advertise_sasl },
-	{ "client_exit",	(hookfn) advertise_sasl_exit },
+	{ "new_remote_user",	(hookfn) advertise_sasl_new },
+	{ "after_client_exit",	(hookfn) advertise_sasl_exit },
+	{ "conf_read_end",	(hookfn) advertise_sasl_config },
 	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV1(sasl, NULL, NULL, sasl_clist, NULL, sasl_hfnlist, "$Revision: 1409 $");
+static int
+sasl_visible(void)
+{
+        struct Client *agent_p = NULL;
+
+        if (ConfigFileEntry.sasl_service)
+                agent_p = find_named_client(ConfigFileEntry.sasl_service);
+
+        return agent_p != NULL && IsService(agent_p);
+}
+
+static int
+_modinit(void)
+{
+	sasl_agent_present = 0;
+	advertise_sasl_config(NULL);
+	return 0;
+}
+
+static void
+_moddeinit(void)
+{
+	advertise_sasl_cap(0);
+}
+
+DECLARE_MODULE_AV1(sasl, _modinit, _moddeinit, sasl_clist, NULL, sasl_hfnlist, "$Revision: 1409 $");
 
 static int
 m_authenticate(struct Client *client_p, struct Client *source_p,
@@ -261,7 +292,20 @@ abort_sasl_exit(hook_data_client_exit *data)
 }
 
 static void
-advertise_sasl(struct Client *client_p)
+advertise_sasl_cap(int available)
+{
+	if (sasl_agent_present != available) {
+		if (available) {
+			sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * NEW :sasl", me.name);
+		} else {
+			sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :sasl", me.name);
+		}
+		sasl_agent_present = available;
+	}
+}
+
+static void
+advertise_sasl_new(struct Client *client_p)
 {
 	if (!ConfigFileEntry.sasl_service)
 		return;
@@ -269,17 +313,22 @@ advertise_sasl(struct Client *client_p)
 	if (irccmp(client_p->name, ConfigFileEntry.sasl_service))
 		return;
 
-	sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * NEW :sasl", me.name);
+	advertise_sasl_cap(IsService(client_p));
 }
 
 static void
-advertise_sasl_exit(hook_data_client_exit *data)
+advertise_sasl_exit(void *ignored)
 {
 	if (!ConfigFileEntry.sasl_service)
 		return;
 
-	if (irccmp(data->target->name, ConfigFileEntry.sasl_service))
-		return;
+	if (sasl_agent_present) {
+		advertise_sasl_cap(sasl_visible());
+	}
+}
 
-	sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :sasl", me.name);
+static void
+advertise_sasl_config(void *ignored)
+{
+	advertise_sasl_cap(sasl_visible());
 }

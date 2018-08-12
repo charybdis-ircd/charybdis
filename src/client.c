@@ -1568,6 +1568,8 @@ exit_client(struct Client *client_p,	/* The local client originating the
 	    const char *comment	/* Reason for the exit */
 	)
 {
+	int ret = -1;
+
 	hook_data_client_exit hdata;
 	if(IsClosing(source_p))
 		return -1;
@@ -1588,23 +1590,25 @@ exit_client(struct Client *client_p,	/* The local client originating the
 	{
 		/* Local clients of various types */
 		if(IsPerson(source_p))
-			return exit_local_client(client_p, source_p, from, comment);
+			ret = exit_local_client(client_p, source_p, from, comment);
 		else if(IsServer(source_p))
-			return exit_local_server(client_p, source_p, from, comment);
+			ret = exit_local_server(client_p, source_p, from, comment);
 		/* IsUnknown || IsConnecting || IsHandShake */
 		else if(!IsReject(source_p))
-			return exit_unknown_client(client_p, source_p, from, comment);
+			ret = exit_unknown_client(client_p, source_p, from, comment);
 	}
 	else
 	{
 		/* Remotes */
 		if(IsPerson(source_p))
-			return exit_remote_client(client_p, source_p, from, comment);
+			ret = exit_remote_client(client_p, source_p, from, comment);
 		else if(IsServer(source_p))
-			return exit_remote_server(client_p, source_p, from, comment);
+			ret = exit_remote_server(client_p, source_p, from, comment);
 	}
 
-	return -1;
+	call_hook(h_after_client_exit, NULL);
+
+	return ret;
 }
 
 /*

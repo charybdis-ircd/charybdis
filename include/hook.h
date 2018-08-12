@@ -25,6 +25,7 @@ extern int h_burst_finished;
 extern int h_server_introduced;
 extern int h_server_eob;
 extern int h_client_exit;
+extern int h_after_client_exit;
 extern int h_umode_changed;
 extern int h_new_local_user;
 extern int h_new_remote_user;
