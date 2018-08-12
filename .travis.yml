@@ -59,4 +59,4 @@ script:
   - CC=$COMPILER ./configure --with-shared-sqlite
   - make -j4
   - make install
-  - make -C doc/oper-guide html man info
+  - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make -C doc/oper-guide html man info; fi"
