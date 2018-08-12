@@ -119,7 +119,7 @@ static void
 read_ident_reply(rb_fde_t *F, void *data)
 {
 	struct auth_client *auth = data;
-	char buf[IDENT_BUFSIZE + 1];	/* buffer to read auth reply into */
+	char buf[IDENT_BUFSIZE + 1] = { 0 }; /* buffer to read auth reply into */
 	ident_message message = REPORT_FAIL;
 	char *s = NULL;
 	char *t = NULL;
