@@ -585,31 +585,26 @@ static void
 opm_initiate(struct auth_client *auth, uint32_t provider)
 {
 	struct opm_lookup *lookup = get_provider_data(auth, SELF_PID);
-	uint32_t rdns_pid, ident_pid;
 
 	lrb_assert(provider != SELF_PID);
 	lrb_assert(!is_provider_done(auth, SELF_PID));
 	lrb_assert(rb_dlink_list_length(&proxy_scanners) > 0);
 
-	if(lookup == NULL || lookup->in_progress)
+	if (lookup == NULL || lookup->in_progress) {
 		/* Nothing to do */
 		return;
-	else if((!get_provider_id("rdns", &rdns_pid) || is_provider_done(auth, rdns_pid)) &&
-		(!get_provider_id("ident", &ident_pid) || is_provider_done(auth, ident_pid)))
-		/* Don't start until ident and rdns are finished (or not loaded) */
-		return;
-	else
+	} else if (run_after_provider(auth, "rdns") && run_after_provider(auth,"ident")) {
+		/* Start scanning if ident and rdns are finished, or not loaded. */
 		opm_scan(auth);
+	}
 }
 
 static bool
 opm_start(struct auth_client *auth)
 {
-	uint32_t rdns_pid, ident_pid;
-
 	lrb_assert(get_provider_data(auth, SELF_PID) == NULL);
 
-	if(!opm_enable || rb_dlink_list_length(&proxy_scanners) == 0) {
+	if (!opm_enable || rb_dlink_list_length(&proxy_scanners) == 0) {
 		/* Nothing to do... */
 		provider_done(auth, SELF_PID);
 		return true;
@@ -619,10 +614,8 @@ opm_start(struct auth_client *auth)
 
 	set_provider_data(auth, SELF_PID, rb_malloc(sizeof(struct opm_lookup)));
 
-	if((!get_provider_id("rdns", &rdns_pid) || is_provider_done(auth, rdns_pid)) &&
-		(!get_provider_id("ident", &ident_pid) || is_provider_done(auth, ident_pid)))
-	{
-		/* Don't start until ident and rdns are finished (or not loaded) */
+	if (run_after_provider(auth, "rdns") && run_after_provider(auth, "ident")) {
+		/* Start scanning if ident and rdns are finished, or not loaded. */
 		opm_scan(auth);
 	}
 
