@@ -1,6 +1,7 @@
 /* modules/m_sasl.c
  *   Copyright (C) 2006 Michael Tharp <gxti@partiallystapled.com>
  *   Copyright (C) 2006 charybdis development team
+ *   Copyright (C) 2016 ChatLounge IRC Network Development Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -275,11 +276,22 @@ advertise_sasl(struct Client *client_p)
 static void
 advertise_sasl_exit(hook_data_client_exit *data)
 {
+	/* Check to see whether the server the SASL agent has dropped,
+	 * or whether the SASL agent has /quit (as it would or should,
+	 * if unloaded).
+	 *
+	 * Ben
+	 */
+
 	if (!ConfigFileEntry.sasl_service)
 		return;
 
-	if (irccmp(data->target->name, ConfigFileEntry.sasl_service))
+	struct Client *sasl_p;
+
+	if((sasl_p = find_named_client(ConfigFileEntry.sasl_service)) == NULL)
 		return;
 
-	sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :sasl", me.name);
+	if (irccmp(data->target->name, sasl_p->servptr->name) == 0 ||
+		irccmp(data->target->name, ConfigFileEntry.sasl_service) == 0)
+		sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :sasl", me.name);
 }
