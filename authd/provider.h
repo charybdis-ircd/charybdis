@@ -191,6 +191,19 @@ is_provider_done(struct auth_client *auth, uint32_t provider)
 	return get_provider_status(auth, provider) == PROVIDER_STATUS_DONE;
 }
 
+/* Check if provider doesn't exist or has finished on this client */
+static inline bool
+run_after_provider(struct auth_client *auth, const char *name)
+{
+	uint32_t id;
+
+	if (get_provider_id(name, &id)) {
+		return get_provider_status(auth, id) == PROVIDER_STATUS_DONE;
+	} else {
+		return true;
+	}
+}
+
 /* Get provider auth client data */
 static inline void *
 get_provider_data(struct auth_client *auth, uint32_t id)

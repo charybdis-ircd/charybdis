@@ -93,6 +93,7 @@ struct blacklist_filter
 /* Blacklist user data attached to auth_client instance */
 struct blacklist_user
 {
+	bool started;
 	rb_dlink_list queries;		/* Blacklist queries in flight */
 };
 
@@ -317,7 +318,7 @@ lookup_all_blacklists(struct auth_client *auth)
 	else
 		return false;
 
-
+	bluser->started = true;
 	notice_client(auth->cid, "*** Checking your IP against DNS blacklist%s",
 			rb_dlink_list_length(&blacklist_list) > 1 ? "s" : "");
 
@@ -365,11 +366,9 @@ delete_all_blacklists(void)
 static bool
 blacklists_start(struct auth_client *auth)
 {
-	uint32_t rdns_pid, ident_pid;
-
 	lrb_assert(get_provider_data(auth, SELF_PID) == NULL);
 
-	if(!rb_dlink_list_length(&blacklist_list)) {
+	if (!rb_dlink_list_length(&blacklist_list)) {
 		/* Nothing to do... */
 		provider_done(auth, SELF_PID);
 		return true;
@@ -379,12 +378,9 @@ blacklists_start(struct auth_client *auth)
 
 	set_provider_data(auth, SELF_PID, rb_malloc(sizeof(struct blacklist_user)));
 
-	if((!get_provider_id("rdns", &rdns_pid) || is_provider_done(auth, rdns_pid)) &&
-		(!get_provider_id("ident", &ident_pid) || is_provider_done(auth, ident_pid)))
-	{
+	if (run_after_provider(auth, "rdns") && run_after_provider(auth, "ident")) {
 		/* Start the lookup if ident and rdns are finished, or not loaded. */
-		if(!lookup_all_blacklists(auth))
-		{
+		if (!lookup_all_blacklists(auth)) {
 			blacklists_cancel_none(auth);
 			return true;
 		}
@@ -398,25 +394,19 @@ static void
 blacklists_initiate(struct auth_client *auth, uint32_t provider)
 {
 	struct blacklist_user *bluser = get_provider_data(auth, SELF_PID);
-	uint32_t rdns_pid, ident_pid;
 
 	lrb_assert(provider != SELF_PID);
 	lrb_assert(!is_provider_done(auth, SELF_PID));
 	lrb_assert(rb_dlink_list_length(&blacklist_list) > 0);
 
-	if(bluser == NULL || rb_dlink_list_length(&bluser->queries))
+	if (bluser == NULL || bluser->started) {
 		/* Nothing to do */
 		return;
-	else if((!get_provider_id("rdns", &rdns_pid) || is_provider_done(auth, rdns_pid)) &&
-		(!get_provider_id("ident", &ident_pid) || is_provider_done(auth, ident_pid)))
-	{
-		/* Don't start until ident and rdns are finished (or not loaded) */
-		return;
-	}
-	else
-	{
-		if(!lookup_all_blacklists(auth))
+	} else if (run_after_provider(auth, "rdns") && run_after_provider(auth, "ident")) {
+		/* Start the lookup if ident and rdns are finished, or not loaded. */
+		if (!lookup_all_blacklists(auth)) {
 			blacklists_cancel_none(auth);
+		}
 	}
 }
 
