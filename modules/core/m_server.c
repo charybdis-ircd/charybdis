@@ -282,22 +282,25 @@ mr_server(struct Client *client_p, struct Client *source_p, int parc, const char
 		return 0;
 	}
 
-	if(has_id(client_p) && (target_p = find_id(client_p->id)) != NULL)
-	{
-		sendto_realops_snomask(SNO_GENERAL, is_remote_connect(client_p) ? L_NETWIDE : L_ALL,
-				     "Attempt to re-introduce SID %s from %s%s (already in use by %s)",
-				     client_p->id,
-				     EmptyString(client_p->name) ? name : "",
-				     client_p->name, target_p->name);
-		ilog(L_SERVER, "Attempt to re-introduce SID %s from %s%s (already in use by %s)",
-				client_p->id,
-				EmptyString(client_p->name) ? name : "",
-				log_client_name(client_p, SHOW_IP),
-				target_p->name);
+	if (client_p->preClient && !EmptyString(client_p->preClient->id)) {
+		if ((target_p = find_id(client_p->preClient->id)) != NULL) {
+			sendto_realops_snomask(SNO_GENERAL, is_remote_connect(client_p) ? L_NETWIDE : L_ALL,
+					"Attempt to re-introduce SID %s from %s%s (already in use by %s)",
+					client_p->preClient->id,
+					EmptyString(client_p->name) ? name : "",
+					client_p->name, target_p->name);
+			ilog(L_SERVER, "Attempt to re-introduce SID %s from %s%s (already in use by %s)",
+					client_p->preClient->id,
+					EmptyString(client_p->name) ? name : "",
+					log_client_name(client_p, SHOW_IP),
+					target_p->name);
 
-		sendto_one(client_p, "ERROR :SID already exists.");
-		exit_client(client_p, client_p, client_p, "SID Exists");
-		return 0;
+			sendto_one(client_p, "ERROR :SID already exists.");
+			exit_client(client_p, client_p, client_p, "SID Exists");
+			return 0;
+		} else {
+			rb_strlcpy(client_p->id, client_p->preClient->id, sizeof(client_p->id));
+		}
 	}
 
 	/*
