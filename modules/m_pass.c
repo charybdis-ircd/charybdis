@@ -83,7 +83,7 @@ mr_pass(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		client_p->localClient->auth_user = rb_strndup(auth_user, PASSWDLEN);
 
 	/* These are for servers only */
-	if(parc > 2 && client_p->user == NULL)
+	if(parc > 2 && client_p->user == NULL && client_p->preClient != NULL)
 	{
 		/*
 		 * It looks to me as if orabidoo wanted to have more
@@ -101,10 +101,10 @@ mr_pass(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			/* only mark as TS6 if the SID is valid.. */
 			if(IsDigit(parv[4][0]) && IsIdChar(parv[4][1]) &&
 			   IsIdChar(parv[4][2]) && parv[4][3] == '\0' &&
-			   EmptyString(client_p->id))
+			   EmptyString(client_p->preClient->id))
 			{
 				client_p->localClient->caps |= CAP_TS6;
-				rb_strlcpy(client_p->id, parv[4], sizeof(client_p->id));
+				rb_strlcpy(client_p->preClient->id, parv[4], sizeof(client_p->preClient->id));
 			}
 		}
 	}

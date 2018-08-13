@@ -316,6 +316,8 @@ struct PreClient
 	struct AuthClient auth;
 
 	struct rb_sockaddr_storage lip; /* address of our side of the connection */
+
+	char id[IDLEN]; /* UID/SID, unique on the network (unverified) */
 };
 
 struct ListClient
