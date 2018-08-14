@@ -52,6 +52,7 @@ extension_LTLIBRARIES =		\
   m_adminwall.la		\
   m_echotags.la			\
   m_extendchans.la		\
+  filter.la			\
   m_findforwards.la		\
   m_identify.la			\
   m_locops.la			\

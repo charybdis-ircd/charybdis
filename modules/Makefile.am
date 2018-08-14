@@ -29,7 +29,6 @@ auto_load_mod_LTLIBRARIES = \
   m_dline.la \
   m_encap.la \
   m_etrace.la \
-  filter.la \
   m_grant.la \
   m_help.la \
   m_info.la \
