@@ -276,22 +276,45 @@ int match_callback(unsigned id,
 	return 0;
 }
 
+static char check_buffer[2000];
+static char clean_buffer[BUFSIZE];
 
-unsigned match_message(const char *msg)
+unsigned match_message(const char *prefix,
+                       struct Client *source,
+                       const char *command,
+                       const char *target,
+                       const char *msg)
 {
 	unsigned state = 0;
 	if (!filter_enable)
 		return 0;
 	if (!filter_db)
 		return 0;
-	hs_error_t r = hs_scan(filter_db, msg, strlen(msg), 0, filter_scratch, match_callback, &state);
+	snprintf(check_buffer, sizeof check_buffer, "%s:%s!%s@%s#%c %s %s :%s",
+	         prefix,
+#if FILTER_NICK
+	         source->name,
+#else
+	         "*",
+#endif
+#if FILTER_USER
+	         source->username,
+#else
+	         "*",
+#endif
+#if FILTER_HOST
+	         source->host,
+#else
+	         "*",
+#endif
+	         source->user && source->user->suser[0] != '\0' ? '1' : '0',
+	         command, target,
+	         msg);
+	hs_error_t r = hs_scan(filter_db, check_buffer, strlen(check_buffer), 0, filter_scratch, match_callback, &state);
 	if (r != HS_SUCCESS && r != HS_SCAN_TERMINATED)
 		return 0;
 	return state;
 }
-
-static char check_buffer[2000];
-static char clean_buffer[BUFSIZE];
 
 void
 filter_msg_user(void *data_)
@@ -311,26 +334,8 @@ filter_msg_user(void *data_)
 	char *text = strcpy(clean_buffer, data->text);
 	strip_colour(text);
 	strip_unprintable(text);
-	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s 0 :%s",
-#if FILTER_NICK
-	         s->name,
-#else
-	         "*",
-#endif
-#if FILTER_USER
-	         s->username,
-#else
-	         "*",
-#endif
-#if FILTER_HOST
-	         s->host,
-#else
-	         "*",
-#endif
-	         s->user && s->user->suser[0] != '\0' ? '1' : '0',
-	         cmdname[data->msgtype],
-	         text);
-	unsigned r = match_message(check_buffer);
+	unsigned r = match_message("0", s, cmdname[data->msgtype], "0", data->text) |
+	             match_message("1", s, cmdname[data->msgtype], "0", text);
 	if (r & ACT_DROP) {
 		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
 		                   form_str(ERR_CANNOTSENDTOCHAN),
@@ -365,27 +370,8 @@ filter_msg_channel(void *data_)
 	char *text = strcpy(clean_buffer, data->text);
 	strip_colour(text);
 	strip_unprintable(text);
-	snprintf(check_buffer, sizeof check_buffer, ":%s!%s@%s#%c %s %s :%s",
-#if FILTER_NICK
-	         s->name,
-#else
-	         "*",
-#endif
-#if FILTER_USER
-	         s->username,
-#else
-	         "*",
-#endif
-#if FILTER_HOST
-	         s->host,
-#else
-	         "*",
-#endif
-	         s->user && s->user->suser[0] != '\0' ? '1' : '0',
-	         cmdname[data->msgtype],
-	         data->chptr->chname,
-	         text);
-	unsigned r = match_message(check_buffer);
+	unsigned r = match_message("0", s, cmdname[data->msgtype], data->chptr->chname, data->text) |
+	             match_message("1", s, cmdname[data->msgtype], data->chptr->chname, text);
 	if (r & ACT_DROP) {
 		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
 		                   form_str(ERR_CANNOTSENDTOCHAN),
