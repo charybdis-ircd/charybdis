@@ -337,9 +337,11 @@ filter_msg_user(void *data_)
 	unsigned r = match_message("0", s, cmdname[data->msgtype], "0", data->text) |
 	             match_message("1", s, cmdname[data->msgtype], "0", text);
 	if (r & ACT_DROP) {
-		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
-		                   form_str(ERR_CANNOTSENDTOCHAN),
-		                   data->target_p->name);
+		if (data->msgtype == MESSAGE_TYPE_PRIVMSG) {
+			sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
+			                   form_str(ERR_CANNOTSENDTOCHAN),
+			                   data->target_p->name);
+		}
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
@@ -373,9 +375,11 @@ filter_msg_channel(void *data_)
 	unsigned r = match_message("0", s, cmdname[data->msgtype], data->chptr->chname, data->text) |
 	             match_message("1", s, cmdname[data->msgtype], data->chptr->chname, text);
 	if (r & ACT_DROP) {
-		sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
-		                   form_str(ERR_CANNOTSENDTOCHAN),
-		                   data->chptr->chname);
+		if (data->msgtype == MESSAGE_TYPE_PRIVMSG) {
+			sendto_one_numeric(s, ERR_CANNOTSENDTOCHAN,
+			                   form_str(ERR_CANNOTSENDTOCHAN),
+			                   data->chptr->chname);
+		}
 		data->approved = 1;
 	}
 	if (r & ACT_ALARM) {
