@@ -116,7 +116,7 @@ mr_nick(struct Client *client_p, struct Client *source_p, int parc, const char *
 	struct Client *target_p;
 	char nick[NICKLEN];
 
-	if (strlen(client_p->id) == 3)
+	if (strlen(client_p->id) == 3 || (source_p->preClient && !EmptyString(source_p->preClient->id)))
 	{
 		exit_client(client_p, client_p, client_p, "Mixing client and server protocol");
 		return 0;

@@ -116,7 +116,7 @@ m_authenticate(struct Client *client_p, struct Client *source_p,
 	if(!IsCapable(source_p, CLICAP_SASL))
 		return 0;
 
-	if (strlen(client_p->id) == 3)
+	if (strlen(client_p->id) == 3 || (source_p->preClient && !EmptyString(source_p->preClient->id)))
 	{
 		exit_client(client_p, client_p, client_p, "Mixing client and server protocol");
 		return 0;
