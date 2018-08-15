@@ -122,7 +122,7 @@ mr_nick(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	struct Client *target_p;
 	char nick[NICKLEN];
 
-	if (strlen(client_p->id) == 3)
+	if (strlen(client_p->id) == 3 || (source_p->preClient && !EmptyString(source_p->preClient->id)))
 	{
 		exit_client(client_p, client_p, client_p, "Mixing client and server protocol");
 		return;
