@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 
-AC_INIT([charybdis], [4.0.2])
+AC_INIT([charybdis], [4.0.3-dev])
 
 AC_PROG_CC_C99
 if test "x${ac_cv_prog_cc_c99}" = "xno"; then
