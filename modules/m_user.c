@@ -63,7 +63,7 @@ mr_user(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	static char buf[BUFSIZE];
 	char *p;
 
-	if (strlen(client_p->id) == 3)
+	if (strlen(client_p->id) == 3 || (source_p->preClient && !EmptyString(source_p->preClient->id)))
 	{
 		exit_client(client_p, client_p, client_p, "Mixing client and server protocol");
 		return;
