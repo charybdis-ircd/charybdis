@@ -1,7 +1,17 @@
 # News
 
-This is charybdis 4.1-dev, Copyright (c) 2005-2018 Charybdis team.
+This is charybdis 4.1.1, Copyright (c) 2005-2018 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-4.1.1
+
+### security
+- Fix an issue with the PASS command and duplicate server instances.
+
+### misc
+- Fix connection hang with blacklist/opm when ident is disabled.
+- Improve SASL CAP notification when the services server disconnects.
+- MbedTLS: Support ChaCha20-Poly1305 in default cipher suites.
 
 ## charybdis-4.1
 
