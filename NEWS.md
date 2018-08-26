@@ -1,7 +1,31 @@
 # News
 
-This is charybdis 3.5.3, Copyright (c) 2005-2016 Charybdis team.
+This is charybdis 3.5.6, Copyright (c) 2005-2016 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-3.5.6
+
+This is primarily a bugfix release.
+
+### security
+- doc/reference.conf: clarify: TLS server fingerprints are not optional
+- extensions/extb_ssl.c: add support for matching fingerprints
+- libratbox/src/mbedtls.c: check public/private keys match
+- libratbox/src/mbedtls.c: support ChaCha20-Poly1305 by default
+
+### user
+- libratbox/src/commio.c: fix accept() for IPv6 after dropping IPv4
+- src/client.c: don't delete servers from the client hash table
+- src/s_user.c: don't send fake MODE for clients with CHGHOST support
+- modules/m_sasl.c: abort session if we receive '*' as data
+- modules/m_sasl.c: check agent is present after every client exit
+
+### misc
+- configure: adjust dlopen/dlsym checks to work under libasan
+- configure: allow exact PID file prefix to be specified
+- doc/: convert SGML oper guide to RST
+- doc/: point users to HELP EXTBAN for inline help
+- extensions/m_webirc.c: set sockhost before using it to set host
 
 ## charybdis-3.5.5
 
