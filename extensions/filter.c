@@ -47,6 +47,8 @@
 #define FILTER_USER     0
 #define FILTER_HOST     0
 
+#define FILTER_EXIT_MSG "Connection closed"
+
 static void filter_msg_user(void *data);
 static void filter_msg_channel(void *data);
 static void on_client_exit(void *data);
@@ -351,7 +353,7 @@ filter_msg_user(void *data_)
 	}
 	if (r & ACT_KILL) {
 		data->approved = 1;
-		exit_client(NULL, s, s, "Excess flood");
+		exit_client(NULL, s, s, FILTER_EXIT_MSG);
 	}
 }
 
@@ -389,7 +391,7 @@ filter_msg_channel(void *data_)
 	}
 	if (r & ACT_KILL) {
 		data->approved = 1;
-		exit_client(NULL, s, s, "Excess flood");
+		exit_client(NULL, s, s, FILTER_EXIT_MSG);
 	}
 }
 
