@@ -83,9 +83,9 @@ strip_colour(char *string)
 static inline char *
 strip_unprintable(char *string)
 {
-	unsigned char *c = (unsigned char *)string;
-	unsigned char *c2 = (unsigned char *)string;
-	unsigned char *last_non_space = NULL;
+	char *c = string;
+	char *c2 = string;
+	char *last_non_space = NULL;
 
 	/* c is source, c2 is target */
 	for(; c && *c; c++)
@@ -109,7 +109,7 @@ strip_unprintable(char *string)
 			*c2++ = *c;
 			break;
 		default:
-			if (*c < 32)
+			if ((unsigned char)*c < 32)
 				break;
 			*c2++ = *c;
 			last_non_space = c2;
