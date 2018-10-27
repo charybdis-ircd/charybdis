@@ -191,6 +191,7 @@ struct config_file_entry
 	int operspy_admin_only;
 	int pace_wait;
 	int pace_wait_simple;
+	int listfake_wait;
 	int short_motd;
 	int no_oper_flood;
 	int hide_server;
@@ -308,6 +309,16 @@ struct alias_entry
 	int flags;			/* reserved for later use */
 	int hits;
 };
+
+struct fakechannel_entry
+{
+	char *name;
+	char *topic;
+
+	int users_min;
+	int users_max;
+};
+
 
 /* All variables are GLOBAL */
 extern int specific_ipv4_vhost;	/* used in s_bsd.c */

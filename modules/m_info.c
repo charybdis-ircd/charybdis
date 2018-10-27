@@ -399,6 +399,12 @@ static struct InfoStruct info_table[] = {
 		"Minimum delay between less intensive commands"
 	},
 	{
+		"listfake_wait",
+		OUTPUT_DECIMAL,
+		&ConfigFileEntry.listfake_wait,
+		"Time until real list command can be used"
+	},
+	{
 		"ping_cookie",
 		OUTPUT_BOOLEAN,
 		&ConfigFileEntry.ping_cookie,

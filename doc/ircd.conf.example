@@ -451,6 +451,14 @@ alias "MS" {
 	target = "MemoServ";
 };
 
+/*
+fakechannel "#honeypot" {
+	topic = "Come in";
+	users_min = 50;
+	users_max = 300;
+};
+*/
+
 general {
 	hide_error_messages = opers;
 	hide_spoof_ips = yes;
@@ -520,6 +528,7 @@ general {
 	caller_id_wait = 1 minute;
 	pace_wait_simple = 1 second;
 	pace_wait = 10 seconds;
+	listfake_wait = 180 seconds;
 	short_motd = no;
 	ping_cookie = no;
 	connect_timeout = 30 seconds;

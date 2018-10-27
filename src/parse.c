@@ -45,6 +45,7 @@
 
 static struct Dictionary *cmd_dict = NULL;
 struct Dictionary *alias_dict = NULL;
+struct Dictionary *fakechannel_dict = NULL;
 
 /* parv[0] is not used, and parv[LAST] == NULL */
 static char *para[MAXPARA + 2];
