@@ -925,7 +925,7 @@ static void
 ssl_new_keys(mod_ctl_t * ctl, mod_ctl_buf_t * ctl_buf)
 {
 	char *buf;
-	char *cert, *key, *dhparam, *cipher_list;
+	char *cert, *key, *dhparam, *cipher_list, *hostname;
 
 	buf = (char *) &ctl_buf->buf[2];
 	cert = buf;
@@ -935,6 +935,8 @@ ssl_new_keys(mod_ctl_t * ctl, mod_ctl_buf_t * ctl_buf)
 	dhparam = buf;
 	buf += strlen(dhparam) + 1;
 	cipher_list = buf;
+	buf += strlen(cipher_list) + 1;
+	hostname = buf;
 	if(strlen(key) == 0)
 		key = cert;
 	if(strlen(dhparam) == 0)
@@ -942,13 +944,39 @@ ssl_new_keys(mod_ctl_t * ctl, mod_ctl_buf_t * ctl_buf)
 	if(strlen(cipher_list) == 0)
 		cipher_list = NULL;
 
-	if(!rb_setup_ssl_server(cert, key, dhparam, cipher_list))
+	int ret;
+	if(strlen(hostname) == 0) {
+		ret = rb_setup_ssl_server(cert, key, dhparam, cipher_list, NULL);
+	} else {
+		ret = rb_setup_ssl_server(cert, key, dhparam, cipher_list, hostname);
+		return;
+	}
+
+	if(!ret)
 	{
 		const char *invalid = "I";
 		mod_cmd_write_queue(ctl, invalid, strlen(invalid));
 		return;
 	}
 }
+
+static void
+ssl_remove_ssl_vhost(mod_ctl_t * ctl, mod_ctl_buf_t * ctl_buf)
+{
+	char *buf;
+	char *hostname;
+
+	buf = (char *) &ctl_buf->buf[2];
+	hostname = buf;
+
+	if(!rb_remove_ssl_vserver(hostname))
+	{
+		const char *invalid = "I";
+		mod_cmd_write_queue(ctl, invalid, strlen(invalid));
+		return;
+	}
+}
+
 
 static void
 send_nossl_support(mod_ctl_t * ctl, mod_ctl_buf_t * ctlb)
@@ -1052,6 +1080,16 @@ mod_process_cmd_recv(mod_ctl_t * ctl)
 					break;
 				}
 				ssl_new_keys(ctl, ctl_buf);
+				break;
+			}
+		case 'D':
+			{
+				if(!ssld_ssl_ok)
+				{
+					send_nossl_support(ctl, ctl_buf);
+					break;
+				}
+				ssl_remove_ssl_vhost(ctl, ctl_buf);
 				break;
 			}
 		case 'I':

@@ -456,8 +456,15 @@ rb_init_ssl(void)
 }
 
 int
+rb_remove_ssl_vserver(const char *hostname)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int
 rb_setup_ssl_server(const char *const certfile, const char *keyfile,
-                    const char *const dhfile, const char *const cipherlist)
+                    const char *const dhfile, const char *const cipherlist, const char *hostname)
 {
 	if(certfile == NULL)
 	{

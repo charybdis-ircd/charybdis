@@ -505,7 +505,11 @@ int
 main(int argc, char *argv[])
 {
 	int fd;
-
+#ifdef HAVE_LIBCRYPTO
+	struct vhost_conf *vhost_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+#endif
 	/* Check to see if the user is running us as root, which is a nono */
 	if(geteuid() == 0)
 	{
@@ -676,13 +680,25 @@ main(int argc, char *argv[])
 	if(ServerInfo.ssl_cert != NULL && ServerInfo.ssl_private_key != NULL)
 	{
 		/* just do the rb_setup_ssl_server to validate the config */
-		if(!rb_setup_ssl_server(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list))
+		if(!rb_setup_ssl_server(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list, NULL))
 		{
 			ilog(L_MAIN, "WARNING: Unable to setup SSL.");
 			ircd_ssl_ok = 0;
 		}
 		else
 			ircd_ssl_ok = 1;
+#ifdef HAVE_LIBCRYPTO
+		RB_DLINK_FOREACH_SAFE(ptr, next_ptr, vhost_conf_list.head)
+		{
+			vhost_p = ptr->data;
+			if(rb_setup_ssl_server(vhost_p->ssl_cert, vhost_p->ssl_private_key,
+						vhost_p->ssl_dh_params ? vhost_p->ssl_dh_params : ServerInfo.ssl_dh_params,
+						vhost_p->ssl_cipher_list ? vhost_p->ssl_cipher_list : ServerInfo.ssl_cipher_list, vhost_p->hostname))
+			{
+				ircd_ssl_ok = 1;
+			}
+		}
+#endif
 	}
 
 	if (testing_conf)

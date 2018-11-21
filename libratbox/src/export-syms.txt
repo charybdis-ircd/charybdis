@@ -48,6 +48,7 @@ rb_setselect
 rb_settimeout
 rb_setup_fd
 rb_setup_ssl_server
+rb_remove_ssl_vserver
 rb_socket
 rb_socketpair
 rb_ssl_listen
