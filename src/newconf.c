@@ -1829,6 +1829,17 @@ conf_end_fakechannel(struct TopConf *tc)
 	{
 		conf_report_error("Ignoring fakechannel -- must have a name.");
 
+		rb_free(yy_fakechannel->topic);
+		rb_free(yy_fakechannel);
+
+		return -1;
+	}
+
+	if (yy_fakechannel->users_max < yy_fakechannel->users_min)
+	{
+		conf_report_error("Ignoring fakechannel -- users_max less than users_min.");
+
+		rb_free(yy_fakechannel->topic);
 		rb_free(yy_fakechannel);
 
 		return -1;
