@@ -1812,7 +1812,7 @@ conf_begin_fakechannel(struct TopConf *tc)
 		yy_fakechannel->name = rb_strdup(conf_cur_block_name);
 
 	/* Set defaults */
-	yy_fakechannel->topic = NULL
+	yy_fakechannel->topic = NULL;
 	yy_fakechannel->users_min = 50;
 	yy_fakechannel->users_max = 300;
 
