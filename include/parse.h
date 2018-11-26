@@ -41,5 +41,6 @@ extern void mod_del_cmd(struct Message *msg);
 extern void report_messages(struct Client *);
 
 extern struct Dictionary *alias_dict;
+extern struct Dictionary *fakechannel_dict;
 
 #endif /* INCLUDED_parse_h_h */
