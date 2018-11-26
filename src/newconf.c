@@ -1812,7 +1812,7 @@ conf_begin_fakechannel(struct TopConf *tc)
 		yy_fakechannel->name = rb_strdup(conf_cur_block_name);
 
 	/* Set defaults */
-	yy_fakechannel->topic = "";
+	yy_fakechannel->topic = NULL
 	yy_fakechannel->users_min = 50;
 	yy_fakechannel->users_max = 300;
 
@@ -1843,6 +1843,11 @@ conf_end_fakechannel(struct TopConf *tc)
 		rb_free(yy_fakechannel);
 
 		return -1;
+	}
+
+	if(yy_fakechannel->topic == NULL)
+	{
+		yy_fakechannel->topic = rb_strdup("");
 	}
 
 	irc_dictionary_add(fakechannel_dict, yy_fakechannel->name, yy_fakechannel);
