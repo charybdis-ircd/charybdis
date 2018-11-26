@@ -1864,7 +1864,7 @@ conf_set_fakechannel_users_min(void *data)
 		return;
 
 	int users_min = *((int *)data);
-	if(users_min <= 0)
+	if(users_min < 0)
 	{
 		conf_report_error("fakechannel::users_min value %d is bogus, ignoring", users_min);
 		return;
@@ -1880,7 +1880,7 @@ conf_set_fakechannel_users_max(void *data)
 		return;
 
 	int users_max = *((int *)data);
-	if(users_max <= 0)
+	if(users_max < 0)
 	{
 		conf_report_error("fakechannel::users_max value %d is bogus, ignoring", users_max);
 		return;
