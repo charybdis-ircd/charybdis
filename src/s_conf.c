@@ -738,7 +738,7 @@ set_default_conf(void)
 	ConfigFileEntry.pace_wait = 10;
 	ConfigFileEntry.caller_id_wait = 60;
 	ConfigFileEntry.pace_wait_simple = 1;
-	ConfigFileEntry.listfake_wait = 180;
+	ConfigFileEntry.listfake_wait = 0;
 	ConfigFileEntry.short_motd = NO;
 	ConfigFileEntry.no_oper_flood = NO;
 	ConfigFileEntry.fname_userlog = NULL;
