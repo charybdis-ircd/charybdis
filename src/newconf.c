@@ -1808,13 +1808,14 @@ conf_begin_fakechannel(struct TopConf *tc)
 {
 	yy_fakechannel = rb_malloc(sizeof(struct fakechannel_entry));
 
-	if (conf_cur_block_name != NULL)
-		yy_fakechannel->name = rb_strdup(conf_cur_block_name);
-
 	/* Set defaults */
+	yy_fakechannel->name = NULL;
 	yy_fakechannel->topic = NULL;
 	yy_fakechannel->users_min = 50;
 	yy_fakechannel->users_max = 300;
+
+	if (conf_cur_block_name != NULL)
+		yy_fakechannel->name = rb_strdup(conf_cur_block_name);
 
 	return 0;
 }
@@ -1839,6 +1840,7 @@ conf_end_fakechannel(struct TopConf *tc)
 	{
 		conf_report_error("Ignoring fakechannel -- users_max less than users_min.");
 
+		rb_free(yy_fakechannel->name);
 		rb_free(yy_fakechannel->topic);
 		rb_free(yy_fakechannel);
 
@@ -1861,6 +1863,7 @@ conf_set_fakechannel_name(void *data)
 	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
 		return;
 
+	rb_free(yy_fakechannel->name);
 	yy_fakechannel->name = rb_strdup(data);
 }
 
@@ -1870,6 +1873,7 @@ conf_set_fakechannel_topic(void *data)
 	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
 		return;
 
+	rb_free(yy_fakechannel->topic);
 	yy_fakechannel->topic = rb_strdup(data);
 }
 
