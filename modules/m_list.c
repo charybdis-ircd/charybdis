@@ -171,7 +171,7 @@ static int m_list(struct Client *client_p, struct Client *source_p, int parc, co
 			sendto_one(source_p, form_str(RPL_LIST), me.name, source_p->name,
 					 "",
 					 fakechannel->name,
-					 (rand() % fakechannel->users_max + fakechannel->users_min),
+					 (unsigned long)(fakechannel->users_min + rand() % (fakechannel->users_max +1 - fakechannel->users_min)),
 					 fakechannel->topic);
 		}
 
