@@ -54,6 +54,7 @@ static rb_dlink_list yy_cluster_list;
 static struct oper_conf *yy_oper = NULL;
 
 static struct alias_entry *yy_alias = NULL;
+static struct fakechannel_entry *yy_fakechannel = NULL;
 
 static char *yy_blacklist_host = NULL;
 static char *yy_blacklist_reason = NULL;
@@ -1874,6 +1875,110 @@ conf_set_alias_target(void *data)
 	yy_alias->target = rb_strdup(data);
 }
 
+static int
+conf_begin_fakechannel(struct TopConf *tc)
+{
+	yy_fakechannel = rb_malloc(sizeof(struct fakechannel_entry));
+
+	/* Set defaults */
+	yy_fakechannel->name = NULL;
+	yy_fakechannel->topic = NULL;
+	yy_fakechannel->users_min = 50;
+	yy_fakechannel->users_max = 300;
+
+	if (conf_cur_block_name != NULL)
+		yy_fakechannel->name = rb_strdup(conf_cur_block_name);
+
+	return 0;
+}
+
+static int
+conf_end_fakechannel(struct TopConf *tc)
+{
+	if (yy_fakechannel == NULL)
+		return -1;
+
+	if (yy_fakechannel->name == NULL)
+	{
+		conf_report_error("Ignoring fakechannel -- must have a name.");
+
+		rb_free(yy_fakechannel->topic);
+		rb_free(yy_fakechannel);
+
+		return -1;
+	}
+
+	if (yy_fakechannel->users_max < yy_fakechannel->users_min)
+	{
+		conf_report_error("Ignoring fakechannel -- users_max less than users_min.");
+
+		rb_free(yy_fakechannel->name);
+		rb_free(yy_fakechannel->topic);
+		rb_free(yy_fakechannel);
+
+		return -1;
+	}
+
+	if (yy_fakechannel->topic == NULL)
+		yy_fakechannel->topic = rb_strdup("");
+
+	rb_dictionary_add(fakechannel_dict, yy_fakechannel->name, yy_fakechannel);
+
+	return 0;
+}
+
+static void
+conf_set_fakechannel_name(void *data)
+{
+	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
+		return;
+
+	rb_free(yy_fakechannel->name);
+	yy_fakechannel->name = rb_strdup(data);
+}
+
+static void
+conf_set_fakechannel_topic(void *data)
+{
+	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
+		return;
+
+	rb_free(yy_fakechannel->topic);
+	yy_fakechannel->topic = rb_strdup(data);
+}
+
+static void
+conf_set_fakechannel_users_min(void *data)
+{
+	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
+		return;
+
+	int users_min = *((int *)data);
+	if(users_min < 0)
+	{
+		conf_report_error("fakechannel::users_min value %d is bogus, ignoring", users_min);
+		return;
+	}
+
+	yy_fakechannel->users_min = users_min;
+}
+
+static void
+conf_set_fakechannel_users_max(void *data)
+{
+	if (data == NULL || yy_fakechannel == NULL)	/* this shouldn't ever happen */
+		return;
+
+	int users_max = *((int *)data);
+	if(users_max < 0)
+	{
+		conf_report_error("fakechannel::users_max value %d is bogus, ignoring", users_max);
+		return;
+	}
+
+	yy_fakechannel->users_max = users_max;
+}
+
 static void
 conf_set_channel_autochanmodes(void *data)
 {
@@ -2794,6 +2899,7 @@ static struct ConfEntry conf_general_table[] =
 	{ "operspy_dont_care_user_info", CF_YESNO, NULL, 0, &ConfigFileEntry.operspy_dont_care_user_info },
 	{ "pace_wait",		CF_TIME,  NULL, 0, &ConfigFileEntry.pace_wait		},
 	{ "pace_wait_simple",	CF_TIME,  NULL, 0, &ConfigFileEntry.pace_wait_simple	},
+	{ "listfake_wait",	CF_TIME,  NULL, 0, &ConfigFileEntry.listfake_wait	},
 	{ "ping_cookie",	CF_YESNO, NULL, 0, &ConfigFileEntry.ping_cookie		},
 	{ "reject_after_count",	CF_INT,   NULL, 0, &ConfigFileEntry.reject_after_count	},
 	{ "reject_ban_time",	CF_TIME,  NULL, 0, &ConfigFileEntry.reject_ban_time	},
@@ -2910,6 +3016,12 @@ newconf_init()
 	add_top_conf("alias", conf_begin_alias, conf_end_alias, NULL);
 	add_conf_item("alias", "name", CF_QSTRING, conf_set_alias_name);
 	add_conf_item("alias", "target", CF_QSTRING, conf_set_alias_target);
+
+	add_top_conf("fakechannel", conf_begin_fakechannel, conf_end_fakechannel, NULL);
+	add_conf_item("fakechannel", "name", CF_QSTRING, conf_set_fakechannel_name);
+	add_conf_item("fakechannel", "topic", CF_QSTRING, conf_set_fakechannel_topic);
+	add_conf_item("fakechannel", "users_max", CF_INT, conf_set_fakechannel_users_max);
+	add_conf_item("fakechannel", "users_min", CF_INT, conf_set_fakechannel_users_min);
 
 	add_top_conf("blacklist", NULL, NULL, NULL);
 	add_conf_item("blacklist", "host", CF_QSTRING, conf_set_blacklist_host);

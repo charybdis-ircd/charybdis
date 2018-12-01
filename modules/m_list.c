@@ -155,6 +155,32 @@ m_list(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			last_used = rb_current_time();
 	}
 
+	/* Disable LIST for a configured timespan after connect and send configured fake
+	 * channels instead.
+	 * Exempts: Opers, identifed users and users with spambot_exempt flag
+	 */
+	if (((source_p->localClient->firsttime + ConfigFileEntry.listfake_wait) > rb_current_time())
+			&& !IsOper(source_p) && !IsExemptSpambot(source_p) &&
+			!(source_p->user != NULL && !EmptyString(source_p->user->suser)))
+	{
+		struct fakechannel_entry *fakechannel;
+		rb_dictionary_iter iter;
+
+		sendto_one(source_p, form_str(RPL_LISTSTART), me.name, source_p->name);
+
+		RB_DICTIONARY_FOREACH(fakechannel, &iter, fakechannel_dict)
+		{
+			sendto_one(source_p, form_str(RPL_LIST), me.name, source_p->name,
+					 "",
+					 fakechannel->name,
+					 (unsigned long)(fakechannel->users_min + rand() % (fakechannel->users_max +1 - fakechannel->users_min)),
+					 fakechannel->topic);
+		}
+
+		sendto_one(source_p, form_str(RPL_LISTEND), me.name, source_p->name);
+		return;
+	}
+
 	mo_list(msgbuf_p, client_p, source_p, parc, parv);
 }
 

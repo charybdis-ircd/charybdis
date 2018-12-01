@@ -43,6 +43,7 @@
 
 rb_dictionary *cmd_dict = NULL;
 rb_dictionary *alias_dict = NULL;
+rb_dictionary *fakechannel_dict = NULL;
 
 static void cancel_clients(struct Client *, struct Client *);
 static void remove_unknown(struct Client *, const char *, char *);

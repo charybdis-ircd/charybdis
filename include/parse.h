@@ -40,6 +40,7 @@ extern void mod_del_cmd(struct Message *msg);
 extern char *reconstruct_parv(int parc, const char *parv[]);
 
 extern rb_dictionary *alias_dict;
+extern rb_dictionary *fakechannel_dict;
 extern rb_dictionary *cmd_dict;
 
 #endif /* INCLUDED_parse_h_h */

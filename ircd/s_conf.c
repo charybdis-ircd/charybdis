@@ -725,6 +725,7 @@ set_default_conf(void)
 	ConfigFileEntry.pace_wait = 10;
 	ConfigFileEntry.caller_id_wait = 60;
 	ConfigFileEntry.pace_wait_simple = 1;
+	ConfigFileEntry.listfake_wait = 0;
 	ConfigFileEntry.short_motd = false;
 	ConfigFileEntry.no_oper_flood = false;
 	ConfigFileEntry.fname_userlog = NULL;
@@ -815,6 +816,9 @@ set_default_conf(void)
 
 	if (!alias_dict)
 		alias_dict = rb_dictionary_create("alias", rb_strcasecmp);
+
+	if (!fakechannel_dict)
+		fakechannel_dict = rb_dictionary_create("fakechannel", irccmp);
 }
 
 /*
@@ -1436,6 +1440,19 @@ free_alias_cb(rb_dictionary_element *ptr, void *unused)
 }
 
 /*
+ * free an fakechannel{} entry.
+ */
+static void
+free_fakechannel_cb(rb_dictionary_element *ptr, void *unused)
+{
+	struct fakechannel_entry *aptr = ptr->data;
+
+	rb_free(aptr->name);
+	rb_free(aptr->topic);
+	rb_free(aptr);
+}
+
+/*
  * clear_out_old_conf
  *
  * inputs       - none
@@ -1534,6 +1551,13 @@ clear_out_old_conf(void)
 	{
 		rb_dictionary_destroy(alias_dict, free_alias_cb, NULL);
 		alias_dict = NULL;
+	}
+
+	/* remove any fakechannels */
+	if (fakechannel_dict != NULL)
+	{
+		rb_dictionary_destroy(fakechannel_dict, free_fakechannel_cb, NULL);
+		fakechannel_dict = NULL;
 	}
 
 	del_blacklist_all();
