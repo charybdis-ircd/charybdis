@@ -13,6 +13,7 @@ AC_PREFIX_DEFAULT([~/ircd])
 AC_CONFIG_HEADER([include/setup.h])
 AC_CONFIG_SUBDIRS([librb])
 AC_CONFIG_AUX_DIR([libltdl/config])
+AC_CONFIG_MACRO_DIRS([m4])
 
 AM_INIT_AUTOMAKE([subdir-objects])
 AM_SILENT_RULES([yes])
