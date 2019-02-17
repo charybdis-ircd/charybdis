@@ -89,7 +89,7 @@ m_ison(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		char *cs = LOCAL_COPY(parv[i]);
 		for (nick = rb_strtok_r(cs, " ", &p); nick; nick = rb_strtok_r(NULL, " ", &p))
 		{
-			target_p = find_named_client(nick);
+			target_p = find_named_person(nick);
 
 			if(target_p != NULL)
 			{
