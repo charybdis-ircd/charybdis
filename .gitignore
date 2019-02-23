@@ -89,6 +89,7 @@ tests/rb_dictionary1
 tests/rb_snprintf_append1
 tests/rb_snprintf_try_append1
 tests/runtests
+tests/sasl_abort1
 tests/send1
 tests/serv_connect1
 tests/substitution1

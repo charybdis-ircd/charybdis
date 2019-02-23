@@ -27,8 +27,37 @@
 
 #include "hash.h"
 #include "s_newconf.h"
+#include "parse.h"
+#include "listener.h"
 
 #define MSG "%s:%d (%s)", __FILE__, __LINE__, __FUNCTION__
+
+static struct Listener fake_listener = {
+	.next = NULL,
+	.name = "fake",
+	.F = NULL,
+	.ref_count = 0,
+	.active = 1,
+	.ssl = 1,
+	.defer_accept = 0,
+	.wsock = 0,
+	.addr = { .ss_family = AF_INET6 },
+	.vhost = { "fake" },
+};
+
+struct Client *make_local_unknown(void)
+{
+	struct Client *client;
+
+	client = make_client(NULL);
+	rb_dlinkMoveNode(&client->localClient->tnode, &unknown_list, &lclient_list);
+	client->servptr = &me;
+	rb_dlinkAdd(client, &client->lnode, &client->servptr->serv->users);
+	client->localClient->listener = &fake_listener;
+	client->preClient->auth.accepted = true;
+
+	return client;
+}
 
 struct Client *make_local_person(void)
 {
@@ -44,10 +73,7 @@ struct Client *make_local_person_full(const char *nick, const char *username, co
 {
 	struct Client *client;
 
-	client = make_client(NULL);
-	rb_dlinkMoveNode(&client->localClient->tnode, &unknown_list, &lclient_list);
-	client->servptr = &me;
-	rb_dlinkAdd(client, &client->lnode, &client->servptr->serv->users);
+	client = make_local_unknown();
 	make_user(client);
 	SetClient(client);
 
@@ -185,6 +211,15 @@ char *get_client_sendq(const struct Client *client)
 	}
 
 	return "";
+}
+
+void client_util_parse(struct Client *client, const char *message)
+{
+	char *copy = rb_strdup(message);
+
+	parse(client, copy, copy+strlen(copy));
+
+	rb_free(copy);
 }
 
 void client_util_init(void)

@@ -63,6 +63,7 @@
 void client_util_init(void);
 void client_util_free(void);
 
+struct Client *make_local_unknown(void);
 struct Client *make_local_person(void);
 struct Client *make_local_person_nick(const char *nick);
 struct Client *make_local_person_full(const char *nick, const char *username, const char *hostname, const char *ip, const char *realname);
@@ -83,11 +84,17 @@ struct Channel *make_channel(void);
 
 char *get_client_sendq(const struct Client *client);
 
+void client_util_parse(struct Client *client, const char *message);
+
 #define is_client_sendq_empty(client, message, ...) do { \
 		is_string("", get_client_sendq(client), message, ##__VA_ARGS__); \
 	} while (0)
 
-#define is_client_sendq(queue, client, message, ...) do { \
+#define is_client_sendq_one(queue, client, message, ...) do { \
 		is_string(queue, get_client_sendq(client), message, ##__VA_ARGS__); \
+	} while (0)
+
+#define is_client_sendq(queue, client, message, ...) do { \
+		is_client_sendq_one(queue, client, message, ##__VA_ARGS__); \
 		is_client_sendq_empty(client, message, ##__VA_ARGS__); \
 	} while (0)
