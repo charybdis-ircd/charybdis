@@ -1,5 +1,3 @@
-!tests/runtime/modules/*.so
-!tests/runtime/modules/autoload/*.so
 *.a
 *.dSYM/
 *.exe

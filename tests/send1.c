@@ -4784,8 +4784,8 @@ int main(int argc, char *argv[])
 	client_util_init();
 
 	// Load modules in a predictable order so that tags are added in the same order every time
-	ircd_util_reload_module("CLICAP_ACCOUNT_TAG");
-	ircd_util_reload_module("CLICAP_SERVER_TIME");
+	ircd_util_reload_module("m_account_tag");
+	ircd_util_reload_module("m_server_time");
 
 	CLICAP_ACCOUNT_TAG = capability_get(cli_capindex, "account-tag", NULL);
 	ok(CLICAP_ACCOUNT_TAG != 0, "CLICAP_ACCOUNT_TAG missing; " MSG);
