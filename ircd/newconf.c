@@ -883,12 +883,6 @@ conf_set_listen_port_both(void *data, int ssl, int sctp)
 		}
                 if(listener_address[0] == NULL)
                 {
-			if (!ssl)
-			{
-				conf_report_warning("listener 'ANY/%d': support for plaintext listeners may be removed in a future release per RFCs 7194 & 7258.  "
-                                                    "It is suggested that users be migrated to SSL/TLS connections.", args->v.number);
-			}
-
 			if (sctp) {
 				conf_report_error("listener::sctp_port has no addresses -- ignoring.");
 			} else {
@@ -903,12 +897,6 @@ conf_set_listen_port_both(void *data, int ssl, int sctp)
 				family = AF_INET6;
 			else
 				family = AF_INET;
-
-			if (!ssl)
-			{
-				conf_report_warning("listener '%s/%d': support for plaintext listeners may be removed in a future release per RFCs 7194 & 7258.  "
-                                                    "It is suggested that users be migrated to SSL/TLS connections.", listener_address, args->v.number);
-			}
 
 			if (sctp) {
 #ifdef HAVE_LIBSCTP
