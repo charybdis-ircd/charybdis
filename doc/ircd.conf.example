@@ -36,6 +36,14 @@
 #loadmodule "extensions/override.so";
 #loadmodule "extensions/no_kill_services.so";
 
+/* This is new in charybdis
+ * sets swhois "is available for help."
+ * in the /whois of the IRC Operator who is modded
+ * +h on!
+ */ 
+
+loadmodule "extensions/m_helpop.so";
+
 /*
  * IP cloaking extensions: use ip_cloaking_4.0
  * if you're linking 3.2 and later, otherwise use
@@ -474,6 +482,14 @@ general {
 	 *	default_umodes = "+ih";
 	 */
 	default_umodes = "+i";
+  
+        /* This is the configuration block for the HELPOP module, 
+         * If it is loaded, you can carry on, if it isn't loaded, kindly
+         * uncomment the following lines:
+         */
+
+        helpopstring = "is available for help.";
+        helpop_unreal_loc = yes;
 
 	default_operstring = "is an IRC Operator";
 	default_adminstring = "is a Server Administrator";
