@@ -102,7 +102,7 @@ int user_modes[256] = {
 	0,			/* e */
 	0,			/* f */
 	UMODE_CALLERID,		/* g */
-	0,			/* h */
+        UMODE_HELPOP,		/* h */
 	UMODE_INVISIBLE,	/* i */
 	0,			/* j */
 	0,			/* k */
@@ -1119,6 +1119,12 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	{
 		sendto_one_notice(source_p, ":*** You need oper and operwall flag for +z");
 		source_p->umodes &= ~UMODE_OPERWALL;
+	}
+
+        if(MyClient(source_p) && (source_p->umodes & UMODE_HELPOP) && !IsOperHelper(source_p))
+	{
+		sendto_one_notice(source_p, ":*** You need oper and helpop flag for +h");
+		source_p->umodes &= ~UMODE_HELPOP;
 	}
 
 	if(MyConnect(source_p) && (source_p->umodes & UMODE_ADMIN) &&

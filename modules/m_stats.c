@@ -788,6 +788,9 @@ stats_operedup (struct Client *source_p)
 	RB_DLINK_FOREACH (oper_ptr, oper_list.head)
 	{
 		target_p = oper_ptr->data;
+      
+                if(!IsHelpOp(target_p))
+			continue;
 
 		if(IsOperInvis(target_p) && !IsOper(source_p))
 			continue;

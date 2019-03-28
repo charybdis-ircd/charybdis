@@ -328,6 +328,7 @@ static struct mode_table umode_table[] = {
 	{"servnotice",	UMODE_SERVNOTICE},
 	{"wallop",	UMODE_WALLOP	},
 	{"operwall",	UMODE_OPERWALL	},
+        {"helpop",	UMODE_HELPOP	},
 	{NULL, 0}
 };
 
