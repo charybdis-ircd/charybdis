@@ -196,6 +196,13 @@ setfilter(const char *check, const char *data, const char **error)
 		return 0;
 	}
 
+	if (*data != '+') {
+		if (error) *error = "unknown command or data doesn't start with +";
+		return -1;
+	}
+
+	data += 1;
+
 	if (state == FILTER_FILLING) {
 		int dl;
 		unsigned char *d = rb_base64_decode(data, strlen(data), &dl);
