@@ -126,7 +126,7 @@ moddeinit(void)
 
 mapi_clist_av1 filter_clist[] = { &setfilter_msgtab, NULL };
 
-DECLARE_MODULE_AV1(filter, modinit, moddeinit, filter_clist, NULL, filter_hfnlist, "0.3");
+DECLARE_MODULE_AV1(filter, modinit, moddeinit, filter_clist, NULL, filter_hfnlist, "0.4");
 
 static int
 setfilter(const char *check, const char *data, const char **error)
@@ -159,6 +159,28 @@ setfilter(const char *check, const char *data, const char **error)
 		}
 		state = FILTER_FILLING;
 		strcpy(check_str, check);
+		return 0;
+	}
+
+	if (!strcasecmp(data, "drop")) {
+		if (!filter_db) {
+			if (error) *error = "no database to drop";
+			return -1;
+		}
+		hs_free_database(filter_db);
+		filter_db = 0;
+		return 0;
+	}
+
+	if (!strcasecmp(data, "abort")) {
+		if (state != FILTER_FILLING) {
+			if (error) *error = "not filling";
+			return -1;
+		}
+		state = filter_db ? FILTER_LOADED : FILTER_EMPTY;
+		rb_free(filter_data);
+		filter_data = 0;
+		filter_data_len = 0;
 		return 0;
 	}
 
