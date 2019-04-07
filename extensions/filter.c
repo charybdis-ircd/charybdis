@@ -27,12 +27,14 @@
 #include "stdinc.h"
 #include "channel.h"
 #include "client.h"
+#include "chmode.h"
 #include "match.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
 #include "s_newconf.h"
+#include "s_serv.h"
+#include "s_user.h"
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
@@ -81,6 +83,8 @@ enum filter_state {
 static enum filter_state state = FILTER_EMPTY;
 static char check_str[21] = "";
 
+static unsigned filter_chmode, filter_umode;
+
 mapi_hfn_list_av1 filter_hfnlist[] = {
 	{ "privmsg_user", (hookfn) filter_msg_user },
 	{ "privmsg_channel", (hookfn) filter_msg_channel },
@@ -95,8 +99,22 @@ struct Message setfilter_msgtab = {
 };
 
 static void
+modinit(void)
+{
+	filter_umode = user_modes['u'] = find_umode_slot();
+	construct_umodebuf();
+	filter_chmode = cflag_add('u', chm_simple);
+}
+
+static void
 moddeinit(void)
 {
+	if (filter_umode) {
+		user_modes['u'] = 0;
+		construct_umodebuf();
+	}
+	if (filter_chmode)
+		cflag_orphan('u');
 	if (filter_scratch)
 		hs_free_scratch(filter_scratch);
 	if (filter_db)
@@ -108,7 +126,7 @@ moddeinit(void)
 
 mapi_clist_av1 filter_clist[] = { &setfilter_msgtab, NULL };
 
-DECLARE_MODULE_AV1(filter, NULL, moddeinit, filter_clist, NULL, filter_hfnlist, "0.3");
+DECLARE_MODULE_AV1(filter, modinit, moddeinit, filter_clist, NULL, filter_hfnlist, "0.3");
 
 static int
 setfilter(const char *check, const char *data, const char **error)
@@ -333,6 +351,9 @@ filter_msg_user(void *data_)
 	if (IsOper(s) || IsOper(data->target_p)) {
 		return;
 	}
+	if (data->target_p->umodes & filter_umode) {
+		return;
+	}
 	char *text = strcpy(clean_buffer, data->text);
 	strip_colour(text);
 	strip_unprintable(text);
@@ -369,6 +390,9 @@ filter_msg_channel(void *data_)
 	/* just normal oper immunity for channels. i'd like to have a mode that
 	 * disables the filter per-channel, but that's for the future */
 	if (IsOper(s)) {
+		return;
+	}
+	if (data->chptr->mode.mode & filter_chmode) {
 		return;
 	}
 	char *text = strcpy(clean_buffer, data->text);
