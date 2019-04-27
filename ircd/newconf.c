@@ -1617,15 +1617,6 @@ conf_set_general_hide_error_messages(void *data)
 }
 
 static void
-conf_set_general_kline_delay(void *data)
-{
-	ConfigFileEntry.kline_delay = *(unsigned int *) data;
-
-	/* THIS MUST BE HERE to stop us being unable to check klines */
-	kline_queued = false;
-}
-
-static void
 conf_set_general_stats_k_oper_only(void *data)
 {
 	char *val = data;
@@ -2732,7 +2723,6 @@ static struct ConfEntry conf_general_table[] =
 	{ "compression_level", 	CF_INT,    conf_set_general_compression_level,	0, NULL },
 	{ "havent_read_conf", 	CF_YESNO,  conf_set_general_havent_read_conf,	0, NULL },
 	{ "hide_error_messages",CF_STRING, conf_set_general_hide_error_messages,0, NULL },
-	{ "kline_delay", 	CF_TIME,   conf_set_general_kline_delay,	0, NULL },
 	{ "stats_k_oper_only", 	CF_STRING, conf_set_general_stats_k_oper_only,	0, NULL },
 	{ "stats_i_oper_only", 	CF_STRING, conf_set_general_stats_i_oper_only,	0, NULL },
 	{ "default_umodes",	CF_QSTRING, conf_set_general_default_umodes, 0, NULL },
