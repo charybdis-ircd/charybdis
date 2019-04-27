@@ -585,7 +585,6 @@ enum
 };
 
 extern void check_banned_lines(void);
-extern void check_klines_event(void *unused);
 extern void check_klines(void);
 extern void check_one_kline(struct ConfItem *kline);
 extern void check_dlines(void);
