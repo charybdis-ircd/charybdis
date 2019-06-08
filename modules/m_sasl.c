@@ -229,6 +229,10 @@ me_sasl(struct Client *client_p, struct Client *source_p,
 	if(!IsService(agent_p))
 		return 0;
 
+	/* If SASL has been aborted, do nothing. */
+	if (target_p->localClient->sasl_out == 0)
+		return 0;
+
 	/* Reject if someone has already answered. */
 	if(*target_p->localClient->sasl_agent && strncmp(parv[1], target_p->localClient->sasl_agent, IDLEN))
 		return 0;
