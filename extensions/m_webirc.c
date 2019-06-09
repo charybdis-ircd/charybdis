@@ -80,6 +80,8 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	const char *encr;
 	struct rb_sockaddr_storage addr;
 
+	int secure = 0;
+
 	aconf = find_address_conf(client_p->host, client_p->sockhost,
 				IsGotId(client_p) ? client_p->username : "webirc",
 				IsGotId(client_p) ? client_p->username : "webirc",
@@ -124,6 +126,27 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	}
 
 	source_p->localClient->ip = addr;
+
+	if (parc >= 6)
+	{
+		char *s;
+		for (s = strtok(parv[5], " "); s != NULL; s = strtok(NULL, " "))
+		{
+			if (!ircncmp(s, "secure", 6) && (s[6] == '=' || s[6] == '\0'))
+				secure = 1;
+		}
+	}
+
+	if (secure && !IsSSL(source_p))
+	{
+		sendto_one(source_p, "NOTICE * :CGI:IRC is not connected securely; marking you as insecure");
+		return 0;
+	}
+
+	if (!secure)
+	{
+		SetInsecure(source_p);
+	}
 
 	rb_inet_ntop_sock((struct sockaddr *)&source_p->localClient->ip, source_p->sockhost, sizeof(source_p->sockhost));
 

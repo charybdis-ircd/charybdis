@@ -439,6 +439,7 @@ struct ListClient
 #define LFLAGS_FLUSH		0x00000002
 #define LFLAGS_CORK		0x00000004
 #define LFLAGS_SCTP		0x00000008
+#define LFLAGS_INSECURE	0x00000010	/* for marking SSL clients as insecure before registration */
 
 /* umodes, settable flags */
 /* lots of this moved to snomask -- jilles */
@@ -512,6 +513,10 @@ struct ListClient
 #define IsSCTP(x)		((x)->localClient->localflags & LFLAGS_SCTP)
 #define SetSCTP(x)		((x)->localClient->localflags |= LFLAGS_SCTP)
 #define ClearSCTP(x)		((x)->localClient->localflags &= ~LFLAGS_SCTP)
+
+#define IsInsecure(x)		((x)->localClient->localflags & LFLAGS_INSECURE)
+#define SetInsecure(x)		((x)->localClient->localflags |= LFLAGS_INSECURE)
+#define ClearInsecure(x)	((x)->localClient->localflags &= ~LFLAGS_INSECURE)
 
 /* oper flags */
 #define MyOper(x)               (MyConnect(x) && IsOper(x))
