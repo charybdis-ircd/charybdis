@@ -140,7 +140,7 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	if (secure && !IsSSL(source_p))
 	{
 		sendto_one(source_p, "NOTICE * :CGI:IRC is not connected securely; marking you as insecure");
-		return 0;
+		secure = 0;
 	}
 
 	if (!secure)
