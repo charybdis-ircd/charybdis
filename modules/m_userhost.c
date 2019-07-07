@@ -33,6 +33,7 @@
 #include "parse.h"
 #include "modules.h"
 #include "s_conf.h"
+#include "s_newconf.h"
 
 static const char userhost_desc[] =
 	"Provides the USERHOST command to show a user's host";
@@ -85,7 +86,7 @@ m_userhost(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sour
 			{
 				rl = sprintf(response, "%s%s=%c%s@%s ",
 						target_p->name,
-						IsOper(target_p) ? "*" : "",
+						SeesOper(target_p, source_p) ? "*" : "",
 						(target_p->user->away) ? '-' : '+',
 						target_p->username,
 						target_p->sockhost);
@@ -94,7 +95,7 @@ m_userhost(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sour
 			{
 				rl = sprintf(response, "%s%s=%c%s@%s ",
 						target_p->name,
-						IsOper(target_p) ? "*" : "",
+						SeesOper(target_p, source_p) ? "*" : "",
 						(target_p->user->away) ? '-' : '+',
 						target_p->username, target_p->host);
 			}

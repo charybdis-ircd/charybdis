@@ -239,6 +239,7 @@ struct config_file_entry
 	int certfp_method;
 
 	int hide_opers_in_whois;
+	int hide_opers;
 };
 
 struct config_channel_entry

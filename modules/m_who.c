@@ -218,7 +218,7 @@ m_who(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
 	/* '/who nick' */
 
 	if(((target_p = find_named_person(mask)) != NULL) &&
-	   (!server_oper || IsOper(target_p)))
+	   (!server_oper || SeesOper(target_p, source_p)))
 	{
 		int isinvis = 0;
 
@@ -314,7 +314,7 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
 		if(!IsInvisible(target_p) || IsMarked(target_p))
 			continue;
 
-		if(server_oper && !IsOper(target_p))
+		if(server_oper && !SeesOper(target_p, source_p))
 			continue;
 
 		SetMark(target_p);
@@ -387,7 +387,7 @@ who_global(struct Client *source_p, const char *mask, int server_oper, int opers
 			continue;
 		}
 
-		if(server_oper && !IsOper(target_p))
+		if(server_oper && !SeesOper(target_p, source_p))
 			continue;
 
 		if(maxmatches > 0)
@@ -435,7 +435,7 @@ do_who_on_channel(struct Client *source_p, struct Channel *chptr,
 		msptr = ptr->data;
 		target_p = msptr->client_p;
 
-		if(server_oper && !IsOper(target_p))
+		if(server_oper && !SeesOper(target_p, source_p))
 			continue;
 
 		if(member || !IsInvisible(target_p))
@@ -488,7 +488,7 @@ do_who(struct Client *source_p, struct Client *target_p, struct membership *mspt
 	const char *q;
 
 	sprintf(status, "%c%s%s",
-		   target_p->user->away ? 'G' : 'H', IsOper(target_p) ? "*" : "", msptr ? find_channel_status(msptr, fmt->fields || IsCapable(source_p, CLICAP_MULTI_PREFIX)) : "");
+		   target_p->user->away ? 'G' : 'H', SeesOper(target_p, source_p) ? "*" : "", msptr ? find_channel_status(msptr, fmt->fields || IsCapable(source_p, CLICAP_MULTI_PREFIX)) : "");
 
 	if (fmt->fields == 0)
 		sendto_one(source_p, form_str(RPL_WHOREPLY), me.name,
