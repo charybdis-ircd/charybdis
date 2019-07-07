@@ -167,7 +167,7 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 #define IsOperMassNotice(x)	(HasPrivilege((x), "oper:mass_notice"))
 #define IsOperGeneral(x)	(HasPrivilege((x), "oper:general"))
 
-#define SeesOper(target, source)	(IsOper((target)) && ((!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden")) || IsOper((source))))
+#define SeesOper(target, source)	(IsOper((target)) && ((!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden")) || HasPrivilege((source), "auspex:oper")))
 
 extern struct oper_conf *make_oper_conf(void);
 extern void free_oper_conf(struct oper_conf *);

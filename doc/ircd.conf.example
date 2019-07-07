@@ -236,7 +236,7 @@ auth {
  * means they must be defined before operator {}.
  */
 privset "local_op" {
-	privs = oper:general, oper:local_kill, oper:operwall;
+	privs = oper:general, auspex:oper, oper:local_kill, oper:operwall;
 };
 
 privset "server_bot" {
