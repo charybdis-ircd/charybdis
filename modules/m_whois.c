@@ -318,7 +318,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 				    GlobalSetOptions.operstring));
 	}
 
-	if(!EmptyString(target_p->user->opername) && IsOper(target_p) && IsOper(source_p))
+	if(!EmptyString(target_p->user->opername) && IsOper(target_p) && (target_p == source_p || HasPrivilege(source_p, "oper:privs")))
 	{
 		char buf[512];
 		const char *privset = "(missing)";

@@ -789,7 +789,7 @@ stats_oper(struct Client *source_p)
 		sendto_one_numeric(source_p, RPL_STATSOLINE,
 				form_str(RPL_STATSOLINE),
 				oper_p->username, oper_p->host, oper_p->name,
-				IsOperGeneral(source_p) ? oper_p->privset->name : "0", "-1");
+				HasPrivilege(source_p, "oper:privs") ? oper_p->privset->name : "0", "-1");
 	}
 }
 
@@ -810,6 +810,13 @@ stats_capability(struct Client *client_p)
 static void
 stats_privset(struct Client *source_p)
 {
+	if (!HasPrivilege(source_p, "oper:privs"))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "privs");
+		return;
+	}
+
 	privilegeset_report(source_p);
 }
 
