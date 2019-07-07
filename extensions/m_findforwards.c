@@ -64,7 +64,7 @@ m_findforwards(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *
 	*p = '\0';
 
 	/* Allow ircops to search for forwards to nonexistent channels */
-	if(!IsOper(source_p))
+	if(!IsOperGeneral(source_p))
 	{
 		if((chptr = find_channel(parv[1])) == NULL || (msptr = find_channel_membership(chptr, source_p)) == NULL)
 		{

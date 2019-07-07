@@ -26,6 +26,7 @@
 #include "stdinc.h"
 #include "ircd_defs.h"
 #include "s_conf.h"
+#include "s_newconf.h"
 #include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
@@ -729,7 +730,7 @@ report_auth(struct Client *client_p)
 			{
 				aconf = arec->aconf;
 
-				if(!IsOper(client_p) && IsConfDoSpoofIp(aconf))
+				if(!IsOperGeneral(client_p) && IsConfDoSpoofIp(aconf))
 					continue;
 
 				get_printable_conf(aconf, &name, &host, &pass, &user, &port,

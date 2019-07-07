@@ -32,6 +32,7 @@
 #include "hook.h"
 #include "send.h"
 #include "s_assert.h"
+#include "s_newconf.h"
 
 static char readBuf[READBUF_SIZE];
 static void client_dopacket(struct Client *client_p, char *buffer, size_t length);
@@ -108,7 +109,7 @@ parse_client_queued(struct Client *client_p)
 		/* allow opers 4 times the amount of messages as users. why 4?
 		 * why not. :) --fl_
 		 */
-		if(IsOper(client_p) && ConfigFileEntry.no_oper_flood)
+		if(IsOperGeneral(client_p) && ConfigFileEntry.no_oper_flood)
 			allow_read *= 4;
 		/*
 		 * Handle flood protection here - if we exceed our flood limit on
@@ -294,7 +295,7 @@ read_packet(rb_fde_t * F, void *data)
 		if(!IsAnyServer(client_p) &&
 		   (rb_linebuf_alloclen(&client_p->localClient->buf_recvq) > ConfigFileEntry.client_flood_max_lines))
 		{
-			if(!(ConfigFileEntry.no_oper_flood && IsOper(client_p)))
+			if(!(ConfigFileEntry.no_oper_flood && IsOperGeneral(client_p)))
 			{
 				exit_client(client_p, client_p, client_p, "Excess Flood");
 				return;

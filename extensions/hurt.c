@@ -470,9 +470,9 @@ doing_stats_hook(hook_data_int *hdata)
 	source_p = hdata->client;
 	if(hdata->arg2 != (int) 's')
 		return;
-	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
+	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOperGeneral(source_p))
 		return;
-	if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper(source_p))
+	if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOperGeneral(source_p))
 	{
 		hurt = hurt_find(source_p->sockhost);
 		if (hurt != NULL)

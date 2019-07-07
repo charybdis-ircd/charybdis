@@ -660,7 +660,7 @@ chm_hidden(struct Client *source_p, struct Channel *chptr,
 	  int alevel, int parc, int *parn,
 	  const char **parv, int *errors, int dir, char c, long mode_type)
 {
-	if(!IsOper(source_p) && !IsServer(source_p))
+	if(!IsOperGeneral(source_p) && !IsServer(source_p))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one_numeric(source_p, ERR_NOPRIVILEGES, form_str(ERR_NOPRIVILEGES));
@@ -1269,7 +1269,7 @@ chm_forward(struct Client *source_p, struct Channel *chptr,
 	if(!allow_mode_change(source_p, chptr, alevel, errors, c))
 		return;
 #else
-	if(!IsOper(source_p) && !IsServer(source_p))
+	if(!IsOperGeneral(source_p) && !IsServer(source_p))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one_numeric(source_p, ERR_NOPRIVILEGES, form_str(ERR_NOPRIVILEGES));

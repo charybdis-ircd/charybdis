@@ -212,7 +212,7 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 
 	statchar = parv[1][0];
 
-	if(MyClient(source_p) && !IsOper(source_p) && parc > 2)
+	if(MyClient(source_p) && !IsOperGeneral(source_p) && parc > 2)
 	{
 		/* Check the user is actually allowed to do /stats, and isnt flooding */
 		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
@@ -253,7 +253,7 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 				   me.name, source_p->name, "admin");
 			goto stats_out;
 		}
-		if(cmd->need_oper && !IsOper(source_p))
+		if(cmd->need_oper && !IsOperGeneral(source_p))
 		{
 			sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 					   form_str (ERR_NOPRIVILEGES));
@@ -322,7 +322,7 @@ stats_connect(struct Client *source_p)
 
 	if((ConfigFileEntry.stats_c_oper_only ||
 	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
-	    !IsOper(source_p))
+	    !IsOperGeneral(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str(ERR_NOPRIVILEGES));
@@ -338,7 +338,7 @@ stats_connect(struct Client *source_p)
 
 		s = buf;
 
-		if(IsOper(source_p))
+		if(IsOperGeneral(source_p))
 		{
 			if(ServerConfAutoconn(server_p))
 				*s++ = 'A';
@@ -527,7 +527,7 @@ stats_hubleaf(struct Client *source_p)
 
 	if((ConfigFileEntry.stats_h_oper_only ||
 	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
-	    !IsOper(source_p))
+	    !IsOperGeneral(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -554,12 +554,12 @@ static void
 stats_auth (struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_i_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_i_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching auth blocks */
-	else if((ConfigFileEntry.stats_i_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_i_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *name, *host, *user, *classname;
@@ -598,12 +598,12 @@ static void
 stats_tklines(struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching klines */
-	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *host, *pass, *user, *oper_reason;
@@ -700,12 +700,12 @@ static void
 stats_klines(struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching klines */
-	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *host, *pass, *user, *oper_reason;
@@ -775,7 +775,7 @@ stats_oper(struct Client *source_p)
 	struct oper_conf *oper_p;
 	rb_dlink_node *ptr;
 
-	if(!IsOper(source_p) && ConfigFileEntry.stats_o_oper_only)
+	if(!IsOperGeneral(source_p) && ConfigFileEntry.stats_o_oper_only)
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -789,7 +789,7 @@ stats_oper(struct Client *source_p)
 		sendto_one_numeric(source_p, RPL_STATSOLINE,
 				form_str(RPL_STATSOLINE),
 				oper_p->username, oper_p->host, oper_p->name,
-				IsOper(source_p) ? oper_p->privset->name : "0", "-1");
+				IsOperGeneral(source_p) ? oper_p->privset->name : "0", "-1");
 	}
 }
 
@@ -853,7 +853,7 @@ stats_operedup (struct Client *source_p)
 static void
 stats_ports (struct Client *source_p)
 {
-	if(!IsOper (source_p) && ConfigFileEntry.stats_P_oper_only)
+	if(!IsOperGeneral (source_p) && ConfigFileEntry.stats_P_oper_only)
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 	else
@@ -1181,7 +1181,7 @@ stats_servers (struct Client *source_p)
 	int days, hours, minutes;
 	int j = 0;
 
-	if(ConfigServerHide.flatten_links && !IsOper(source_p) &&
+	if(ConfigServerHide.flatten_links && !IsOperGeneral(source_p) &&
 	   !IsExemptShide(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -1257,7 +1257,7 @@ stats_gecos(struct Client *source_p)
 static void
 stats_class(struct Client *source_p)
 {
-	if(ConfigFileEntry.stats_y_oper_only && !IsOper(source_p))
+	if(ConfigFileEntry.stats_y_oper_only && !IsOperGeneral(source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 	else
@@ -1524,7 +1524,7 @@ stats_servlinks (struct Client *source_p)
 	int j = 0;
 	char buf[128];
 
-	if(ConfigServerHide.flatten_links && !IsOper (source_p) &&
+	if(ConfigServerHide.flatten_links && !IsOperGeneral (source_p) &&
 	   !IsExemptShide(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -1553,7 +1553,7 @@ stats_servlinks (struct Client *source_p)
 			rb_current_time() - target_p->localClient->firsttime,
 			(rb_current_time() > target_p->localClient->lasttime) ?
 			 (rb_current_time() - target_p->localClient->lasttime) : 0,
-			IsOper (source_p) ? show_capabilities (target_p) : "TS");
+			IsOperGeneral (source_p) ? show_capabilities (target_p) : "TS");
 	}
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
@@ -1659,7 +1659,7 @@ stats_ltrace(struct Client *source_p, int parc, const char *parv[])
 			stats_l_list(source_p, name, doall, wilds, &local_oper_list, statchar, stats_l_should_show_oper);
 		}
 
-		if (!ConfigServerHide.flatten_links || IsOper(source_p) ||
+		if (!ConfigServerHide.flatten_links || IsOperGeneral(source_p) ||
 				IsExemptShide(source_p))
 			stats_l_list(source_p, name, doall, wilds, &serv_list, statchar, NULL);
 
@@ -1713,7 +1713,7 @@ stats_l_client(struct Client *source_p, struct Client *target_p,
 				rb_current_time() - target_p->localClient->firsttime,
 				(rb_current_time() > target_p->localClient->lasttime) ?
 				 (rb_current_time() - target_p->localClient->lasttime) : 0,
-				IsOper(source_p) ? show_capabilities(target_p) : "-");
+				IsOperGeneral(source_p) ? show_capabilities(target_p) : "-");
 	}
 
 	else
