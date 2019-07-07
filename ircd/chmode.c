@@ -714,17 +714,14 @@ chm_staff(struct Client *source_p, struct Channel *chptr,
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
-	if(MyClient(source_p) && !IsOperResv(source_p))
+	if(MyClient(source_p) && !HasPrivilege(source_p, "oper:cmodes"))
 	{
 		if(!(*errors & SM_ERR_NOPRIVS))
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name,
-					source_p->name, "resv");
+					source_p->name, "cmodes");
 		*errors |= SM_ERR_NOPRIVS;
 		return;
 	}
-
-	if(!allow_mode_change(source_p, chptr, CHFL_CHANOP, errors, c))
-		return;
 
 	if(MyClient(source_p) && (++mode_limit_simple > MAXMODES_SIMPLE))
 		return;
