@@ -3898,8 +3898,8 @@ static void sendto_realops_snomask1(void)
 	oper3->snomask = SNO_BOTS | SNO_SKILL;
 	oper4->snomask = SNO_GENERAL | SNO_REJ;
 
-	oper3->localClient->privset = privilegeset_get("admin");
-	oper4->localClient->privset = privilegeset_get("admin");
+	oper3->user->privset = privilegeset_get("admin");
+	oper4->user->privset = privilegeset_get("admin");
 
 	server->localClient->caps = CAP_ENCAP | CAP_TS6;
 	server2->localClient->caps = 0;
@@ -4125,8 +4125,8 @@ static void sendto_realops_snomask1__tags(void)
 	oper3->snomask = SNO_BOTS | SNO_SKILL;
 	oper4->snomask = SNO_GENERAL | SNO_REJ;
 
-	oper3->localClient->privset = privilegeset_get("admin");
-	oper4->localClient->privset = privilegeset_get("admin");
+	oper3->user->privset = privilegeset_get("admin");
+	oper4->user->privset = privilegeset_get("admin");
 
 	server->localClient->caps = CAP_ENCAP | CAP_TS6;
 	server2->localClient->caps = 0;
@@ -4340,8 +4340,8 @@ static void sendto_realops_snomask_from1(void)
 	oper3->snomask = SNO_BOTS | SNO_SKILL;
 	oper4->snomask = SNO_GENERAL | SNO_REJ;
 
-	oper3->localClient->privset = privilegeset_get("admin");
-	oper4->localClient->privset = privilegeset_get("admin");
+	oper3->user->privset = privilegeset_get("admin");
+	oper4->user->privset = privilegeset_get("admin");
 
 	sendto_realops_snomask_from(SNO_BOTS, L_ALL, &me, "Hello %s!", "World");
 	is_client_sendq(":" TEST_ME_NAME " NOTICE * :*** Notice -- Hello World!" CRLF, oper1, "Matches mask; " MSG);
@@ -4460,8 +4460,8 @@ static void sendto_realops_snomask_from1__tags(void)
 	oper3->snomask = SNO_BOTS | SNO_SKILL;
 	oper4->snomask = SNO_GENERAL | SNO_REJ;
 
-	oper3->localClient->privset = privilegeset_get("admin");
-	oper4->localClient->privset = privilegeset_get("admin");
+	oper3->user->privset = privilegeset_get("admin");
+	oper4->user->privset = privilegeset_get("admin");
 
 	sendto_realops_snomask_from(SNO_BOTS, L_ALL, &me, "Hello %s!", "World");
 	is_client_sendq("@time=" ADVENTURE_TIME " :" TEST_ME_NAME " NOTICE * :*** Notice -- Hello World!" CRLF, oper1, "Matches mask; " MSG);

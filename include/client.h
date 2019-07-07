@@ -79,6 +79,9 @@ struct User
 	char *away;		/* pointer to away message */
 	int refcnt;		/* Number of times this block is referenced */
 
+	char *opername; /* name of operator{} block being used or tried (challenge) */
+	struct PrivilegeSet *privset;
+
 	char suser[NICKLEN+1];
 };
 
@@ -225,7 +228,6 @@ struct LocalUser
 	 */
 	char *passwd;
 	char *auth_user;
-	char *opername; /* name of operator{} block being used or tried (challenge) */
 	char *challenge;
 	char *fullcaps;
 	char *cipher_string;
@@ -281,8 +283,6 @@ struct LocalUser
 	struct ZipStats *zipstats;		/* zipstats */
 	uint16_t cork_count;			/* used for corking/uncorking connections */
 	struct ev_entry *event;			/* used for associated events */
-
-	struct PrivilegeSet *privset;		/* privset... */
 
 	char sasl_agent[IDLEN];
 	unsigned char sasl_out;

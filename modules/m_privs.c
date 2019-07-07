@@ -38,6 +38,7 @@
 #include "modules.h"
 #include "s_conf.h"
 #include "s_newconf.h"
+#include "hash.h"
 
 static const char privs_desc[] = "Provides the PRIVS command to inspect an operator's privileges";
 
@@ -86,21 +87,24 @@ static void show_privs(struct Client *source_p, struct Client *target_p)
 	struct mode_table *p;
 
 	buf[0] = '\0';
-	if (target_p->localClient->privset)
-		rb_strlcat(buf, target_p->localClient->privset->privs, sizeof buf);
+	if (target_p->user->privset)
+		rb_strlcat(buf, target_p->user->privset->privs, sizeof buf);
 	if (IsOper(target_p))
 	{
-		if (buf[0] != '\0')
-			rb_strlcat(buf, " ", sizeof buf);
-		rb_strlcat(buf, "operator:", sizeof buf);
-		rb_strlcat(buf, target_p->localClient->opername, sizeof buf);
+		if (target_p->user->opername)
+		{
+			if (buf[0] != '\0')
+				rb_strlcat(buf, " ", sizeof buf);
+			rb_strlcat(buf, "operator:", sizeof buf);
+			rb_strlcat(buf, target_p->user->opername, sizeof buf);
+		}
 
-		if (target_p->localClient->privset)
+		if (target_p->user->privset)
 		{
 			if (buf[0] != '\0')
 				rb_strlcat(buf, " ", sizeof buf);
 			rb_strlcat(buf, "privset:", sizeof buf);
-			rb_strlcat(buf, target_p->localClient->privset->name, sizeof buf);
+			rb_strlcat(buf, target_p->user->privset->name, sizeof buf);
 		}
 	}
 	p = &auth_client_table[0];
@@ -126,8 +130,9 @@ me_privs(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	if (!IsOper(source_p) || parc < 2 || EmptyString(parv[1]))
 		return;
 
-	/* we cannot show privs for remote clients */
-	if((target_p = find_person(parv[1])) && MyClient(target_p))
+	target_p = find_person(parv[1]);
+
+	if (target_p != NULL)
 		show_privs(source_p, target_p);
 }
 
@@ -135,13 +140,24 @@ static void
 mo_privs(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
+	struct Client *server_p;
 
 	if (parc < 2 || EmptyString(parv[1]))
-		target_p = source_p;
+	{
+		server_p = target_p = source_p;
+	}
 	else
 	{
-		target_p = find_named_person(parv[1]);
-		if (target_p == NULL)
+		if (parc >= 3)
+		{
+			server_p = find_named_client(parv[1]);
+			target_p = find_named_person(parv[2]);
+		}
+		else
+		{
+			server_p = target_p = find_named_person(parv[1]);
+		}
+		if (server_p == NULL || target_p == NULL)
 		{
 			sendto_one_numeric(source_p, ERR_NOSUCHNICK,
 					   form_str(ERR_NOSUCHNICK), parv[1]);
@@ -149,12 +165,15 @@ mo_privs(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		}
 	}
 
-	if (MyClient(target_p))
+	if (!IsServer(server_p))
+		server_p = server_p->servptr;
+
+	if (IsMe(server_p))
 		show_privs(source_p, target_p);
 	else
-		sendto_one(target_p, ":%s ENCAP %s PRIVS %s",
-				get_id(source_p, target_p),
-				target_p->servptr->name,
+		sendto_one(server_p, ":%s ENCAP %s PRIVS %s",
+				get_id(source_p, server_p),
+				server_p->name,
 				use_id(target_p));
 }
 

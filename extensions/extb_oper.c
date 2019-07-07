@@ -42,7 +42,7 @@ static int eb_oper(const char *data, struct Client *client_p,
 	if (data != NULL)
 	{
 		struct PrivilegeSet *set = privilegeset_get(data);
-		if (set != NULL && client_p->localClient->privset == set)
+		if (set != NULL && client_p->user->privset == set)
 			return EXTBAN_MATCH;
 
 		/* $o:admin or whatever */

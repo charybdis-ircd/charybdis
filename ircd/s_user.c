@@ -1121,12 +1121,19 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 					}
 					source_p->flags &= ~OPER_FLAGS;
 
-					rb_free(source_p->localClient->opername);
-					source_p->localClient->opername = NULL;
-
 					rb_dlinkFindDestroy(source_p, &local_oper_list);
-					privilegeset_unref(source_p->localClient->privset);
-					source_p->localClient->privset = NULL;
+				}
+
+				if(source_p->user->opername != NULL)
+				{
+					rb_free(source_p->user->opername);
+					source_p->user->opername = NULL;
+				}
+
+				if(source_p->user->privset != NULL)
+				{
+					privilegeset_unref(source_p->user->privset);
+					source_p->user->privset = NULL;
 				}
 
 				rb_dlinkFindDestroy(source_p, &oper_list);
@@ -1413,8 +1420,8 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 	SetExemptKline(source_p);
 
 	source_p->flags |= oper_p->flags;
-	source_p->localClient->opername = rb_strdup(oper_p->name);
-	source_p->localClient->privset = privilegeset_ref(oper_p->privset);
+	source_p->user->opername = rb_strdup(oper_p->name);
+	source_p->user->privset = privilegeset_ref(oper_p->privset);
 
 	rb_dlinkAddAlloc(source_p, &local_oper_list);
 	rb_dlinkAddAlloc(source_p, &oper_list);
@@ -1433,6 +1440,8 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 	sendto_realops_snomask(SNO_GENERAL, L_ALL,
 			     "%s (%s!%s@%s) is now an operator", oper_p->name, source_p->name,
 			     source_p->username, source_p->host);
+	sendto_server(NULL, NULL, CAP_TS6, NOCAPS, ":%s OPER %s %s",
+			use_id(source_p), oper_p->name, oper_p->privset->name);
 	if(!(old & UMODE_INVISIBLE) && IsInvisible(source_p))
 		++Count.invisi;
 	if((old & UMODE_INVISIBLE) && !IsInvisible(source_p))

@@ -1267,7 +1267,7 @@ get_oper_name(struct Client *client_p)
 	{
 		snprintf(buffer, sizeof(buffer), "%s!%s@%s{%s}",
 				client_p->name, client_p->username,
-				client_p->host, client_p->localClient->opername);
+				client_p->host, client_p->user->opername);
 		return buffer;
 	}
 

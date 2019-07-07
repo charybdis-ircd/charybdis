@@ -300,10 +300,7 @@ free_local_client(struct Client *client_p)
 	rb_free(client_p->localClient->auth_user);
 	rb_free(client_p->localClient->challenge);
 	rb_free(client_p->localClient->fullcaps);
-	rb_free(client_p->localClient->opername);
 	rb_free(client_p->localClient->mangledhost);
-	if (client_p->localClient->privset)
-		privilegeset_unref(client_p->localClient->privset);
 
 	if (IsSSL(client_p))
 		ssld_decrement_clicount(client_p->localClient->ssl_ctl);
@@ -1920,6 +1917,9 @@ free_user(struct User *user, struct Client *client_p)
 	{
 		if(user->away)
 			rb_free((char *) user->away);
+		rb_free(user->opername);
+		if (user->privset)
+			privilegeset_unref(user->privset);
 		/*
 		 * sanity check
 		 */

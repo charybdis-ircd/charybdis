@@ -61,7 +61,7 @@ void set_privset(struct Client *const source,
 		return;
 	}
 
-	if(IsOper(target) && target->localClient->privset == privset)
+	if(IsOper(target) && target->user->privset == privset)
 	{
 		sendto_one_notice(source, ":%s already has role of %s.", target->name, privset_name);
 		return;
@@ -71,7 +71,7 @@ void set_privset(struct Client *const source,
 	{
 		sendto_one_notice(target, ":%s has changed your role to %s.", source->name, privset_name);
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has changed %s's role to %s.", get_oper_name(source), target->name, privset_name);
-		target->localClient->privset = privset;
+		target->user->privset = privset;
 		return;
 	}
 
