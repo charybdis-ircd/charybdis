@@ -309,9 +309,17 @@ _modinit(void)
 static void
 _moddeinit(void)
 {
+	rb_dlink_node *n, *tn;
+
 	/* disable the umode and remove it from the available list */
 	user_modes['p'] = 0;
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH_SAFE(n, tn, overriding_opers.head)
+	{
+		rb_dlinkDelete(n, &overriding_opers);
+		rb_free(n->data);
+	}
 
 	rb_event_delete(expire_override_deadlines_ev);
 }
