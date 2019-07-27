@@ -288,9 +288,18 @@ struct ev_entry *expire_override_deadlines_ev = NULL;
 static int
 _modinit(void)
 {
+	rb_dlink_node *ptr;
+
 	/* add the usermode to the available slot */
 	user_modes['p'] = find_umode_slot();
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH(ptr, lclient_list.head)
+	{
+		struct Client *client_p = ptr->data;
+		if (IsPerson(client_p) && (client_p->umodes & user_modes['p']))
+			update_session_deadline(client_p, NULL);
+	}
 
 	expire_override_deadlines_ev = rb_event_add("expire_override_deadlines", expire_override_deadlines, NULL, 60);
 
