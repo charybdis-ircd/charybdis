@@ -108,6 +108,7 @@ static void
 check_umode_change(void *vdata)
 {
 	hook_data_umode_changed *data = (hook_data_umode_changed *)vdata;
+	bool changed = false;
 	struct Client *source_p = data->client;
 
 	if (!MyClient(source_p))
@@ -116,9 +117,7 @@ check_umode_change(void *vdata)
 	if (data->oldumodes & UMODE_OPER && !IsOper(source_p))
 		source_p->umodes &= ~user_modes['p'];
 
-	/* didn't change +p umode, we don't need to do anything */
-	if (!((data->oldumodes ^ source_p->umodes) & user_modes['p']))
-		return;
+	changed = ((data->oldumodes ^ source_p->umodes) & user_modes['p']);
 
 	if (source_p->umodes & user_modes['p'])
 	{
@@ -129,12 +128,14 @@ check_umode_change(void *vdata)
 			return;
 		}
 
-		update_session_deadline(source_p, NULL);
-
-		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has enabled oper-override (+p)",
-				       get_oper_name(source_p));
+		if (changed)
+		{
+			update_session_deadline(source_p, NULL);
+			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has enabled oper-override (+p)",
+					get_oper_name(source_p));
+		}
 	}
-	else if (!(source_p->umodes & user_modes['p']))
+	else if (changed && !(source_p->umodes & user_modes['p']))
 	{
 		rb_dlink_node *n, *tn;
 
