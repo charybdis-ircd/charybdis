@@ -161,6 +161,13 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 
 		oper_up(target_p, &oper);
 	}
+	else if (privset != NULL)
+	{
+		privilegeset_ref(privset);
+	}
+
+	if (target_p->user->privset != NULL)
+		privilegeset_unref(target_p->user->privset);
 
 	target_p->user->privset = privset;
 	const char *modeparv[4];
