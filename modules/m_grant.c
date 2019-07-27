@@ -170,6 +170,11 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 		privilegeset_unref(target_p->user->privset);
 
 	target_p->user->privset = privset;
+
+	if (privset != NULL)
+		sendto_server(NULL, NULL, CAP_TS6, NOCAPS, ":%s OPER %s %s",
+				use_id(target_p), target_p->user->opername, privset->name);
+
 	const char *modeparv[4];
 	modeparv[0] = modeparv[1] = target_p->name;
 	modeparv[2] = "+";
