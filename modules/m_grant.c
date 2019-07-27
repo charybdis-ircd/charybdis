@@ -1,8 +1,6 @@
 /*
  * Copyright (C) 2006 Jilles Tjoelker
  * Copyright (C) 2006 Stephen Bennett <spb@gentoo.org>
- *
- * $Id$
  */
 
 #include "stdinc.h"
@@ -15,14 +13,15 @@
 #include "s_serv.h"
 #include "s_conf.h"
 #include "s_newconf.h"
+#include "msgbuf.h"
 
-static int mo_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
-static int me_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
+static int mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
+static int me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
 
 static int do_grant(struct Client *source_p, struct Client *target_p, const char *new_privset);
 
 struct Message grant_msgtab = {
-  "GRANT", 0, 0, 0, MFLG_SLOW,
+  "GRANT", 0, 0, 0, 0,
   { mg_ignore, mg_not_oper, mg_ignore, mg_ignore, {me_grant, 3}, {mo_grant, 3}}
 };
 
@@ -30,14 +29,12 @@ mapi_clist_av1 grant_clist[] = { &grant_msgtab, NULL };
 
 DECLARE_MODULE_AV1(grant, NULL, NULL, grant_clist, NULL, NULL, "$Revision$");
 
-extern struct mode_table oper_table[];
-
 static int
-mo_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
 
-	if(!IsOperGrant(source_p))
+	if(!HasPrivilege(source_p, "oper:grant"))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "grant");
 		return 0;
@@ -65,7 +62,8 @@ mo_grant(struct Client *client_p, struct Client *source_p, int parc, const char 
 	return 0;
 }
 
-static int me_grant(struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+static int
+me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
 
@@ -98,7 +96,7 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 
 	if (!strcmp(new_privset, "deoper"))
 	{
-		if (!IsAnyOper(target_p))
+		if (!IsOper(target_p))
 		{
 			sendto_one_notice(source_p, ":You can't deoper someone who isn't an oper.");
 			return 0;
@@ -126,7 +124,7 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 
 	if (!dodeoper)
 	{
-		if (!IsAnyOper(target_p))
+		if (!IsOper(target_p))
 		{
 			sendto_one_notice(target_p, ":%s is opering you with privilege set %s", source_p->name, privset->name);
 			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is opering %s with privilege set %s", get_oper_name(source_p), target_p->name, privset->name);
