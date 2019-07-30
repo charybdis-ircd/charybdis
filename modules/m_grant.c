@@ -15,8 +15,8 @@
 #include "s_newconf.h"
 #include "msgbuf.h"
 
-static int mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
-static int me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
+static void mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
+static void me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
 
 static int do_grant(struct Client *source_p, struct Client *target_p, const char *new_privset);
 
@@ -27,9 +27,11 @@ struct Message grant_msgtab = {
 
 mapi_clist_av1 grant_clist[] = { &grant_msgtab, NULL };
 
-DECLARE_MODULE_AV1(grant, NULL, NULL, grant_clist, NULL, NULL, "$Revision$");
+static const char grant_desc[] = "Allows operators to set or remove operator privileges on other users";
 
-static int
+DECLARE_MODULE_AV2(grant, NULL, NULL, grant_clist, NULL, NULL, NULL, NULL, grant_desc);
+
+static void
 mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
@@ -37,7 +39,7 @@ mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	if(!HasPrivilege(source_p, "oper:grant"))
 	{
 		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "grant");
-		return 0;
+		return;
 	}
 
 	target_p = find_named_person(parv[1]);
@@ -45,7 +47,7 @@ mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	{
 		sendto_one_numeric(source_p, ERR_NOSUCHNICK,
 				form_str(ERR_NOSUCHNICK), parv[1]);
-		return 0;
+		return;
 	}
 
 	if (MyClient(target_p))
@@ -58,11 +60,9 @@ mo_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 				get_id(source_p, target_p), target_p->servptr->name,
 				get_id(target_p, target_p), parv[2]);
 	}
-
-	return 0;
 }
 
-static int
+static void
 me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Client *target_p;
@@ -72,7 +72,7 @@ me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	{
 		sendto_one_numeric(source_p, ERR_NOSUCHNICK,
 				form_str(ERR_NOSUCHNICK), parv[1]);
-		return 0;
+		return;
 	}
 
 	if(!find_shared_conf(source_p->username, source_p->host,
@@ -80,12 +80,10 @@ me_grant(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	{
 		sendto_one(source_p, ":%s NOTICE %s :You don't have an appropriate shared"
 			"block to grant privilege on this server.", me.name, source_p->name);
-		return 0;
+		return;
 	}
 
 	do_grant(source_p, target_p, parv[2]);
-
-	return 0;
 }
 
 
