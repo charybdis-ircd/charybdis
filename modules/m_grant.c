@@ -99,7 +99,6 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 			sendto_one_notice(source_p, ":You can't deoper someone who isn't an oper.");
 			return 0;
 		}
-		new_privset = "default";
 		dodeoper = 1;
 
 		sendto_one_notice(target_p, ":%s is deopering you.", source_p->name);
