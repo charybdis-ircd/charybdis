@@ -1047,7 +1047,7 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 
 	if(source_p != target_p)
 	{
-		if (MyOper(source_p) && parc < 3)
+		if (HasPrivilege(source_p, "auspex:umodes") && parc < 3)
 			show_other_user_mode(source_p, target_p);
 		else
 			sendto_one(source_p, form_str(ERR_USERSDONTMATCH), me.name, source_p->name);
