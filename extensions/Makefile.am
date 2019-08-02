@@ -40,7 +40,8 @@ extension_LTLIBRARIES =		\
   ip_cloaking_3.0.la		\
   ip_cloaking_4.0.la		\
   override.la			\
-  restrict-unauthenticated.la    \
+  override_kick_immunity.la	\
+  restrict-unauthenticated.la	\
   sno_channelcreate.la		\
   sno_farconnect.la		\
   sno_globalkline.la		\
