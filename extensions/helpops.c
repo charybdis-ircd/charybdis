@@ -108,8 +108,17 @@ do_dehelper(struct Client *source_p, struct Client *target_p)
 static int
 _modinit(void)
 {
+	rb_dlink_node *ptr;
+
 	user_modes[UMODECHAR_HELPOPS] = find_umode_slot();
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH (ptr, global_client_list.head)
+	{
+		struct Client *client_p = ptr->data;
+		if (IsPerson(client_p) && (client_p->umodes & user_modes[UMODECHAR_HELPOPS]))
+			helper_add(client_p);
+	}
 
 	return 0;
 }
@@ -117,8 +126,13 @@ _modinit(void)
 static void
 _moddeinit(void)
 {
+	rb_dlink_node *n, *tn;
+
 	user_modes[UMODECHAR_HELPOPS] = 0;
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH_SAFE(n, tn, helper_list.head)
+		rb_dlinkDestroy(n, &helper_list);
 }
 
 static void
