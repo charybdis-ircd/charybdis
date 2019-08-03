@@ -53,9 +53,9 @@ mo_dehelper(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 {
 	struct Client *target_p;
 
-	if (!IsOperAdmin(source_p))
+	if (!HasPrivilege(source_p, "oper:dehelper"))
 	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "admin");
+		sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "dehelper");
 		return;
 	}
 
