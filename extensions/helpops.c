@@ -220,8 +220,7 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 	struct Client *source_p = hdata->client;
 
 	/* didn't change +H umode, we don't need to do anything */
-	if (!((hdata->oldumodes ^ source_p->umodes) & user_modes[UMODECHAR_HELPOPS]))
-		return;
+	bool changed = (hdata->oldumodes ^ source_p->umodes) & user_modes[UMODECHAR_HELPOPS];
 
 	if (source_p->umodes & user_modes[UMODECHAR_HELPOPS])
 	{
@@ -229,13 +228,19 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 		{
 			source_p->umodes &= ~user_modes[UMODECHAR_HELPOPS];
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "usermode:helpops");
+			/* they didn't ask for +H so we must be removing it */
+			if (!changed)
+				helper_delete(source_p);
 			return;
 		}
 
-		helper_add(source_p);
+		if (changed)
+			helper_add(source_p);
 	}
-	else if (!(source_p->umodes & user_modes[UMODECHAR_HELPOPS]))
+	else if (changed)
+	{
 		helper_delete(source_p);
+	}
 }
 
 static void
