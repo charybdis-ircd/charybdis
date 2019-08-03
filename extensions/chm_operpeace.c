@@ -58,7 +58,7 @@ hdl_can_kick(hook_data_channel_approval *data)
 	if(IsOper(source_p))
 		return;
 
-	if((chptr->mode.mode & mymode) && IsOper(who))
+	if((chptr->mode.mode & mymode) && HasPrivilege(who, "oper:receive_immunity"))
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s attempted to kick %s from %s (which is +M)",
 			source_p->name, who->name, chptr->chname);
