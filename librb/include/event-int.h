@@ -33,5 +33,6 @@ struct ev_entry
 	time_t next;
 	void *data;
 	void *comm_ptr;
+	int dead;
 };
 void rb_event_io_register_all(void);

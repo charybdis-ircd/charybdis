@@ -87,6 +87,7 @@ rb_event_add_common(const char *name, EVH * func, void *arg, time_t when, time_t
 	ev->when = rb_current_time() + when;
 	ev->next = when;
 	ev->frequency = frequency;
+	ev->dead = 0;
 
 	if((ev->when < event_time_min) || (event_time_min == -1))
 		event_time_min = ev->when;
@@ -142,10 +143,9 @@ rb_event_delete(struct ev_entry *ev)
 	if(ev == NULL)
 		return;
 
-	rb_dlinkDelete(&ev->node, &event_list);
+	ev->dead = 1;
+
 	rb_io_unsched_event(ev);
-	rb_free(ev->name);
-	rb_free(ev);
 }
 
 /*
@@ -228,6 +228,13 @@ rb_event_run(void)
 	RB_DLINK_FOREACH_SAFE(ptr, next, event_list.head)
 	{
 		ev = ptr->data;
+		if (ev->dead)
+		{
+			rb_dlinkDelete(&ev->node, &event_list);
+			rb_free(ev->name);
+			rb_free(ev);
+			continue;
+		}
 		if(ev->when <= rb_current_time())
 		{
 			rb_strlcpy(last_event_ran, ev->name, sizeof(last_event_ran));
