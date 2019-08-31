@@ -1,7 +1,18 @@
 # News
 
-This is charybdis 3.5.6, Copyright (c) 2005-2016 Charybdis team.
+This is charybdis 3.5.7, Copyright (c) 2005-2019 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-3.5.7
+
+This is primarily a bugfix release.
+
+### user
+- modules/m_sasl.c: don't process messages if SASL has been aborted
+- src/s_user.c: don't corrupt usermodes on module unload/reload
+
+### misc
+- modules/m_list.c: add fake /LIST reply output to help fight spambots
 
 ## charybdis-3.5.6
 
