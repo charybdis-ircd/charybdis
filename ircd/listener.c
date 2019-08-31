@@ -389,11 +389,11 @@ add_sctp_listener(int port, const char *vhost_ip1, const char *vhost_ip2, int ss
 	memset(&vaddr, 0, sizeof(vaddr));
 
 	if (vhost_ip1 != NULL) {
-		if (rb_inet_pton_sock(vhost_ip1, (struct sockaddr *)&vaddr[0]) <= 0)
+		if (rb_inet_pton_sock(vhost_ip1, &vaddr[0]) <= 0)
 			return;
 
 		if (vhost_ip2 != NULL) {
-			if (rb_inet_pton_sock(vhost_ip2, (struct sockaddr *)&vaddr[1]) <= 0)
+			if (rb_inet_pton_sock(vhost_ip2, &vaddr[1]) <= 0)
 				return;
 		} else {
 			SET_SS_FAMILY(&vaddr[1], AF_UNSPEC);

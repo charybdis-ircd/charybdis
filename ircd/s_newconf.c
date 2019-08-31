@@ -387,14 +387,14 @@ conf_connect_dns_callback(const char *result, int status, int aftype, void *data
 	if(aftype == AF_INET)
 	{
 		if(status == 1)
-			rb_inet_pton_sock(result, (struct sockaddr *)&server_p->connect4);
+			rb_inet_pton_sock(result, &server_p->connect4);
 
 		server_p->dns_query_connect4 = 0;
 	}
 	else if(aftype == AF_INET6)
 	{
 		if(status == 1)
-			rb_inet_pton_sock(result, (struct sockaddr *)&server_p->connect6);
+			rb_inet_pton_sock(result, &server_p->connect6);
 
 		server_p->dns_query_connect6 = 0;
 	}
@@ -418,14 +418,14 @@ conf_bind_dns_callback(const char *result, int status, int aftype, void *data)
 	if(aftype == AF_INET)
 	{
 		if(status == 1)
-			rb_inet_pton_sock(result, (struct sockaddr *)&server_p->bind4);
+			rb_inet_pton_sock(result, &server_p->bind4);
 
 		server_p->dns_query_bind4 = 0;
 	}
 	else if(aftype == AF_INET6)
 	{
 		if(status == 1)
-			rb_inet_pton_sock(result, (struct sockaddr *)&server_p->bind6);
+			rb_inet_pton_sock(result, &server_p->bind6);
 
 		server_p->dns_query_bind6 = 0;
 	}

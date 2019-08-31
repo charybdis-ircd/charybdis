@@ -246,7 +246,7 @@ conf_set_serverinfo_vhost(void *data)
 {
 	struct rb_sockaddr_storage addr;
 
-	if(rb_inet_pton_sock(data, (struct sockaddr *)&addr) <= 0 || GET_SS_FAMILY(&addr) != AF_INET)
+	if(rb_inet_pton_sock(data, &addr) <= 0 || GET_SS_FAMILY(&addr) != AF_INET)
 	{
 		conf_report_error("Invalid IPv4 address for server vhost (%s)", (char *) data);
 		return;
@@ -261,7 +261,7 @@ conf_set_serverinfo_vhost6(void *data)
 
 	struct rb_sockaddr_storage addr;
 
-	if(rb_inet_pton_sock(data, (struct sockaddr *)&addr) <= 0 || GET_SS_FAMILY(&addr) != AF_INET6)
+	if(rb_inet_pton_sock(data, &addr) <= 0 || GET_SS_FAMILY(&addr) != AF_INET6)
 	{
 		conf_report_error("Invalid IPv6 address for server vhost (%s)", (char *) data);
 		return;
@@ -1357,7 +1357,7 @@ conf_set_connect_host(void *data)
 {
 	struct rb_sockaddr_storage addr;
 
-	if(rb_inet_pton_sock(data, (struct sockaddr *)&addr) <= 0)
+	if(rb_inet_pton_sock(data, &addr) <= 0)
 	{
 		rb_free(yy_server->connect_host);
 		yy_server->connect_host = rb_strdup(data);
@@ -1383,7 +1383,7 @@ conf_set_connect_vhost(void *data)
 {
 	struct rb_sockaddr_storage addr;
 
-	if(rb_inet_pton_sock(data, (struct sockaddr *)&addr) <= 0)
+	if(rb_inet_pton_sock(data, &addr) <= 0)
 	{
 		rb_free(yy_server->bind_host);
 		yy_server->bind_host = rb_strdup(data);
@@ -2191,7 +2191,7 @@ conf_set_opm_listen_address_both(void *data, bool ipv6)
 	const char *confstr = (ipv6 ? "opm::listen_ipv6" : "opm::listen_ipv4");
 	char *ip = data;
 
-	if(!rb_inet_pton_sock(ip, (struct sockaddr *)&addr))
+	if(!rb_inet_pton_sock(ip, &addr))
 	{
 		conf_report_error("%s is an invalid address: %s", confstr, ip);
 		return;

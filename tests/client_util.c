@@ -81,7 +81,7 @@ struct Client *make_local_person_full(const char *nick, const char *username, co
 	make_user(client);
 	SetClient(client);
 
-	rb_inet_pton_sock(ip, (struct sockaddr *)&client->localClient->ip);
+	rb_inet_pton_sock(ip, &client->localClient->ip);
 	rb_strlcpy(client->name, nick, sizeof(client->name));
 	rb_strlcpy(client->username, username, sizeof(client->username));
 	rb_strlcpy(client->host, hostname, sizeof(client->host));
@@ -154,7 +154,7 @@ struct Client *make_remote_person_nick(struct Client *server, const char *nick)
 struct Client *make_remote_person_full(struct Client *server, const char *nick, const char *username, const char *hostname, const char *ip, const char *realname)
 {
 	struct Client *client;
-	struct sockaddr addr;
+	struct sockaddr_storage addr;
 
 	client = make_client(server);
 	make_user(client);
@@ -167,7 +167,7 @@ struct Client *make_remote_person_full(struct Client *server, const char *nick, 
 	rb_strlcpy(client->name, nick, sizeof(client->name));
 	rb_strlcpy(client->username, username, sizeof(client->username));
 	rb_strlcpy(client->host, hostname, sizeof(client->host));
-	rb_inet_ntop_sock(&addr, client->sockhost, sizeof(client->sockhost));
+	rb_inet_ntop_sock((struct sockaddr *)&addr, client->sockhost, sizeof(client->sockhost));
 	rb_strlcpy(client->info, realname, sizeof(client->info));
 
 	add_to_client_hash(nick, client);

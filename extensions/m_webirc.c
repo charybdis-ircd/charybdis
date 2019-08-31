@@ -112,7 +112,7 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 		return;
 	}
 
-	if (rb_inet_pton_sock(parv[4], (struct sockaddr *)&addr) <= 0)
+	if (rb_inet_pton_sock(parv[4], &addr) <= 0)
 	{
 		sendto_one(source_p, "NOTICE * :Invalid IP");
 		return;

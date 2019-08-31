@@ -372,7 +372,7 @@ check_server(const char *name, struct Client *client_p)
 
 		name_matched = true;
 
-		if(rb_inet_pton_sock(client_p->sockhost, (struct sockaddr *)&client_addr) <= 0)
+		if(rb_inet_pton_sock(client_p->sockhost, &client_addr) <= 0)
 			SET_SS_FAMILY(&client_addr, AF_UNSPEC);
 
 		if((tmp_p->connect_host && match(tmp_p->connect_host, client_p->host))

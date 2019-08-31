@@ -45,7 +45,7 @@ static void common_sasl_test(bool aborted, bool by_user)
 	struct Client *server = make_remote_server(&me);
 	struct Client *remote = make_remote_person(server);
 
-	rb_inet_pton_sock(TEST_IP, (struct sockaddr *)&user->localClient->ip);
+	rb_inet_pton_sock(TEST_IP, &user->localClient->ip);
 	rb_strlcpy(user->host, TEST_HOSTNAME, sizeof(user->host));
 	rb_inet_ntop_sock((struct sockaddr *)&user->localClient->ip, user->sockhost, sizeof(user->sockhost));
 

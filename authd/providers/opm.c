@@ -457,7 +457,7 @@ create_listener(const char *ip, uint16_t port)
 	rb_fde_t *F;
 	int opt = 1;
 
-	if(!rb_inet_pton_sock(ip, (struct sockaddr *)&addr))
+	if(!rb_inet_pton_sock(ip, &addr))
 	{
 		warn_opers(L_CRIT, "OPM: got a bad listener: %s:%hu", ip, port);
 		exit(EX_PROVIDER_ERROR);

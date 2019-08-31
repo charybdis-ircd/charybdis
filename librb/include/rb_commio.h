@@ -152,7 +152,7 @@ int rb_listen(rb_fde_t *, int backlog, int defer_accept);
 const char *rb_inet_ntop(int af, const void *src, char *dst, unsigned int size);
 int rb_inet_pton(int af, const char *src, void *dst);
 const char *rb_inet_ntop_sock(struct sockaddr *src, char *dst, unsigned int size);
-int rb_inet_pton_sock(const char *src, struct sockaddr *dst);
+int rb_inet_pton_sock(const char *src, struct sockaddr_storage *dst);
 int rb_getmaxconnect(void);
 int rb_ignore_errno(int);
 
