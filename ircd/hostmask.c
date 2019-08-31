@@ -198,6 +198,9 @@ get_mask_hash(const char *text)
 
 /* struct ConfItem* find_conf_by_address(const char*, struct rb_sockaddr_storage*,
  *         int type, int fam, const char *username)
+ *
+ * This process needs to be kept in sync with check_one_kline().
+ *
  * Input: The hostname, the address, the type of mask to find, the address
  *        family, the username.
  * Output: The matching value with the highest precedence.

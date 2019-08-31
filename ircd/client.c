@@ -571,6 +571,8 @@ check_klines(void)
 
 /* check_one_kline()
  *
+ * This process needs to be kept in sync with find_kline() aka find_conf_by_address().
+ *
  * inputs       - pointer to kline to check
  * outputs      -
  * side effects - all clients will be checked against given kline
