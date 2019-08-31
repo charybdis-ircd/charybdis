@@ -1,7 +1,12 @@
 # News
 
-This is charybdis 4.1.2-dev, Copyright (c) 2005-2018 Charybdis team.
+This is charybdis 4.1.2, Copyright (c) 2005-2018 Charybdis team.
 See LICENSE for licensing details (GPL v2).
+
+## charybdis-4.1.2
+
+### user
+- src/s_user.c: don't corrupt usermodes on module unload/reload
 
 ## charybdis-4.1.1
 
