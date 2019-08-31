@@ -79,7 +79,7 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 				return HM_HOST;
 		} else
 			*b = 128;
-		if(rb_inet_pton_sock(ip, (struct sockaddr *)addr) > 0)
+		if(rb_inet_pton_sock(ip, addr) > 0)
 			return HM_IPV6;
 		else
 			return HM_HOST;
@@ -98,7 +98,7 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 				return HM_HOST;
 		} else
 			*b = 32;
-		if(rb_inet_pton_sock(ip, (struct sockaddr *)addr) > 0)
+		if(rb_inet_pton_sock(ip, addr) > 0)
 			return HM_IPV4;
 		else
 			return HM_HOST;

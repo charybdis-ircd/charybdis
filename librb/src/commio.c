@@ -1317,7 +1317,7 @@ inet_ntop6(const unsigned char *src, char *dst, unsigned int size)
 #endif
 
 int
-rb_inet_pton_sock(const char *src, struct sockaddr *dst)
+rb_inet_pton_sock(const char *src, struct sockaddr_storage *dst)
 {
 	if(rb_inet_pton(AF_INET, src, &((struct sockaddr_in *)dst)->sin_addr))
 	{

@@ -75,7 +75,7 @@ lookup_hostname(const char *ip, DNSCB callback, void *data)
 	struct dns_query *query = rb_malloc(sizeof(struct dns_query));
 	int aftype;
 
-	if(!rb_inet_pton_sock(ip, (struct sockaddr *)&query->addr))
+	if(!rb_inet_pton_sock(ip, &query->addr))
 	{
 		rb_free(query);
 		return NULL;
