@@ -1484,14 +1484,17 @@ construct_umodebuf(void)
 			if (user_modes[i] == 0)
 			{
 				orphaned_umodes |= prev_user_modes[i];
-				user_modes[i] = prev_user_modes[i];
+				sendto_realops_snomask(SNO_DEBUG, L_ALL, "Umode +%c is now orphaned", i);
 			}
 			else
+			{
 				orphaned_umodes &= ~prev_user_modes[i];
+				sendto_realops_snomask(SNO_DEBUG, L_ALL, "Orphaned umode +%c is picked up by module", i);
+			}
+			user_modes[i] = prev_user_modes[i];
 		}
 		else
 			prev_user_modes[i] = user_modes[i];
-
 		if (user_modes[i])
 			*ptr++ = (char) i;
 	}
