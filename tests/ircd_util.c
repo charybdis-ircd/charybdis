@@ -100,10 +100,13 @@ void ircd_util_init(const char *name)
 void ircd_util_reload_module(const char *name)
 {
 	struct module *mod = findmodule_byname(name);
+	int origin, core;
 
 	if (ok(mod != NULL, MSG)) {
+		origin = mod->origin;
+		core = mod->core;
 		if (ok(unload_one_module(name, false), MSG)) {
-			ok(load_one_module(name, mod->origin, mod->core), MSG);
+			ok(load_one_module(name, origin, core), MSG);
 		}
 	}
 }
