@@ -55,6 +55,6 @@ script:
   - bash autogen.sh
   - CC=$COMPILER ./configure --with-shared-sqlite
   - make -j4
-  - make check
+  - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make check; fi"
   - make install
   - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make -C doc/oper-guide html man info; fi"
