@@ -1,6 +1,6 @@
 # News
 
-This is charybdis 4.0.3, Copyright (c) 2005-2018 Charybdis team.
+This is charybdis 4.0.4-dev, Copyright (c) 2005-2018 Charybdis team.
 See LICENSE for licensing details (GPL v2).
 
 ## charybdis-4.0.3
