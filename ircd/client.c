@@ -601,7 +601,7 @@ check_one_kline(struct ConfItem *kline)
 			int bits;
 			struct rb_sockaddr_storage sockaddr;
 
-			masktype = parse_netmask(kline->host, (struct sockaddr *)&sockaddr, &bits);
+			masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
 
 			switch (masktype) {
 			case HM_IPV4:
