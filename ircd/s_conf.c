@@ -707,7 +707,6 @@ set_default_conf(void)
 	ConfigFileEntry.client_exit = true;
 	ConfigFileEntry.dline_with_reason = true;
 	ConfigFileEntry.kline_with_reason = true;
-	ConfigFileEntry.kline_delay = 0;
 	ConfigFileEntry.warn_no_nline = true;
 	ConfigFileEntry.non_redundant_klines = true;
 	ConfigFileEntry.stats_e_disabled = false;

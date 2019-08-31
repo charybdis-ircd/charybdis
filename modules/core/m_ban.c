@@ -286,20 +286,7 @@ ms_ban(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			else
 			{
 				add_conf_by_address(aconf->host, CONF_KILL, aconf->user, NULL, aconf);
-				if(ConfigFileEntry.kline_delay ||
-						(IsServer(source_p) &&
-						 !HasSentEob(source_p)))
-				{
-					if(kline_queued == 0)
-					{
-						rb_event_addonce("check_klines", check_klines_event, NULL,
-							ConfigFileEntry.kline_delay ?
-								ConfigFileEntry.kline_delay : 1);
-						kline_queued = 1;
-					}
-				}
-				else
-					check_klines();
+				check_one_kline(aconf);
 			}
 			break;
 		case CONF_XLINE:
