@@ -285,12 +285,6 @@ static struct InfoStruct info_table[] = {
 		"Hide IPs of spoofed users"
 	},
 	{
-		"kline_delay",
-		OUTPUT_DECIMAL,
-		&ConfigFileEntry.kline_delay,
-		"Duration of time to delay kline checking"
-	},
-	{
 		"kline_reason",
 		OUTPUT_STRING,
 		&ConfigFileEntry.kline_reason,

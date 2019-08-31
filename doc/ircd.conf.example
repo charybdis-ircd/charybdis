@@ -579,7 +579,6 @@ general {
 	resv_fnc = yes;
 	global_snotices = yes;
 	dline_with_reason = yes;
-	kline_delay = 0 seconds;
 	kline_with_reason = yes;
 	kline_reason = "K-Lined";
 	identify_service = "NickServ@services.int";
