@@ -122,6 +122,10 @@ struct mapi_mheader_av2
 void mod_add_path(const char *path);
 void mod_clear_paths(void);
 
+/* cap-notify utilities */
+extern void mod_remember_clicaps(void);
+extern void mod_notify_clicaps(void);
+
 /* load a module */
 extern void load_module(char *path);
 

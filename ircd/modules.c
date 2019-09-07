@@ -80,6 +80,29 @@ init_modules(void)
 	mod_add_path(ircd_paths[IRCD_PATH_AUTOLOAD_MODULES]);
 }
 
+static unsigned int prev_caps;
+
+void
+mod_remember_clicaps(void)
+{
+	prev_caps = capability_index_mask(cli_capindex);
+}
+
+void
+mod_notify_clicaps(void)
+{
+	unsigned int cur_caps = capability_index_mask(cli_capindex);
+	unsigned int del = prev_caps & ~cur_caps;
+	unsigned int new = cur_caps & ~prev_caps;
+
+	if (del)
+		sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :%s",
+				me.name, capability_index_list(cli_capindex, del));
+	if (new)
+		sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * NEW :%s",
+				me.name, capability_index_list(cli_capindex, new));
+}
+
 /* mod_find_path()
  *
  * input	- path
@@ -382,10 +405,7 @@ unload_one_module(const char *name, bool warn)
 					}
 
 					if (m->cap_id != NULL)
-					{
 						capability_orphan(idx, m->cap_name);
-						sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * DEL :%s", me.name, m->cap_name);
-					}
 				}
 			}
 			break;
@@ -600,10 +620,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 
 					result = capability_put(idx, m->cap_name, m->cap_ownerdata);
 					if (m->cap_id != NULL)
-					{
 						*(m->cap_id) = result;
-						sendto_local_clients_with_capability(CLICAP_CAP_NOTIFY, ":%s CAP * ADD :%s", me.name, m->cap_name);
-					}
 				}
 			}
 		}
@@ -671,6 +688,8 @@ modules_do_restart(void *unused)
 	unsigned int modnum = 0;
 	rb_dlink_node *ptr, *nptr;
 
+	mod_remember_clicaps();
+
 	RB_DLINK_FOREACH_SAFE(ptr, nptr, module_list.head)
 	{
 		struct module *mod = ptr->data;
@@ -693,6 +712,8 @@ modules_do_restart(void *unused)
 	load_all_modules(false);
 	load_core_modules(false);
 	rehash(false);
+
+	mod_notify_clicaps();
 
 	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 			     "Module Restart: %u modules unloaded, %lu modules loaded",

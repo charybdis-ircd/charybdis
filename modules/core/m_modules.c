@@ -274,8 +274,12 @@ do_modload(struct Client *source_p, const char *module)
 		return;
 	}
 
+	mod_remember_clicaps();
+
 	origin = strcmp(module, m_bn) == 0 ? MAPI_ORIGIN_CORE : MAPI_ORIGIN_EXTENSION;
 	load_one_module(module, origin, false);
+
+	mod_notify_clicaps();
 
 	rb_free(m_bn);
 }
@@ -300,8 +304,12 @@ do_modunload(struct Client *source_p, const char *module)
 		return;
 	}
 
+	mod_remember_clicaps();
+
 	if(unload_one_module(m_bn, true) == false)
 		sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
+
+	mod_notify_clicaps();
 
 	rb_free(m_bn);
 }
@@ -322,6 +330,8 @@ do_modreload(struct Client *source_p, const char *module)
 
 	check_core = mod->core;
 
+	mod_remember_clicaps();
+
 	if(unload_one_module(m_bn, true) == false)
 	{
 		sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
@@ -336,6 +346,8 @@ do_modreload(struct Client *source_p, const char *module)
 		ilog(L_MAIN, "Error loading core module %s: terminating ircd", m_bn);
 		exit(0);
 	}
+
+	mod_notify_clicaps();
 
 	rb_free(m_bn);
 }
