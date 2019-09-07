@@ -39,7 +39,7 @@ mapi_hfn_list_av1 helpops_hfnlist[] = {
 	{ NULL, NULL }
 };
 
-static int UMODE_HELPOPS = 0;
+#define UMODECHAR_HELPOPS 'H'
 
 struct Message dehelper_msgtab = {
 	"DEHELPER", 0, 0, 0, 0,
@@ -92,7 +92,7 @@ do_dehelper(struct Client *source_p, struct Client *target_p)
 {
 	const char *fakeparv[4];
 
-	if(!(target_p->umodes & UMODE_HELPOPS))
+	if(!(target_p->umodes & user_modes[UMODECHAR_HELPOPS]))
 		return;
 
 	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s is using DEHELPER on %s",
@@ -108,9 +108,17 @@ do_dehelper(struct Client *source_p, struct Client *target_p)
 static int
 _modinit(void)
 {
-	/* add the usermode to the available slot */
-	user_modes['H'] = UMODE_HELPOPS = find_umode_slot();
+	rb_dlink_node *ptr;
+
+	user_modes[UMODECHAR_HELPOPS] = find_umode_slot();
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH (ptr, global_client_list.head)
+	{
+		struct Client *client_p = ptr->data;
+		if (IsPerson(client_p) && (client_p->umodes & user_modes[UMODECHAR_HELPOPS]))
+			helper_add(client_p);
+	}
 
 	return 0;
 }
@@ -118,9 +126,13 @@ _modinit(void)
 static void
 _moddeinit(void)
 {
-	/* disable the umode and remove it from the available list */
-	user_modes['H'] = UMODE_HELPOPS = 0;
+	rb_dlink_node *n, *tn;
+
+	user_modes[UMODECHAR_HELPOPS] = 0;
 	construct_umodebuf();
+
+	RB_DLINK_FOREACH_SAFE(n, tn, helper_list.head)
+		rb_dlinkDestroy(n, &helper_list);
 }
 
 static void
@@ -172,7 +184,7 @@ helper_delete(struct Client *client_p)
 static void
 h_hdl_new_remote_user(struct Client *client_p)
 {
-	if (client_p->umodes & UMODE_HELPOPS)
+	if (client_p->umodes & user_modes[UMODECHAR_HELPOPS])
 		helper_add(client_p);
 }
 
@@ -181,7 +193,7 @@ recurse_client_exit(struct Client *client_p)
 {
 	if (IsPerson(client_p))
 	{
-		if (client_p->umodes & UMODE_HELPOPS)
+		if (client_p->umodes & user_modes[UMODECHAR_HELPOPS])
 			helper_delete(client_p);
 	}
 	else if (IsServer(client_p))
@@ -208,22 +220,27 @@ h_hdl_umode_changed(hook_data_umode_changed *hdata)
 	struct Client *source_p = hdata->client;
 
 	/* didn't change +H umode, we don't need to do anything */
-	if (!((hdata->oldumodes ^ source_p->umodes) & UMODE_HELPOPS))
-		return;
+	bool changed = (hdata->oldumodes ^ source_p->umodes) & user_modes[UMODECHAR_HELPOPS];
 
-	if (source_p->umodes & UMODE_HELPOPS)
+	if (source_p->umodes & user_modes[UMODECHAR_HELPOPS])
 	{
 		if (MyClient(source_p) && !HasPrivilege(source_p, "usermode:helpops"))
 		{
-			source_p->umodes &= ~UMODE_HELPOPS;
+			source_p->umodes &= ~user_modes[UMODECHAR_HELPOPS];
 			sendto_one(source_p, form_str(ERR_NOPRIVS), me.name, source_p->name, "usermode:helpops");
+			/* they didn't ask for +H so we must be removing it */
+			if (!changed)
+				helper_delete(source_p);
 			return;
 		}
 
-		helper_add(source_p);
+		if (changed)
+			helper_add(source_p);
 	}
-	else if (!(source_p->umodes & UMODE_HELPOPS))
+	else if (changed)
+	{
 		helper_delete(source_p);
+	}
 }
 
 static void
@@ -232,7 +249,7 @@ h_hdl_whois(hook_data_client *hdata)
 	struct Client *source_p = hdata->client;
 	struct Client *target_p = hdata->target;
 
-	if ((target_p->umodes & UMODE_HELPOPS) && EmptyString(target_p->user->away))
+	if ((target_p->umodes & user_modes[UMODECHAR_HELPOPS]) && EmptyString(target_p->user->away))
 	{
 		sendto_one_numeric(source_p, RPL_WHOISHELPOP, form_str(RPL_WHOISHELPOP), target_p->name);
 	}
