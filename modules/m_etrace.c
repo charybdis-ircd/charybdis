@@ -167,7 +167,7 @@ do_etrace(struct Client *source_p, int ipv4, int ipv6)
 
 		sendto_one(source_p, form_str(RPL_ETRACE),
 			   me.name, source_p->name,
-			   IsOper(target_p) ? "Oper" : "User",
+			   SeesOper(target_p, source_p) ? "Oper" : "User",
 			   get_client_class(target_p),
 			   target_p->name, target_p->username, target_p->host,
 			   show_ip(source_p, target_p) ? target_p->sockhost : "255.255.255.255",
@@ -206,14 +206,14 @@ do_single_etrace(struct Client *source_p, struct Client *target_p)
 	if(!show_ip(source_p, target_p))
 		sendto_one(source_p, form_str(RPL_ETRACEFULL),
 				me.name, source_p->name,
-				IsOper(target_p) ? "Oper" : "User",
+				SeesOper(target_p, source_p) ? "Oper" : "User",
 				get_client_class(target_p),
 				target_p->name, target_p->username, target_p->host,
 				"255.255.255.255", "<hidden> <hidden>", target_p->info);
 	else
 		sendto_one(source_p, form_str(RPL_ETRACEFULL),
 				me.name, source_p->name,
-				IsOper(target_p) ? "Oper" : "User",
+				SeesOper(target_p, source_p) ? "Oper" : "User",
 				get_client_class(target_p),
 				target_p->name, target_p->username,
 				target_p->host, target_p->sockhost,
@@ -278,7 +278,7 @@ m_chantrace(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 
 		sendto_one(source_p, form_str(RPL_ETRACE),
 				me.name, source_p->name,
-				IsOper(target_p) ? "Oper" : "User",
+				SeesOper(target_p, source_p) ? "Oper" : "User",
 				/* class field -- pretend its server.. */
 				target_p->servptr->name,
 				target_p->name, target_p->username, target_p->host,
@@ -323,7 +323,7 @@ match_masktrace(struct Client *source_p, rb_dlink_list *list,
 
 			sendto_one(source_p, form_str(RPL_ETRACE),
 				me.name, source_p->name,
-				IsOper(target_p) ? "Oper" : "User",
+				SeesOper(target_p, source_p) ? "Oper" : "User",
 				/* class field -- pretend its server.. */
 				target_p->servptr->name,
 				target_p->name, target_p->username, target_p->host,

@@ -830,7 +830,7 @@ stats_operedup (struct Client *source_p)
 	{
 		target_p = oper_ptr->data;
 
-		if(IsOperInvis(target_p) && !IsOper(source_p))
+		if(!SeesOper(target_p, source_p))
 			continue;
 
 		if(target_p->user->away)

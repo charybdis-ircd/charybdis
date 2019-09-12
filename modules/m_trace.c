@@ -204,6 +204,9 @@ m_trace(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			if(!doall && wilds && (match(tname, target_p->name) == 0))
 				continue;
 
+			if(!SeesOper(target_p, source_p))
+				continue;
+
 			report_this_status(source_p, target_p);
 		}
 
@@ -233,14 +236,14 @@ m_trace(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		target_p = ptr->data;
 
 		/* dont show invisible users to remote opers */
-		if(IsInvisible(target_p) && dow && !MyConnect(source_p) && !IsOper(target_p))
+		if(IsInvisible(target_p) && dow && !MyConnect(source_p) && !SeesOper(target_p, source_p))
 			continue;
 
 		if(!doall && wilds && !match(tname, target_p->name))
 			continue;
 
 		/* remote opers may not see invisible normal users */
-		if(dow && !MyConnect(source_p) && !IsOper(target_p) &&
+		if(dow && !MyConnect(source_p) && !SeesOper(target_p, source_p) &&
 				IsInvisible(target_p))
 			continue;
 
@@ -379,8 +382,8 @@ report_this_status(struct Client *source_p, struct Client *target_p)
 	case STAT_CLIENT:
 		{
 			sendto_one_numeric(source_p,
-					IsOper(target_p) ? RPL_TRACEOPERATOR : RPL_TRACEUSER,
-					IsOper(target_p) ? form_str(RPL_TRACEOPERATOR) : form_str(RPL_TRACEUSER),
+					SeesOper(target_p, source_p) ? RPL_TRACEOPERATOR : RPL_TRACEUSER,
+					SeesOper(target_p, source_p) ? form_str(RPL_TRACEOPERATOR) : form_str(RPL_TRACEUSER),
 					class_name, name,
 					show_ip(source_p, target_p) ? ip : empty_sockhost,
 					(unsigned long)(rb_current_time() - target_p->localClient->lasttime),
