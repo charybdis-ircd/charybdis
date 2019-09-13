@@ -669,6 +669,12 @@ burst_TS6(struct Client *client_p)
 				   use_id(target_p),
 				   target_p->user->away);
 
+		if(IsOper(target_p) && target_p->user && target_p->user->opername && target_p->user->privset)
+			sendto_one(client_p, ":%s OPER %s %s",
+					use_id(target_p),
+					target_p->user->opername,
+					target_p->user->privset->name);
+
 		hclientinfo.target = target_p;
 		call_hook(h_burst_client, &hclientinfo);
 	}

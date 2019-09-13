@@ -146,7 +146,7 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 #define IsOperConfEncrypted(x)	((x)->flags & OPER_ENCRYPTED)
 #define IsOperConfNeedSSL(x)	((x)->flags & OPER_NEEDSSL)
 
-#define HasPrivilege(x, y)	((x)->localClient != NULL && (x)->localClient->privset != NULL && privilegeset_in_set((x)->localClient->privset, (y)))
+#define HasPrivilege(x, y)	((x)->user != NULL && (x)->user->privset != NULL && privilegeset_in_set((x)->user->privset, (y)))
 
 #define IsOperGlobalKill(x)     (HasPrivilege((x), "oper:global_kill"))
 #define IsOperLocalKill(x)      (HasPrivilege((x), "oper:local_kill"))

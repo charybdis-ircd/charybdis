@@ -93,9 +93,9 @@ cleanup_challenge(struct Client *target_p)
 		return;
 
 	rb_free(target_p->localClient->challenge);
-	rb_free(target_p->localClient->opername);
+	rb_free(target_p->user->opername);
 	target_p->localClient->challenge = NULL;
-	target_p->localClient->opername = NULL;
+	target_p->user->opername = NULL;
 	target_p->localClient->chal_time = 0;
 }
 
@@ -131,7 +131,7 @@ m_challenge(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 		{
 			sendto_one(source_p, form_str(ERR_PASSWDMISMATCH), me.name, source_p->name);
 			ilog(L_FOPER, "EXPIRED CHALLENGE (%s) by (%s!%s@%s) (%s)",
-			     source_p->localClient->opername, source_p->name,
+			     source_p->user->opername, source_p->name,
 			     source_p->username, source_p->host, source_p->sockhost);
 
 			if(ConfigFileEntry.failed_oper_notice)
@@ -151,7 +151,7 @@ m_challenge(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 		{
 			sendto_one(source_p, form_str(ERR_PASSWDMISMATCH), me.name, source_p->name);
 			ilog(L_FOPER, "FAILED CHALLENGE (%s) by (%s!%s@%s) (%s)",
-			     source_p->localClient->opername, source_p->name,
+			     source_p->user->opername, source_p->name,
 			     source_p->username, source_p->host, source_p->sockhost);
 
 			if(ConfigFileEntry.failed_oper_notice)
@@ -169,13 +169,13 @@ m_challenge(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 
 		oper_p = find_oper_conf(source_p->username, source_p->orighost,
 					source_p->sockhost,
-					source_p->localClient->opername);
+					source_p->user->opername);
 
 		if(oper_p == NULL)
 		{
 			sendto_one_numeric(source_p, ERR_NOOPERHOST, form_str(ERR_NOOPERHOST));
 			ilog(L_FOPER, "FAILED OPER (%s) by (%s!%s@%s) (%s)",
-			     source_p->localClient->opername, source_p->name,
+			     source_p->user->opername, source_p->name,
 			     source_p->username, source_p->host,
 			     source_p->sockhost);
 
@@ -192,7 +192,7 @@ m_challenge(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 		oper_up(source_p, oper_p);
 
 		ilog(L_OPERED, "OPER %s by %s!%s@%s (%s)",
-		     source_p->localClient->opername, source_p->name,
+		     source_p->user->opername, source_p->name,
 		     source_p->username, source_p->host, source_p->sockhost);
 		return;
 	}
@@ -274,7 +274,7 @@ m_challenge(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 		sendto_one(source_p, form_str(RPL_ENDOFRSACHALLENGE2),
 			   me.name, source_p->name);
 		rb_free(challenge);
-		source_p->localClient->opername = rb_strdup(oper_p->name);
+		source_p->user->opername = rb_strdup(oper_p->name);
 	}
 	else
 		sendto_one_notice(source_p, ":Failed to generate challenge.");

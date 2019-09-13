@@ -670,6 +670,13 @@ and most error messages are suppressed.
 Servers may not send '$$', '$#' and opers@server notices. Older servers may
 not allow servers to send to specific statuses on a channel.
 
+OPER
+source: user
+parameters: opername, privset
+
+Sets the source user's oper name and privset. Sent after the +o mode change, or
+during burst, to inform other servers of an oper's privileges.
+
 OPERSPY
 encap only
 encap target: *
@@ -1222,7 +1229,6 @@ MODRESTART
 MODUNLOAD
 MONITOR
 NAMES
-OPER
 POST
 PUT
 RESTART

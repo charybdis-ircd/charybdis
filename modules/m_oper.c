@@ -31,6 +31,7 @@
 #include "s_newconf.h"
 #include "logger.h"
 #include "s_user.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
@@ -41,12 +42,13 @@
 static const char oper_desc[] = "Provides the OPER command to become an IRC operator";
 
 static void m_oper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
+static void mc_oper(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 
 static bool match_oper_password(const char *password, struct oper_conf *oper_p);
 
 struct Message oper_msgtab = {
 	"OPER", 0, 0, 0, 0,
-	{mg_unreg, {m_oper, 3}, mg_ignore, mg_ignore, mg_ignore, {m_oper, 3}}
+	{mg_unreg, {m_oper, 3}, {mc_oper, 3}, mg_ignore, mg_ignore, {m_oper, 3}}
 };
 
 mapi_clist_av1 oper_clist[] = { &oper_msgtab, NULL };
@@ -159,6 +161,35 @@ m_oper(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 					     source_p->name, source_p->username, source_p->host);
 		}
 	}
+}
+
+/*
+ * mc_oper - server-to-server OPER propagation
+ *     parv[1] = opername
+ *     parv[2] = privset
+ */
+static void
+mc_oper(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+{
+	struct PrivilegeSet *privset;
+	sendto_server(client_p, NULL, CAP_TS6, NOCAPS, ":%s OPER %s %s", use_id(source_p), parv[1], parv[2]);
+
+	privset = privilegeset_get(parv[2]);
+	if(privset == NULL)
+	{
+		/* if we don't have a matching privset, we'll create an empty one and
+		 * mark it illegal, so it gets picked up on a rehash later */
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "Received OPER for %s with unknown privset %s", source_p->name, parv[2]);
+		privset = privilegeset_set_new(parv[2], "", 0);
+		privset->status |= CONF_ILLEGAL;
+	}
+
+	privset = privilegeset_ref(privset);
+	if (source_p->user->privset != NULL)
+		privilegeset_unref(source_p->user->privset);
+
+	source_p->user->privset = privset;
+	source_p->user->opername = rb_strdup(parv[1]);
 }
 
 /*
