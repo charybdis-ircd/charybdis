@@ -2799,6 +2799,7 @@ static struct ConfEntry conf_general_table[] =
 	{ "hide_opers_in_whois",	CF_YESNO, NULL, 0, &ConfigFileEntry.hide_opers_in_whois		},
 	{ "hide_opers",		CF_YESNO, NULL, 0, &ConfigFileEntry.hide_opers		},
 	{ "certfp_method",	CF_STRING, conf_set_general_certfp_method, 0, NULL },
+	{ "drain_reason",	CF_QSTRING, NULL, BUFSIZE, &ConfigFileEntry.drain_reason	},
 	{ "\0", 		0, 	  NULL, 0, NULL }
 };
 

@@ -240,6 +240,8 @@ struct config_file_entry
 
 	int hide_opers_in_whois;
 	int hide_opers;
+
+	char *drain_reason;
 };
 
 struct config_channel_entry
