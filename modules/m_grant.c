@@ -92,7 +92,7 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 	int dooper = 0, dodeoper = 0;
 	struct PrivilegeSet *privset = 0;
 
-	if (!strcmp(new_privset, "deoper"))
+	if (!strcasecmp(new_privset, "deoper"))
 	{
 		if (!IsOper(target_p))
 		{
