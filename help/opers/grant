@@ -1,0 +1,9 @@
+GRANT <target> deoper
+
+Removes oper status from <target>.
+
+GRANT <target> <privset>
+
+Opers <target> with the privset <privset>.
+
+- Requires Oper Priv: grant
