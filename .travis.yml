@@ -6,6 +6,11 @@ language: c
 # Use the faster container-based infrastructure.
 sudo: false
 
+notifications:
+  irc:
+    channels:
+    - "chat.freenode.net#charybdis"
+
 matrix:
   include:
     - os: linux
