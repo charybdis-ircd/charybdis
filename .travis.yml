@@ -19,7 +19,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-4.8 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
+      env: COMPILER=gcc-4.8
 
     - os: linux
       compiler: gcc
@@ -27,7 +27,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.9', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-4.9 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
+      env: COMPILER=gcc-4.9
 
     - os: linux
       compiler: gcc
@@ -35,7 +35,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-5', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-5 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
+      env: COMPILER=gcc-5
 
     - os: linux
       compiler: gcc
@@ -43,7 +43,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-7', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-7 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
+      env: COMPILER=gcc-7
 
     - os: linux
       compiler: gcc
@@ -51,7 +51,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-8', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-8 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
+      env: COMPILER=gcc-8
 
     - os: linux
       compiler: clang
@@ -72,7 +72,7 @@ cache:
 
 script:
   - bash autogen.sh
-  - CC=$COMPILER ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
+  - CC=$COMPILER CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable" ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
   - make -j4
   - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make check; fi"
   - make install
