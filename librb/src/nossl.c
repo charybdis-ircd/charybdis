@@ -174,11 +174,19 @@ rb_get_ssl_info(char *buf __attribute__((unused)), size_t len __attribute__((unu
 }
 
 int
-rb_ssl_get_certfp(rb_fde_t *F __attribute__((unused)), uint8_t certfp[RB_SSL_CERTFP_LEN] __attribute__((unused)))
+rb_get_ssl_certfp(rb_fde_t *F __attribute__((unused)), uint8_t certfp[RB_SSL_CERTFP_LEN] __attribute__((unused)), const int method __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
+
+int
+rb_get_ssl_certfp_file(const char *const filename __attribute__((unused)), uint8_t certfp[const RB_SSL_CERTFP_LEN] __attribute__((unused)), const int method __attribute__((unused)))
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 
 const char *
 rb_ssl_get_cipher(rb_fde_t *F __attribute__((unused)))
