@@ -53,7 +53,7 @@ cache:
 
 script:
   - bash autogen.sh
-  - CC=$COMPILER ./configure --with-shared-sqlite
+  - CC=$COMPILER CFLAGS="-Wno-unused-value -Werror" ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
   - make -j4
   - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make check; fi"
   - make install
