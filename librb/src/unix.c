@@ -164,7 +164,6 @@ const char *
 rb_path_to_self(void)
 {
 	static char path_buf[4096];
-	size_t path_len = sizeof(path_buf);
 #if defined(HAVE_GETEXECNAME)
 	char *s = getexecname();
 	if (s == NULL)
@@ -172,10 +171,11 @@ rb_path_to_self(void)
 	realpath(s, path_buf);
 	return path_buf;
 #elif defined(__linux__) || (defined(__FreeBSD__) && !defined(KERN_PROC_PATHNAME))
-	if (readlink("/proc/self/exe", path_buf, path_len) != -1)
+	if (readlink("/proc/self/exe", path_buf, sizeof(path_buf)) != -1)
 		return path_buf;
 	return NULL;
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
+	size_t path_len = sizeof(path_buf);
 	int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
 	if (sysctl(mib, 4, path_buf, &path_len, NULL, 0) == 0)
 		return path_buf;
