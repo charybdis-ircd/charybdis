@@ -168,7 +168,7 @@ ilog(ilogfile dest, const char *format, ...)
 {
 	FILE *logfile = *log_table[dest].logfile;
 	char buf[BUFSIZE];
-	char buf2[BUFSIZE];
+	char buf2[MAX_DATE_STRING + 1 + BUFSIZE + 1];
 	va_list args;
 
 	if(logfile == NULL)
