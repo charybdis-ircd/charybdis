@@ -96,7 +96,8 @@ cache:
 
 script:
   - bash autogen.sh
-  - CC=$COMPILER CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter" ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
+  - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then CC=$COMPILER CFLAGS=\"-Werror -Wno-unused-value -Wno-unused-parameter\" ./configure --with-shared-sqlite --with-assert=hard --enable-warnings; fi"
+  - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then CC=$COMPILER ./configure --with-shared-sqlite; fi"
   - make -j4
   - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make check; fi"
   - make install
