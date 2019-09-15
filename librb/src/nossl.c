@@ -33,7 +33,7 @@
 #include <commio-ssl.h>
 
 int
-rb_setup_ssl_server(const char *cert, const char *keyfile, const char *dhfile, const char *cipher_list)
+rb_setup_ssl_server(const char *cert __attribute__((unused)), const char *keyfile __attribute__((unused)), const char *dhfile __attribute__((unused)), const char *cipher_list __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return 0;
@@ -48,21 +48,21 @@ rb_init_ssl(void)
 }
 
 int
-rb_ssl_listen(rb_fde_t *F, int backlog, int defer_accept)
+rb_ssl_listen(rb_fde_t *F __attribute__((unused)), int backlog __attribute__((unused)), int defer_accept __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 static void
-rb_stir_arc4random(void *unused)
+rb_stir_arc4random(void *unused __attribute__((unused)))
 {
 	arc4random_stir();
 }
 
 
 int
-rb_init_prng(const char *path, prng_seed_t seed_type)
+rb_init_prng(const char *path __attribute__((unused)), prng_seed_t seed_type __attribute__((unused)))
 {
 	/* xxx this ignores the parameters above */
 	arc4random_stir();
@@ -86,39 +86,39 @@ rb_get_random(void *buf, size_t length)
 }
 
 const char *
-rb_get_ssl_strerror(rb_fde_t *F)
+rb_get_ssl_strerror(rb_fde_t *F __attribute__((unused)))
 {
 	static const char *nosupport = "SSL/TLS not supported";
 	return nosupport;
 }
 
 int
-rb_get_ssl_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
+rb_get_ssl_certfp(rb_fde_t *F __attribute__((unused)), uint8_t certfp[RB_SSL_CERTFP_LEN] __attribute__((unused)), int method __attribute__((unused)))
 {
 	return 0;
 }
 
 int
-rb_get_ssl_certfp_file(const char *filename, uint8_t certfp[RB_SSL_CERTFP_LEN], int method)
+rb_get_ssl_certfp_file(const char *filename __attribute__((unused)), uint8_t certfp[RB_SSL_CERTFP_LEN] __attribute__((unused)), int method __attribute__((unused)))
 {
 	return 0;
 }
 
 void
-rb_ssl_start_accepted(rb_fde_t *new_F, ACCB * cb, void *data, int timeout)
+rb_ssl_start_accepted(rb_fde_t *new_F __attribute__((unused)), ACCB * cb __attribute__((unused)), void *data __attribute__((unused)), int timeout __attribute__((unused)))
 {
 	return;
 }
 
 void
-rb_ssl_start_connected(rb_fde_t *F, CNCB * callback, void *data, int timeout)
+rb_ssl_start_connected(rb_fde_t *F __attribute__((unused)), CNCB * callback __attribute__((unused)), void *data __attribute__((unused)), int timeout __attribute__((unused)))
 {
 	return;
 }
 
 void
-rb_connect_tcp_ssl(rb_fde_t *F, struct sockaddr *dest,
-		   struct sockaddr *clocal, CNCB * callback, void *data, int timeout)
+rb_connect_tcp_ssl(rb_fde_t *F __attribute__((unused)), struct sockaddr *dest __attribute__((unused)),
+		   struct sockaddr *clocal __attribute__((unused)), CNCB * callback __attribute__((unused)), void *data __attribute__((unused)), int timeout __attribute__((unused)))
 {
 	return;
 }
@@ -130,58 +130,58 @@ rb_supports_ssl(void)
 }
 
 void
-rb_ssl_shutdown(rb_fde_t *F)
+rb_ssl_shutdown(rb_fde_t *F __attribute__((unused)))
 {
 	return;
 }
 
 void
-rb_ssl_accept_setup(rb_fde_t *F, rb_fde_t *new_F, struct sockaddr *st, int addrlen)
+rb_ssl_accept_setup(rb_fde_t *F __attribute__((unused)), rb_fde_t *new_F __attribute__((unused)), struct sockaddr *st __attribute__((unused)), int addrlen __attribute__((unused)))
 {
 	return;
 }
 
 ssize_t
-rb_ssl_read(rb_fde_t *F, void *buf, size_t count)
+rb_ssl_read(rb_fde_t *F __attribute__((unused)), void *buf __attribute__((unused)), size_t count __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 ssize_t
-rb_ssl_write(rb_fde_t *F, const void *buf, size_t count)
+rb_ssl_write(rb_fde_t *F __attribute__((unused)), const void *buf __attribute__((unused)), size_t count __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 unsigned int
-rb_ssl_handshake_count(rb_fde_t *F)
+rb_ssl_handshake_count(rb_fde_t *F __attribute__((unused)))
 {
 	return 0;
 }
 
 void
-rb_ssl_clear_handshake_count(rb_fde_t *F)
+rb_ssl_clear_handshake_count(rb_fde_t *F __attribute__((unused)))
 {
 	return;
 }
 
 void
-rb_get_ssl_info(char *buf, size_t len)
+rb_get_ssl_info(char *buf __attribute__((unused)), size_t len __attribute__((unused)))
 {
 	snprintf(buf, len, "Not compiled with SSL support");
 }
 
 int
-rb_ssl_get_certfp(rb_fde_t *F, uint8_t certfp[RB_SSL_CERTFP_LEN])
+rb_ssl_get_certfp(rb_fde_t *F __attribute__((unused)), uint8_t certfp[RB_SSL_CERTFP_LEN] __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 const char *
-rb_ssl_get_cipher(rb_fde_t *F)
+rb_ssl_get_cipher(rb_fde_t *F __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return NULL;

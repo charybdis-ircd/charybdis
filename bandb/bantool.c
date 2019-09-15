@@ -743,7 +743,7 @@ check_schema(void)
 		NULL
 	};
 
-	for(i = 0; i < LAST_BANDB_TYPE; i++)
+	for(i = 0; i < LAST_BANDB_TYPE; i += 2 /* skip over _PERM */)
 	{
 		if(!table_exists(bandb_table[i]))
 		{
@@ -770,8 +770,6 @@ check_schema(void)
 					  columns[j], type);
 			}
 		}
-
-		i++;		/* skip over .perm */
 	}
 }
 
@@ -816,10 +814,9 @@ wipe_schema(void)
 {
 	int i;
 	rsdb_transaction(RSDB_TRANS_START);
-	for(i = 0; i < LAST_BANDB_TYPE; i++)
+	for(i = 0; i < LAST_BANDB_TYPE; i += 2 /* double increment to skip over _PERM */)
 	{
 		rsdb_exec(NULL, "DROP TABLE %s", bandb_table[i]);
-		i++;		/* double increment to skip over .perm */
 	}
 	rsdb_transaction(RSDB_TRANS_END);
 

@@ -51,7 +51,7 @@ typedef struct _pollfd_list pollfd_list_t;
 static pollfd_list_t pollfd_list;
 
 int
-rb_setup_fd_poll(rb_fde_t *F)
+rb_setup_fd_poll(rb_fde_t *F __attribute__((unused)))
 {
 	return 0;
 }
@@ -238,21 +238,21 @@ rb_init_netio_poll(void)
 }
 
 void
-rb_setselect_poll(rb_fde_t *F, unsigned int type, PF * handler, void *client_data)
+rb_setselect_poll(rb_fde_t *F __attribute__((unused)), unsigned int type __attribute__((unused)), PF * handler __attribute__((unused)), void *client_data __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return;
 }
 
 int
-rb_select_poll(long delay)
+rb_select_poll(long delay __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-rb_setup_fd_poll(rb_fde_t *F)
+rb_setup_fd_poll(rb_fde_t *F __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;

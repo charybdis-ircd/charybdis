@@ -623,21 +623,21 @@ rb_init_netio_win32(void)
 }
 
 void
-rb_setselect_win32(rb_fde_t *F, unsigned int type, PF * handler, void *client_data)
+rb_setselect_win32(rb_fde_t *F __attribute__((unused)), unsigned int type __attribute__((unused)), PF * handler __attribute__((unused)), void *client_data __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return;
 }
 
 int
-rb_select_win32(long delay)
+rb_select_win32(long delay __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-rb_setup_fd_win32(rb_fde_t *F)
+rb_setup_fd_win32(rb_fde_t *F __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;

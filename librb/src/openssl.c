@@ -100,7 +100,7 @@ rb_ssl_init_fd(rb_fde_t *const F, const rb_fd_tls_direction dir)
 }
 
 static void
-rb_ssl_accept_common(rb_fde_t *const F, void *const data)
+rb_ssl_accept_common(rb_fde_t *const F, void *const data __attribute__((unused)))
 {
 	lrb_assert(F != NULL);
 	lrb_assert(F->accept != NULL);
@@ -191,7 +191,7 @@ rb_ssl_strerror(const unsigned long err)
 }
 
 static int
-verify_accept_all_cb(const int preverify_ok, X509_STORE_CTX *const x509_ctx)
+verify_accept_all_cb(const int preverify_ok __attribute__((unused)), X509_STORE_CTX *const x509_ctx __attribute__((unused)))
 {
 	return 1;
 }
@@ -635,7 +635,7 @@ rb_ssl_connect_realcb(rb_fde_t *const F, const int status, struct ssl_connect *c
 }
 
 static void
-rb_ssl_timeout_cb(rb_fde_t *const F, void *const data)
+rb_ssl_timeout_cb(rb_fde_t *const F, void *const data __attribute__((unused)))
 {
 	lrb_assert(F->accept != NULL);
 	lrb_assert(F->accept->callback != NULL);

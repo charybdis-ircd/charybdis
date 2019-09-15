@@ -586,7 +586,7 @@ void rb_dictionary_foreach_start(rb_dictionary *dtree,
  * Side Effects:
  *     - none
  */
-void *rb_dictionary_foreach_cur(rb_dictionary *dtree,
+void *rb_dictionary_foreach_cur(rb_dictionary *dtree __attribute__((unused)),
 	rb_dictionary_iter *state)
 {
 	lrb_assert(dtree != NULL);

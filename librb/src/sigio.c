@@ -487,14 +487,14 @@ rb_sigio_init_event(void)
 }
 
 int
-rb_sigio_sched_event(struct ev_entry *event, int when)
+rb_sigio_sched_event(struct ev_entry *event __attribute__((unused)), int when __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 void
-rb_sigio_unsched_event(struct ev_entry *event)
+rb_sigio_unsched_event(struct ev_entry *event __attribute__((unused)))
 {
 	return;
 }

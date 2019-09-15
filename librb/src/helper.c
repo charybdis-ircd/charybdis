@@ -242,7 +242,7 @@ rb_helper_write(rb_helper *helper, const char *format, ...)
 }
 
 static void
-rb_helper_read_cb(rb_fde_t *F, void *data)
+rb_helper_read_cb(rb_fde_t *F __attribute__((unused)), void *data)
 {
 	rb_helper *helper = (rb_helper *)data;
 	static char buf[32768];

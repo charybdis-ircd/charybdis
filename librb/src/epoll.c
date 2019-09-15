@@ -84,7 +84,7 @@ rb_init_netio_epoll(void)
 }
 
 int
-rb_setup_fd_epoll(rb_fde_t *F)
+rb_setup_fd_epoll(rb_fde_t *F __attribute__((unused)))
 {
 	return 0;
 }
@@ -326,7 +326,7 @@ struct our_signalfd_siginfo
 
 #define SIGFDIOV_COUNT 16
 static void
-signalfd_handler(rb_fde_t *F, void *data)
+signalfd_handler(rb_fde_t *F, void *data __attribute__((unused)))
 {
 	static struct our_signalfd_siginfo fdsig[SIGFDIOV_COUNT];
 	static struct iovec iov[SIGFDIOV_COUNT];
@@ -533,21 +533,21 @@ rb_init_netio_epoll(void)
 }
 
 void
-rb_setselect_epoll(rb_fde_t *F, unsigned int type, PF * handler, void *client_data)
+rb_setselect_epoll(rb_fde_t *F __attribute__((unused)), unsigned int type __attribute__((unused)), PF * handler __attribute__((unused)), void *client_data __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return;
 }
 
 int
-rb_select_epoll(long delay)
+rb_select_epoll(long delay __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-rb_setup_fd_epoll(rb_fde_t *F)
+rb_setup_fd_epoll(rb_fde_t *F __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
@@ -564,14 +564,14 @@ rb_epoll_init_event(void)
 }
 
 int
-rb_epoll_sched_event(struct ev_entry *event, int when)
+rb_epoll_sched_event(struct ev_entry *event __attribute__((unused)), int when __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 void
-rb_epoll_unsched_event(struct ev_entry *event)
+rb_epoll_unsched_event(struct ev_entry *event __attribute__((unused)))
 {
 	return;
 }

@@ -358,21 +358,21 @@ rb_init_netio_kqueue(void)
 }
 
 void
-rb_setselect_kqueue(rb_fde_t *F, unsigned int type, PF * handler, void *client_data)
+rb_setselect_kqueue(rb_fde_t *F __attribute__((unused)), unsigned int type __attribute__((unused)), PF * handler __attribute__((unused)), void *client_data __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return;
 }
 
 int
-rb_select_kqueue(long delay)
+rb_select_kqueue(long delay __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int
-rb_setup_fd_kqueue(rb_fde_t *F)
+rb_setup_fd_kqueue(rb_fde_t *F __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
@@ -388,14 +388,14 @@ rb_kqueue_init_event(void)
 }
 
 int
-rb_kqueue_sched_event(struct ev_entry *event, int when)
+rb_kqueue_sched_event(struct ev_entry *event __attribute__((unused)), int when __attribute__((unused)))
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 void
-rb_kqueue_unsched_event(struct ev_entry *event)
+rb_kqueue_unsched_event(struct ev_entry *event __attribute__((unused)))
 {
 	return;
 }

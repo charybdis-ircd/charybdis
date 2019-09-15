@@ -248,7 +248,7 @@ rb_bh_destroy(rb_bh *bh)
 }
 
 void
-rb_bh_usage(rb_bh *bh, size_t *bused, size_t *bfree, size_t *bmemusage, const char **desc)
+rb_bh_usage(rb_bh *bh __attribute__((unused)), size_t *bused, size_t *bfree, size_t *bmemusage, const char **desc)
 {
 	if(bused != NULL)
 		*bused = 0;
