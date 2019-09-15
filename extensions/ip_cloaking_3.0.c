@@ -125,11 +125,11 @@ do_host_cloak_ip(const char *inbuf, char *outbuf)
 
 	if(ipv6)
 	{
-	    snprintf(outbuf, HOSTLEN, "%s:%x", buf, accum);
+	    snprintf(outbuf, HOSTLEN, "%.60s:%x", buf, accum);
 	}
 	else
 	{
-	    snprintf(outbuf, HOSTLEN, "%s.%x", buf, accum);
+	    snprintf(outbuf, HOSTLEN, "%.60s.%x", buf, accum);
 	}
 }
 

@@ -199,7 +199,7 @@ m_displaymsg(struct MsgBuf *msgbuf_p, struct Client *source_p, const char *chann
 	snprintf(text3, sizeof(text3), "%s (%s)", text, source_p->name);
 
 	if(action)
-		snprintf(text2, sizeof(text2), "\1ACTION %s\1", text3);
+		snprintf(text2, sizeof(text2), "\1ACTION %.500s\1", text3);
 	else
 		snprintf(text2, sizeof(text2), "%s", text3);
 

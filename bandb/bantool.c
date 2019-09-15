@@ -230,8 +230,11 @@ main(int argc, char *argv[])
 	/* checking for our files to import or export */
 	for(i = 0; i < LAST_BANDB_TYPE; i++)
 	{
-		snprintf(conf, sizeof(conf), "%s/%s.conf%s",
-			    etc, bandb_table[i], bandb_suffix[i]);
+		if (snprintf(conf, sizeof(conf), "%s/%s.conf%s",
+			    etc, bandb_table[i], bandb_suffix[i]) >= sizeof(conf)) {
+			fprintf(stderr, "* Error: Config filename too long\n");
+			exit(EXIT_FAILURE);
+		}
 
 		if(flag.import && flag.pretend == false)
 			rsdb_transaction(RSDB_TRANS_START);

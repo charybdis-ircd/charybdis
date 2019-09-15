@@ -236,7 +236,7 @@ isupport_umode(const void *ptr)
 static const char *
 isupport_chanmodes(const void *ptr)
 {
-	static char result[80];
+	static char result[300];
 
 	snprintf(result, sizeof result, "%s%sbq,k,%slj,%s",
 			ConfigChannel.use_except ? "e" : "",
@@ -249,7 +249,7 @@ isupport_chanmodes(const void *ptr)
 static const char *
 isupport_chanlimit(const void *ptr)
 {
-	static char result[30];
+	static char result[BUFSIZE + 30];
 
 	snprintf(result, sizeof result, "%s:%i", allowed_chantypes, ConfigChannel.max_chans_per_user);
 	return result;
