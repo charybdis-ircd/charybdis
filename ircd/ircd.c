@@ -679,6 +679,7 @@ charybdis_main(int argc, char * const argv[])
 	me.localClient = &meLocalUser;
 
 	/* Make sure all lists are zeroed */
+	memset(&global_client_list, 0, sizeof(global_client_list));
 	memset(&unknown_list, 0, sizeof(unknown_list));
 	memset(&lclient_list, 0, sizeof(lclient_list));
 	memset(&serv_list, 0, sizeof(serv_list));
