@@ -166,7 +166,7 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 #define IsOperRemoteBan(x)	(HasPrivilege((x), "oper:remoteban"))
 #define IsOperMassNotice(x)	(HasPrivilege((x), "oper:mass_notice"))
 
-#define SeesOper(target, source)	(IsOper((target)) && (!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden") || IsOper((source))))
+#define SeesOper(target, source)	(IsOper((target)) && ((!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden")) || IsOper((source))))
 
 extern struct oper_conf *make_oper_conf(void);
 extern void free_oper_conf(struct oper_conf *);
