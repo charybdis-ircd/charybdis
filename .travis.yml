@@ -19,7 +19,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-4.8
+      env: COMPILER=gcc-4.8 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
 
     - os: linux
       compiler: gcc
@@ -27,7 +27,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.9', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-4.9
+      env: COMPILER=gcc-4.9 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
 
     - os: linux
       compiler: gcc
@@ -35,7 +35,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-5', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-5
+      env: COMPILER=gcc-5 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
 
     - os: linux
       compiler: gcc
@@ -43,7 +43,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-7', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-7
+      env: COMPILER=gcc-7 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
 
     - os: linux
       compiler: gcc
@@ -51,7 +51,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-8', 'automake', 'autoconf', 'libtool', 'shtool', 'libsqlite3-dev', 'python-sphinx', 'texinfo']
-      env: COMPILER=gcc-8
+      env: COMPILER=gcc-8 CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable"
 
     - os: linux
       compiler: clang
@@ -62,11 +62,9 @@ matrix:
       env: COMPILER=clang-3.7
 
     - os: osx
+      osx_image: xcode7.3
       compiler: clang
       env: COMPILER=clang LIBTOOLIZE=glibtoolize
-
-
-osx_image: xcode7.3
 
 cache:
   apt:
@@ -74,7 +72,7 @@ cache:
 
 script:
   - bash autogen.sh
-  - CC=$COMPILER CFLAGS="-Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-variable" ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
+  - CC=$COMPILER ./configure --with-shared-sqlite --with-assert=hard --enable-warnings
   - make -j4
   - "if [ ${TRAVIS_OS_NAME} != 'osx' ]; then make check; fi"
   - make install
