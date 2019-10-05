@@ -100,12 +100,13 @@ struct Message setfilter_msgtab = {
 	{mg_unreg, mg_not_oper, mg_ignore, mg_ignore, {me_setfilter, 2}, {mo_setfilter, 2}}
 };
 
-static void
+static int
 modinit(void)
 {
 	filter_umode = user_modes['u'] = find_umode_slot();
 	construct_umodebuf();
 	filter_chmode = cflag_add('u', chm_simple);
+	return 0;
 }
 
 static void
