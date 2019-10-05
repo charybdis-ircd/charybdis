@@ -51,6 +51,8 @@
 
 #define FILTER_EXIT_MSG "Connection closed"
 
+static const char filter_desc[] = "Filter messages using a precompiled Hyperscan database";
+
 static void filter_msg_user(void *data);
 static void filter_msg_channel(void *data);
 static void on_client_exit(void *data);
@@ -126,7 +128,7 @@ moddeinit(void)
 
 mapi_clist_av1 filter_clist[] = { &setfilter_msgtab, NULL };
 
-DECLARE_MODULE_AV1(filter, modinit, moddeinit, filter_clist, NULL, filter_hfnlist, "0.4");
+DECLARE_MODULE_AV2(filter, modinit, moddeinit, filter_clist, NULL, filter_hfnlist, NULL, "0.4", filter_desc);
 
 static int
 setfilter(const char *check, const char *data, const char **error)
