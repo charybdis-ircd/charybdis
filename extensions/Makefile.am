@@ -52,7 +52,6 @@ extension_LTLIBRARIES =		\
   m_adminwall.la		\
   m_echotags.la			\
   m_extendchans.la		\
-  filter.la			\
   m_findforwards.la		\
   m_identify.la			\
   m_locops.la			\
@@ -78,3 +77,7 @@ extension_LTLIBRARIES =		\
   spy_trace_notice.la		\
   drain.la			\
   example_module.la
+
+if HAVE_HYPERSCAN
+    extension_LTLIBRARIES += filter.la
+endif

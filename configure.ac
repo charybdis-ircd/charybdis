@@ -324,13 +324,23 @@ AC_ARG_ENABLE(hyperscan,
 AC_HELP_STRING([--disable-hyperscan],[Disable hyperscan support]),
 [hyperscan=$enableval],[hyperscan=yes])
 
-if test "$hyperscan" = yes; then
+AS_IF([test "$hyperscan" = yes], [
+	save_CPPFLAGS="$CPPFLAGS"
+	save_LIBS="$LIBS"
+	PKG_CHECK_MODULES([HS], [libhs >= 4], [], [hyperscan=no])
+	CPPFLAGS="$CPPFLAGS $HS_CFLAGS"
+	LIBS="$LIBS $HS_LIBS"
+	AC_CHECK_HEADER([hs_common.h], [], [hyperscan=no])
+	AC_CHECK_FUNC([hs_scan], [], [hyperscan=no])
+])
 
-CPPFLAGS="$CPPFLAGS $(pkg-config --cflags libhs)"
-LIBS="$LIBS $(pkg-config --libs libhs)"
-AC_CHECK_HEADER(hs_common.h)
+AS_IF([test "$hyperscan" = no], [
+	CPPFLAGS="$save_CPPFLAGS"
+	LIBS="$save_LIBS"
+])
 
-fi
+AM_CONDITIONAL([HAVE_HYPERSCAN], [test "$hyperscan" = "yes"])
+
 
 AC_ARG_WITH(zlib-path,
 AC_HELP_STRING([--with-zlib-path=DIR],[Path to libz.so for ziplinks support.]),
