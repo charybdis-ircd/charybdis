@@ -230,7 +230,7 @@ setfilter(const char *check, const char *data, const char **error)
 
 	if (state == FILTER_FILLING) {
 		int dl;
-		unsigned char *d = rb_base64_decode(data, strlen(data), &dl);
+		unsigned char *d = rb_base64_decode((unsigned char *)data, strlen(data), &dl);
 		if (!d) {
 			if (error) *error = "invalid data";
 			return -1;
