@@ -131,8 +131,6 @@ check_umode_change(void *vdata)
 		if (changed)
 		{
 			update_session_deadline(source_p, NULL);
-			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has enabled oper-override (+p)",
-					get_oper_name(source_p));
 		}
 	}
 	else if (changed && !(source_p->umodes & user_modes['p']))
@@ -145,9 +143,6 @@ check_umode_change(void *vdata)
 
 			if (session_p->client != source_p)
 				continue;
-
-			sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "%s has disabled oper-override (+p)",
-					       get_oper_name(session_p->client));
 
 			rb_dlinkDelete(n, &overriding_opers);
 			rb_free(session_p);
