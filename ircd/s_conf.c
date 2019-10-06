@@ -25,6 +25,7 @@
 #include "stdinc.h"
 #include "ircd_defs.h"
 #include "s_conf.h"
+#include "s_user.h"
 #include "s_newconf.h"
 #include "newconf.h"
 #include "s_serv.h"
@@ -630,6 +631,8 @@ attach_conf(struct Client *client_p, struct ConfItem *aconf)
 bool
 rehash(bool sig)
 {
+	rb_dlink_node *n;
+
 	hook_data_rehash hdata = { sig };
 
 	if(sig)
@@ -647,6 +650,16 @@ rehash(bool sig)
 		rb_strlcpy(me.info, "unknown", sizeof(me.info));
 
 	open_logfiles();
+
+	RB_DLINK_FOREACH(n, local_oper_list.head)
+	{
+		struct Client *oper = n->data;
+		const char *modeparv[4];
+		modeparv[0] = modeparv[1] = oper->name;
+		modeparv[2] = "+";
+		modeparv[3] = NULL;
+		user_mode(oper, oper, 3, modeparv);
+	}
 
 	call_hook(h_rehash, &hdata);
 	return false;
