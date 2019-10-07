@@ -38,7 +38,6 @@ check-local: $(check_PROGRAMS) \
 	../ssld/ssld \
 	../wsockd/wsockd \
 	$(patsubst ../modules/%.c,../modules/.libs/%.so,$(wildcard ../modules/*.c)) \
-	$(patsubst ../modules/core/%.c,../modules/core/.libs/%.so,$(wildcard ../modules/core/*.c)) \
-	$(patsubst ../extensions/%.c,../extensions/.libs/%.so,$(wildcard ../extensions/*.c))
+	$(patsubst ../modules/core/%.c,../modules/core/.libs/%.so,$(wildcard ../modules/core/*.c))
 
 	./runtests -l $(abs_top_srcdir)/tests/TESTS
