@@ -64,7 +64,13 @@ struct Message webirc_msgtab = {
 
 mapi_clist_av1 webirc_clist[] = { &webirc_msgtab, NULL };
 
-DECLARE_MODULE_AV2(webirc, NULL, NULL, webirc_clist, NULL, NULL, NULL, NULL, webirc_desc);
+static void new_local_user(void *data);
+mapi_hfn_list_av1 webirc_hfnlist[] = {
+	{ "new_local_user", (hookfn) new_local_user },
+	{ NULL, NULL }
+};
+
+DECLARE_MODULE_AV2(webirc, NULL, NULL, webirc_clist, NULL, webirc_hfnlist, NULL, NULL, webirc_desc);
 
 /*
  * mr_webirc - webirc message handler
@@ -139,4 +145,14 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	}
 
 	sendto_one(source_p, "NOTICE * :CGI:IRC host/IP set to %s %s", parv[3], parv[4]);
+}
+
+static void
+new_local_user(void *data)
+{
+	struct Client *source_p = data;
+	struct ConfItem *aconf = source_p->localClient->att_conf;
+
+	if (!irccmp(aconf->info.name, "webirc."))
+		exit_client(source_p, source_p, &me, "Cannot log in using a WEBIRC block");
 }
