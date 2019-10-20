@@ -102,7 +102,7 @@ mr_webirc(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sourc
 	}
 	if (!IsSSL(source_p) && aconf->flags & CONF_FLAGS_NEED_SSL)
 	{
-		sendto_one(source_p, "NOTICE * :Your CGI:IRC block requires SSL");
+		sendto_one(source_p, "NOTICE * :Your CGI:IRC block requires TLS");
 		return;
 	}
 
