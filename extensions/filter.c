@@ -206,6 +206,7 @@ setfilter(const char *check, const char *data, const char **error)
 		r = hs_alloc_scratch(db, &filter_scratch);
 		if (r != HS_SUCCESS) {
 			if (error) *error = "couldn't allocate scratch";
+			hs_free_database(db);
 			return -1;
 		}
 		if (filter_db) {
