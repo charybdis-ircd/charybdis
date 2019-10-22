@@ -143,7 +143,7 @@
 #define NUMERIC_STR_401      "%s :No such nick/channel"
 #define NUMERIC_STR_402      "%s :No such server"
 #define NUMERIC_STR_403      "%s :No such channel"
-#define NUMERIC_STR_404      "%s :Cannot send to channel"
+#define NUMERIC_STR_404      "%s :Cannot send to nick/channel"
 #define NUMERIC_STR_405      ":%s 405 %s %s :You have joined too many channels"
 #define NUMERIC_STR_406      ":%s :There was no such nickname"
 #define NUMERIC_STR_407      ":%s 407 %s %s :Too many recipients."
