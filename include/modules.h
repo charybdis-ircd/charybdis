@@ -28,6 +28,7 @@
 #include "defaults.h"
 #include "setup.h"
 #include "parse.h"
+#include "client.h" /* for IDLEN */
 
 #define MAPI_CHARYBDIS 2
 
@@ -117,6 +118,12 @@ struct mapi_mheader_av2
 
 #define DECLARE_MODULE_AV2(name, reg, unreg, cl, hl, hfnlist, caplist, v, desc) \
 	struct mapi_mheader_av2 _mheader = { MAPI_V2, reg, unreg, cl, hl, hfnlist, caplist, v, desc, DATECODE}
+
+struct modreload
+{
+	char module[BUFSIZE];
+	char id[IDLEN];
+};
 
 /* add a path */
 void mod_add_path(const char *path);
