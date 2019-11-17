@@ -36,6 +36,7 @@
 #include "match.h"
 #include "s_serv.h"
 #include "capability.h"
+#include "hash.h"
 
 #include <ltdl.h>
 
@@ -680,6 +681,49 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	}
 	rb_free(mod_displayname);
 	return true;
+}
+
+void
+modules_do_reload(void *info_)
+{
+	struct modreload *info = info_;
+	struct module *mod;
+	int check_core;
+	char *m_bn = rb_basename(info->module);
+	struct Client *source_p = find_id(info->id);
+
+	if((mod = findmodule_byname(m_bn)) == NULL)
+	{
+		if (source_p) sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
+		rb_free(info);
+		rb_free(m_bn);
+		return;
+	}
+
+	check_core = mod->core;
+
+	mod_remember_clicaps();
+
+	if(unload_one_module(m_bn, true) == false)
+	{
+		if (source_p) sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
+		rb_free(info);
+		rb_free(m_bn);
+		return;
+	}
+
+	if((load_one_module(m_bn, mod->origin, check_core) == false) && check_core)
+	{
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+				     "Error reloading core module: %s: terminating ircd", m_bn);
+		ilog(L_MAIN, "Error loading core module %s: terminating ircd", m_bn);
+		exit(0);
+	}
+
+	mod_notify_clicaps();
+
+	rb_free(info);
+	rb_free(m_bn);
 }
 
 void

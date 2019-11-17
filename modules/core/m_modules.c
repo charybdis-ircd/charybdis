@@ -54,6 +54,7 @@ static void do_modreload(struct Client *, const char *);
 static void do_modlist(struct Client *, const char *);
 static void do_modrestart(struct Client *);
 
+extern void modules_do_reload(void *); /* end of ircd/modules.c */
 extern void modules_do_restart(void *); /* end of ircd/modules.c */
 
 struct Message modload_msgtab = {
@@ -317,39 +318,10 @@ do_modunload(struct Client *source_p, const char *module)
 static void
 do_modreload(struct Client *source_p, const char *module)
 {
-	struct module *mod;
-	int check_core;
-	char *m_bn = rb_basename(module);
-
-	if((mod = findmodule_byname(m_bn)) == NULL)
-	{
-		sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
-		rb_free(m_bn);
-		return;
-	}
-
-	check_core = mod->core;
-
-	mod_remember_clicaps();
-
-	if(unload_one_module(m_bn, true) == false)
-	{
-		sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
-		rb_free(m_bn);
-		return;
-	}
-
-	if((load_one_module(m_bn, mod->origin, check_core) == false) && check_core)
-	{
-		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
-				     "Error reloading core module: %s: terminating ircd", m_bn);
-		ilog(L_MAIN, "Error loading core module %s: terminating ircd", m_bn);
-		exit(0);
-	}
-
-	mod_notify_clicaps();
-
-	rb_free(m_bn);
+	struct modreload *info = rb_malloc(sizeof *info);
+	strcpy(info->module, module);
+	strcpy(info->id, source_p->id);
+	rb_event_addonce("modules_do_reload", modules_do_reload, info, 1);
 }
 
 static void
