@@ -132,8 +132,10 @@ static void stats_ziplinks(struct Client *);
 static void stats_comm(struct Client *);
 static void stats_capability(struct Client *);
 
-#define HANDLER_NORM(fn, oper, admin) { { .handler = fn }, false, oper, admin }
-#define HANDLER_PARV(fn, oper, admin) { { .handler_parv = fn }, true, oper, admin }
+#define HANDLER_NORM(fn, oper, admin) \
+		{ { .handler = fn }, .need_parv = false, .need_oper = oper, .need_admin = admin }
+#define HANDLER_PARV(fn, oper, admin) \
+		{ { .handler_parv = fn }, .need_parv = true, .need_oper = oper, .need_admin = admin }
 
 /* This table contains the possible stats items, in order:
  * stats letter,  function to call, operonly? adminonly? --fl_
