@@ -90,8 +90,8 @@ struct stats_cmd
 		handler_t handler;
 		handler_parv_t handler_parv;
 	};
+	const char *need_priv;
 	bool need_parv;
-	bool need_oper;
 	bool need_admin;
 };
 
@@ -132,10 +132,10 @@ static void stats_ziplinks(struct Client *);
 static void stats_comm(struct Client *);
 static void stats_capability(struct Client *);
 
-#define HANDLER_NORM(fn, oper, admin) \
-		{ { .handler = fn }, .need_parv = false, .need_oper = oper, .need_admin = admin }
-#define HANDLER_PARV(fn, oper, admin) \
-		{ { .handler_parv = fn }, .need_parv = true, .need_oper = oper, .need_admin = admin }
+#define HANDLER_NORM(fn, admin, priv) \
+		{ { .handler = fn }, .need_parv = false, .need_priv = priv, .need_admin = admin }
+#define HANDLER_PARV(fn, admin, priv) \
+		{ { .handler_parv = fn }, .need_parv = true, .need_priv = priv, .need_admin = admin }
 
 /* This table contains the possible stats items, in order:
  * stats letter,  function to call, operonly? adminonly? --fl_
@@ -145,54 +145,54 @@ static void stats_capability(struct Client *);
  * --Elizafox
  */
 static struct stats_cmd stats_cmd_table[256] = {
-/*	letter               handler		oper	admin	*/
-	['a'] = HANDLER_NORM(stats_dns_servers,	true,	true),
-	['A'] = HANDLER_NORM(stats_dns_servers,	true,	true),
-	['b'] = HANDLER_NORM(stats_delay,	true,	true),
-	['B'] = HANDLER_NORM(stats_hash,	true,	true),
-	['c'] = HANDLER_NORM(stats_connect,	false,	false),
-	['C'] = HANDLER_NORM(stats_capability,	true,	false),
-	['d'] = HANDLER_NORM(stats_tdeny,	true,	false),
-	['D'] = HANDLER_NORM(stats_deny,	true,	false),
-	['e'] = HANDLER_NORM(stats_exempt,	true,	false),
-	['E'] = HANDLER_NORM(stats_events,	true,	true),
-	['f'] = HANDLER_NORM(stats_comm,	true,	true),
-	['F'] = HANDLER_NORM(stats_comm,	true,	true),
-	['g'] = HANDLER_NORM(stats_prop_klines,	true,	false),
-	['h'] = HANDLER_NORM(stats_hubleaf,	false,	false),
-	['H'] = HANDLER_NORM(stats_hubleaf,	false,	false),
-	['i'] = HANDLER_NORM(stats_auth,	false,	false),
-	['I'] = HANDLER_NORM(stats_auth,	false,	false),
-	['k'] = HANDLER_NORM(stats_tklines,	false,	false),
-	['K'] = HANDLER_NORM(stats_klines,	false,	false),
-	['l'] = HANDLER_PARV(stats_ltrace,	false,	false),
-	['L'] = HANDLER_PARV(stats_ltrace,	false,	false),
-	['m'] = HANDLER_NORM(stats_messages,	false,	false),
-	['M'] = HANDLER_NORM(stats_messages,	false,	false),
-	['n'] = HANDLER_NORM(stats_dnsbl,	false,	false),
-	['o'] = HANDLER_NORM(stats_oper,	false,	false),
-	['O'] = HANDLER_NORM(stats_privset,	true,	false),
-	['p'] = HANDLER_NORM(stats_operedup,	false,	false),
-	['P'] = HANDLER_NORM(stats_ports,	false,	false),
-	['q'] = HANDLER_NORM(stats_tresv,	true,	false),
-	['Q'] = HANDLER_NORM(stats_resv,	true,	false),
-	['r'] = HANDLER_NORM(stats_usage,	true,	false),
-	['R'] = HANDLER_NORM(stats_usage,	true,	false),
-	['s'] = HANDLER_NORM(stats_ssld,	true,	true),
-	['S'] = HANDLER_NORM(stats_ssld,	true,	true),
-	['t'] = HANDLER_NORM(stats_tstats,	true,	false),
-	['T'] = HANDLER_NORM(stats_tstats,	true,	false),
-	['u'] = HANDLER_NORM(stats_uptime,	false,	false),
-	['U'] = HANDLER_NORM(stats_shared,	true,	false),
-	['v'] = HANDLER_NORM(stats_servers,	false,	false),
-	['V'] = HANDLER_NORM(stats_servers,	false,	false),
-	['x'] = HANDLER_NORM(stats_tgecos,	true,	false),
-	['X'] = HANDLER_NORM(stats_gecos,	true,	false),
-	['y'] = HANDLER_NORM(stats_class,	false,	false),
-	['Y'] = HANDLER_NORM(stats_class,	false,	false),
-	['z'] = HANDLER_NORM(stats_memory,	true,	false),
-	['Z'] = HANDLER_NORM(stats_ziplinks,	true,	false),
-	['?'] = HANDLER_NORM(stats_servlinks,	false,	false),
+/*	letter               handler		admin	priv */
+	['a'] = HANDLER_NORM(stats_dns_servers,	true,	NULL),
+	['A'] = HANDLER_NORM(stats_dns_servers,	true,	NULL),
+	['b'] = HANDLER_NORM(stats_delay,	true,	NULL),
+	['B'] = HANDLER_NORM(stats_hash,	true,	NULL),
+	['c'] = HANDLER_NORM(stats_connect,	false,	NULL),
+	['C'] = HANDLER_NORM(stats_capability,	false,	"oper:general"),
+	['d'] = HANDLER_NORM(stats_tdeny,	false,	"oper:general"),
+	['D'] = HANDLER_NORM(stats_deny,	false,	"oper:general"),
+	['e'] = HANDLER_NORM(stats_exempt,	false,	"oper:general"),
+	['E'] = HANDLER_NORM(stats_events,	true,	NULL),
+	['f'] = HANDLER_NORM(stats_comm,	true,	NULL),
+	['F'] = HANDLER_NORM(stats_comm,	true,	NULL),
+	['g'] = HANDLER_NORM(stats_prop_klines,	false,	"oper:general"),
+	['h'] = HANDLER_NORM(stats_hubleaf,	false,	NULL),
+	['H'] = HANDLER_NORM(stats_hubleaf,	false,	NULL),
+	['i'] = HANDLER_NORM(stats_auth,	false,	NULL),
+	['I'] = HANDLER_NORM(stats_auth,	false,	NULL),
+	['k'] = HANDLER_NORM(stats_tklines,	false,	NULL),
+	['K'] = HANDLER_NORM(stats_klines,	false,	NULL),
+	['l'] = HANDLER_PARV(stats_ltrace,	false,	NULL),
+	['L'] = HANDLER_PARV(stats_ltrace,	false,	NULL),
+	['m'] = HANDLER_NORM(stats_messages,	false,	NULL),
+	['M'] = HANDLER_NORM(stats_messages,	false,	NULL),
+	['n'] = HANDLER_NORM(stats_dnsbl,	false,	NULL),
+	['o'] = HANDLER_NORM(stats_oper,	false,	NULL),
+	['O'] = HANDLER_NORM(stats_privset,	false,	"oper:general"),
+	['p'] = HANDLER_NORM(stats_operedup,	false,	NULL),
+	['P'] = HANDLER_NORM(stats_ports,	false,	NULL),
+	['q'] = HANDLER_NORM(stats_tresv,	false,	"oper:general"),
+	['Q'] = HANDLER_NORM(stats_resv,	false,	"oper:general"),
+	['r'] = HANDLER_NORM(stats_usage,	false,	"oper:general"),
+	['R'] = HANDLER_NORM(stats_usage,	false,	"oper:general"),
+	['s'] = HANDLER_NORM(stats_ssld,	true,	NULL),
+	['S'] = HANDLER_NORM(stats_ssld,	true,	NULL),
+	['t'] = HANDLER_NORM(stats_tstats,	false,	"oper:general"),
+	['T'] = HANDLER_NORM(stats_tstats,	false,	"oper:general"),
+	['u'] = HANDLER_NORM(stats_uptime,	false,	NULL),
+	['U'] = HANDLER_NORM(stats_shared,	false,	"oper:general"),
+	['v'] = HANDLER_NORM(stats_servers,	false,	NULL),
+	['V'] = HANDLER_NORM(stats_servers,	false,	NULL),
+	['x'] = HANDLER_NORM(stats_tgecos,	false,	"oper:general"),
+	['X'] = HANDLER_NORM(stats_gecos,	false,	"oper:general"),
+	['y'] = HANDLER_NORM(stats_class,	false,	NULL),
+	['Y'] = HANDLER_NORM(stats_class,	false,	NULL),
+	['z'] = HANDLER_NORM(stats_memory,	false,	"oper:general"),
+	['Z'] = HANDLER_NORM(stats_ziplinks,	false,	"oper:general"),
+	['?'] = HANDLER_NORM(stats_servlinks,	false,	NULL),
 };
 
 /*
@@ -249,16 +249,26 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		/* Called for remote clients and for local opers, so check need_admin
 		 * and need_oper
 		 */
+		const char *missing_priv = NULL;
 		if(cmd->need_admin && !IsOperAdmin(source_p))
+			missing_priv = "admin";
+		else if(cmd->need_priv && !HasPrivilege(source_p, cmd->need_priv))
+			missing_priv = cmd->need_priv;
+
+		if(missing_priv != NULL)
 		{
-			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "admin");
-			goto stats_out;
-		}
-		if(cmd->need_oper && !IsOperGeneral(source_p))
-		{
-			sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
-					   form_str (ERR_NOPRIVILEGES));
+			if(!IsOper(source_p))
+			{
+				sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
+					form_str(ERR_NOPRIVILEGES));
+			}
+			else
+			{
+				if(!strncmp(missing_priv, "oper:", 5))
+					missing_priv += 5;
+				sendto_one(source_p, form_str(ERR_NOPRIVS),
+					me.name, source_p->name, missing_priv);
+			}
 			goto stats_out;
 		}
 
