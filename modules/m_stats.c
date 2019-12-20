@@ -171,7 +171,7 @@ static struct stats_cmd stats_cmd_table[256] = {
 	['M'] = HANDLER_NORM(stats_messages,	false,	NULL),
 	['n'] = HANDLER_NORM(stats_dnsbl,	false,	NULL),
 	['o'] = HANDLER_NORM(stats_oper,	false,	NULL),
-	['O'] = HANDLER_NORM(stats_privset,	false,	"oper:general"),
+	['O'] = HANDLER_NORM(stats_privset,	false,	"oper:privs"),
 	['p'] = HANDLER_NORM(stats_operedup,	false,	NULL),
 	['P'] = HANDLER_NORM(stats_ports,	false,	NULL),
 	['q'] = HANDLER_NORM(stats_tresv,	false,	"oper:general"),
@@ -822,13 +822,6 @@ stats_capability(struct Client *client_p)
 static void
 stats_privset(struct Client *source_p)
 {
-	if (!HasPrivilege(source_p, "oper:privs"))
-	{
-		sendto_one(source_p, form_str(ERR_NOPRIVS),
-			   me.name, source_p->name, "privs");
-		return;
-	}
-
 	privilegeset_report(source_p);
 }
 
