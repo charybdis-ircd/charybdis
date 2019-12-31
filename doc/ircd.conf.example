@@ -580,6 +580,7 @@ general {
 	global_snotices = yes;
 	dline_with_reason = yes;
 	kline_with_reason = yes;
+	hide_tkdline_duration = no;
 	kline_reason = "K-Lined";
 	identify_service = "NickServ@services.int";
 	identify_command = "IDENTIFY";
