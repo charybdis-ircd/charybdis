@@ -178,6 +178,7 @@ struct config_file_entry
 	int ts_warn_delta;
 	int dline_with_reason;
 	int kline_with_reason;
+	int hide_tkdline_duration;
 	int warn_no_nline;
 	int nick_delay;
 	int non_redundant_klines;
