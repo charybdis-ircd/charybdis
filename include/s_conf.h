@@ -350,6 +350,7 @@ extern void read_conf_files(bool cold);
 extern int attach_conf(struct Client *, struct ConfItem *);
 extern int check_client(struct Client *client_p, struct Client *source_p, const char *);
 
+extern void deref_conf(struct ConfItem *);
 extern int detach_conf(struct Client *);
 
 extern struct ConfItem *find_tkline(const char *, const char *, struct sockaddr *);

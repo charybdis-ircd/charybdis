@@ -280,9 +280,8 @@ check_client(struct Client *client_p, struct Client *source_p, const char *usern
 				source_p->name, IsGotId(source_p) ? "" : "~",
 				source_p->username, source_p->sockhost,
 				source_p->localClient->listener->name, port);
-			add_reject(client_p, NULL, NULL);
-			exit_client(client_p, source_p, &me,
-				    "You are not authorised to use this server");
+			add_reject(client_p, NULL, NULL, NULL, "You are not authorised to use this server.");
+			exit_client(client_p, source_p, &me, "You are not authorised to use this server.");
 			break;
 		}
 	case BANNED_CLIENT:
@@ -364,7 +363,7 @@ verify_access(struct Client *client_p, const char *username)
 					form_str(ERR_YOUREBANNEDCREEP),
 					me.name, client_p->name,
 					get_user_ban_reason(aconf));
-		add_reject(client_p, aconf->user, aconf->host);
+		add_reject(client_p, aconf->user, aconf->host, aconf, NULL);
 		return (BANNED_CLIENT);
 	}
 
@@ -529,6 +528,20 @@ attach_iline(struct Client *client_p, struct ConfItem *aconf)
 
 
 	return (attach_conf(client_p, aconf));
+}
+
+/*
+ * deref_conf
+ *
+ * inputs	- ConfItem that is referenced by something other than a client
+ * side effects	- Decrement and free ConfItem if appropriate
+ */
+void
+deref_conf(struct ConfItem *aconf)
+{
+	aconf->clients--;
+	if(!aconf->clients && IsIllegal(aconf))
+		free_conf(aconf);
 }
 
 /*
