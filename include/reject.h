@@ -29,7 +29,7 @@
 
 void init_reject(void);
 int check_reject(rb_fde_t *F, struct sockaddr *addr);
-void add_reject(struct Client *, const char *mask1, const char *mask2);
+void add_reject(struct Client *, const char *mask1, const char *mask2, struct ConfItem *aconf, const char *reason);
 int is_reject_ip(struct sockaddr *addr);
 void flush_reject(void);
 int remove_reject_ip(const char *ip);

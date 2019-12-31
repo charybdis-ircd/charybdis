@@ -240,7 +240,7 @@ authd_check(struct Client *client_p, struct Client *source_p)
 
 			sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s",
 				source_p->sockhost, blacklist);
-			add_reject(source_p, NULL, NULL);
+			add_reject(source_p, NULL, NULL, NULL, "Banned (DNS blacklist)");
 			exit_client(client_p, source_p, &me, "Banned (DNS blacklist)");
 			reject = true;
 		}
@@ -283,7 +283,7 @@ authd_check(struct Client *client_p, struct Client *source_p)
 			sendto_one_notice(source_p,
 				":*** Your IP address %s has been detected as an open proxy (type %s, port %s)",
 				source_p->sockhost, proxy, port);
-			add_reject(source_p, NULL, NULL);
+			add_reject(source_p, NULL, NULL, NULL, "Banned (Open proxy)");
 			exit_client(client_p, source_p, &me, "Banned (Open proxy)");
 			reject = true;
 		}
@@ -307,7 +307,7 @@ authd_check(struct Client *client_p, struct Client *source_p)
 
 		sendto_one_notice(source_p, ":*** Rejected by authentication system: %s",
 			reason);
-		add_reject(source_p, NULL, NULL);
+		add_reject(source_p, NULL, NULL, NULL, "Banned (authentication system)");
 		exit_client(client_p, source_p, &me, "Banned (authentication system)");
 		reject = true;
 		break;
@@ -553,7 +553,7 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	   (xconf = find_xline(source_p->info, 1)) != NULL)
 	{
 		ServerStats.is_ref++;
-		add_reject(source_p, xconf->host, NULL);
+		add_reject(source_p, xconf->host, NULL, NULL, NULL);
 		exit_client(client_p, source_p, &me, "Bad user info");
 		return CLIENT_EXITED;
 	}

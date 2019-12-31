@@ -45,6 +45,8 @@ static void throttle_expires(void *unused);
 typedef struct _reject_data
 {
 	rb_dlink_node rnode;
+	struct ConfItem *aconf;
+	const char *reason;
 	time_t time;
 	unsigned int count;
 	uint32_t mask_hashv;
@@ -54,6 +56,8 @@ typedef struct _delay_data
 {
 	rb_dlink_node node;
 	rb_fde_t *F;
+	struct ConfItem *aconf;
+	const char *reason;
 } delay_t;
 
 typedef struct _throttle
@@ -70,8 +74,20 @@ delay_exit_length(void)
 }
 
 static void
+reject_free(reject_t *rdata)
+{
+	struct ConfItem *aconf = rdata->aconf;
+
+	if (aconf)
+		deref_conf(aconf);
+
+	rb_free(rdata);
+}
+
+static void
 reject_exit(void *unused)
 {
+	static char dynamic_reason[BUFSIZE];
 	rb_dlink_node *ptr, *ptr_next;
 	delay_t *ddata;
 	static const char *errbuf = "ERROR :Closing Link: (*** Banned (cache))\r\n";
@@ -79,6 +95,23 @@ reject_exit(void *unused)
 	RB_DLINK_FOREACH_SAFE(ptr, ptr_next, delay_exit.head)
 	{
 		ddata = ptr->data;
+
+		*dynamic_reason = '\0';
+
+		if (ddata->aconf)
+		{
+			snprintf(dynamic_reason, BUFSIZE, form_str(ERR_YOUREBANNEDCREEP) "\r\n",
+				me.name, "*", get_user_ban_reason(ddata->aconf));
+			rb_write(ddata->F, dynamic_reason, strlen(dynamic_reason));
+
+			deref_conf(ddata->aconf);
+		}
+		else if (ddata->reason)
+		{
+			snprintf(dynamic_reason, BUFSIZE, ":%s 465 %s :%s\r\n",
+				me.name, "*", ddata->reason);
+			rb_write(ddata->F, dynamic_reason, strlen(dynamic_reason));
+		}
 
 		rb_write(ddata->F, errbuf, strlen(errbuf));
 		rb_close(ddata->F);
@@ -105,7 +138,7 @@ reject_expires(void *unused)
 			continue;
 
 		rb_dlinkDelete(ptr, &reject_list);
-		rb_free(rdata);
+		reject_free(rdata);
 		rb_patricia_remove(reject_tree, pnode);
 	}
 }
@@ -141,7 +174,7 @@ throttle_size(void)
 }
 
 void
-add_reject(struct Client *client_p, const char *mask1, const char *mask2)
+add_reject(struct Client *client_p, const char *mask1, const char *mask2, struct ConfItem *aconf, const char *reason)
 {
 	rb_patricia_node_t *pnode;
 	reject_t *rdata;
@@ -173,8 +206,25 @@ add_reject(struct Client *client_p, const char *mask1, const char *mask2)
 		rb_dlinkAddTail(pnode, &rdata->rnode, &reject_list);
 		rdata->time = rb_current_time();
 		rdata->count = 1;
+		rdata->aconf = NULL;
+		rdata->reason = NULL;
 	}
 	rdata->mask_hashv = hashv;
+
+	if (aconf != NULL && aconf != rdata->aconf && (aconf->status & CONF_KILL) && aconf->passwd)
+	{
+		if (rdata->aconf != NULL)
+			deref_conf(rdata->aconf);
+		aconf->clients++;
+		rdata->aconf = aconf;
+	}
+	else if (reason != NULL)
+	{
+		if (rdata->aconf != NULL)
+			deref_conf(rdata->aconf);
+		rdata->aconf = NULL;
+		rdata->reason = reason;
+	}
 }
 
 int
@@ -198,6 +248,22 @@ check_reject(rb_fde_t *F, struct sockaddr *addr)
 			ddata = rb_malloc(sizeof(delay_t));
 			ServerStats.is_rej++;
 			rb_setselect(F, RB_SELECT_WRITE | RB_SELECT_READ, NULL, NULL);
+			if(rdata->aconf)
+			{
+				ddata->aconf = rdata->aconf;
+				ddata->aconf->clients++;
+				ddata->reason = NULL;
+			}
+			else if(rdata->reason)
+			{
+				ddata->reason = rdata->reason;
+				ddata->aconf = NULL;
+			}
+			else
+			{
+				ddata->aconf = NULL;
+				ddata->reason = NULL;
+			}
 			ddata->F = F;
 			rb_dlinkAdd(ddata, &ddata->node, &delay_exit);
 			return 1;
@@ -244,7 +310,7 @@ flush_reject(void)
 		pnode = ptr->data;
 		rdata = pnode->data;
 		rb_dlinkDelete(ptr, &reject_list);
-		rb_free(rdata);
+		reject_free(rdata);
 		rb_patricia_remove(reject_tree, pnode);
 	}
 }
@@ -262,7 +328,7 @@ remove_reject_ip(const char *ip)
 	{
 		reject_t *rdata = pnode->data;
 		rb_dlinkDelete(&rdata->rnode, &reject_list);
-		rb_free(rdata);
+		reject_free(rdata);
 		rb_patricia_remove(reject_tree, pnode);
 		return 1;
 	}
@@ -290,7 +356,7 @@ remove_reject_mask(const char *mask1, const char *mask2)
 		if (rdata->mask_hashv == hashv)
 		{
 			rb_dlinkDelete(ptr, &reject_list);
-			rb_free(rdata);
+			reject_free(rdata);
 			rb_patricia_remove(reject_tree, pnode);
 			n++;
 		}
