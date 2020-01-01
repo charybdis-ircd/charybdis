@@ -1135,7 +1135,7 @@ deactivate_conf(struct ConfItem *aconf, rb_dlink_node *ptr, time_t now)
 			del_from_resv_hash(aconf->host, aconf);
 			break;
 	}
-	if (aconf->clients > 0 || (aconf->lifetime != 0 && now < aconf->lifetime))
+	if (aconf->lifetime != 0 && now < aconf->lifetime)
 	{
 		aconf->status |= CONF_ILLEGAL;
 	}
@@ -1143,7 +1143,10 @@ deactivate_conf(struct ConfItem *aconf, rb_dlink_node *ptr, time_t now)
 	{
 		if (aconf->lifetime != 0)
 			rb_dlinkDestroy(ptr, &prop_bans);
-		free_conf(aconf);
+		if (aconf->clients == 0)
+			free_conf(aconf);
+		else
+			aconf->status |= CONF_ILLEGAL;
 	}
 }
 
