@@ -13,14 +13,14 @@
 
 #include <stdint.h>
 
+static const char sasl_usercloak_desc[] =
+	"Insert the SASL account name into certain iline spoofed hosts";
+
 static void check_new_user(void *data);
 mapi_hfn_list_av1 sasl_usercloak_hfnlist[] = {
-	{ "new_local_user", (hookfn) check_new_user },
+	{ "new_local_user", check_new_user },
 	{ NULL, NULL }
 };
-
-DECLARE_MODULE_AV1(sasl_usercloak, NULL, NULL, NULL, NULL,
-			sasl_usercloak_hfnlist, "$Revision: 3526 $");
 
 
 unsigned int fnv_hash_string(char *str)
@@ -38,7 +38,7 @@ unsigned int fnv_hash_string(char *str)
 static void
 check_new_user(void *vdata)
 {
-	struct Client *source_p = (void *)vdata;
+	struct Client *source_p = vdata;
 
 	if (!IsIPSpoof(source_p))
 		return;
@@ -70,7 +70,7 @@ check_new_user(void *vdata)
 			return;
 		}
 
-		char c = ToLower(*src);
+		char c = tolower(*src);
 
 		if (IsHostChar(c))
 			*dst++ = c;
@@ -130,3 +130,5 @@ check_new_user(void *vdata)
 		notify_banned_client(source_p, aconf, K_LINED);
 	}
 }
+
+DECLARE_MODULE_AV2(sasl_usercloak, NULL, NULL, NULL, NULL, sasl_usercloak_hfnlist, NULL, NULL, sasl_usercloak_desc);
