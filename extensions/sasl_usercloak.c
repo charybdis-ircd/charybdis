@@ -97,7 +97,7 @@ check_new_user(void *vdata)
 
 		unsigned int hashval = fnv_hash_string(source_p->user->suser);
 		hashval %= 100000000; // eight digits only please.
-		snprintf(dst, 9, "%08ud", hashval);
+		snprintf(dst, 9, "%08u", hashval);
 	}
 
 	/* just in case */
