@@ -689,6 +689,7 @@ modules_do_reload(void *info_)
 	struct modreload *info = info_;
 	struct module *mod;
 	int check_core;
+	int origin;
 	char *m_bn = rb_basename(info->module);
 	struct Client *source_p = find_id(info->id);
 
@@ -700,6 +701,7 @@ modules_do_reload(void *info_)
 		return;
 	}
 
+	origin = mod->origin;
 	check_core = mod->core;
 
 	mod_remember_clicaps();
@@ -712,7 +714,7 @@ modules_do_reload(void *info_)
 		return;
 	}
 
-	if((load_one_module(m_bn, mod->origin, check_core) == false) && check_core)
+	if((load_one_module(m_bn, origin, check_core) == false) && check_core)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Error reloading core module: %s: terminating ircd", m_bn);
