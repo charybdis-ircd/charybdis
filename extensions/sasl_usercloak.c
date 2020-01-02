@@ -46,9 +46,11 @@ check_new_user(void *vdata)
 	if (EmptyString(source_p->user->suser))
 		return;
 
-	char *accountpart = strstr(source_p->orighost, "account");
-	if (!accountpart)
+	char *accountpart = strstr(source_p->orighost, "/account");
+	if (!accountpart || accountpart[8] != '\0')
 		return;
+
+	accountpart += 1;
 
 	char buf[HOSTLEN];
 	memset(buf, 0, sizeof(buf));
