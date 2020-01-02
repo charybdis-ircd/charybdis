@@ -15,6 +15,9 @@ fi
 
 generation=`expr $generation + 1`
 
+if test -n "$SOURCE_DATE_EPOCH" -a "$EXTERNAL_BUILD_TIMESTAMP" = '' ; then
+    EXTERNAL_BUILD_TIMESTAMP=$SOURCE_DATE_EPOCH
+fi
 if test "$EXTERNAL_BUILD_TIMESTAMP" = ''; then
     creation=`LC_ALL=C date | \
 awk '{if (NF == 6) \
