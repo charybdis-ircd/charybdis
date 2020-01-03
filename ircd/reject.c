@@ -250,6 +250,13 @@ check_reject(rb_fde_t *F, struct sockaddr *addr)
 			rb_setselect(F, RB_SELECT_WRITE | RB_SELECT_READ, NULL, NULL);
 			if(rdata->aconf)
 			{
+				if(rdata->aconf->status & CONF_ILLEGAL)
+				{
+					rb_dlinkDelete(&rdata->rnode, &reject_list);
+					reject_free(rdata);
+					rb_patricia_remove(reject_tree, pnode);
+					return 0;
+				}
 				ddata->aconf = rdata->aconf;
 				ddata->aconf->clients++;
 				ddata->reason = NULL;
