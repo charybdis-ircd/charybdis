@@ -233,44 +233,51 @@ check_reject(rb_fde_t *F, struct sockaddr *addr)
 	rb_patricia_node_t *pnode;
 	reject_t *rdata;
 	delay_t *ddata;
+
 	/* Reject is disabled */
-	if(ConfigFileEntry.reject_after_count == 0 || ConfigFileEntry.reject_duration == 0)
+	if (ConfigFileEntry.reject_after_count == 0 || ConfigFileEntry.reject_duration == 0)
 		return 0;
 
 	pnode = rb_match_ip(reject_tree, addr);
-	if(pnode != NULL)
-	{
-		rdata = pnode->data;
+	if (pnode == NULL)
+		return 0;
 
-		rdata->time = rb_current_time();
-		if(rdata->count > (unsigned long)ConfigFileEntry.reject_after_count)
-		{
-			ddata = rb_malloc(sizeof(delay_t));
-			ServerStats.is_rej++;
-			rb_setselect(F, RB_SELECT_WRITE | RB_SELECT_READ, NULL, NULL);
-			if(rdata->aconf)
-			{
-				ddata->aconf = rdata->aconf;
-				ddata->aconf->clients++;
-				ddata->reason = NULL;
-			}
-			else if(rdata->reason)
-			{
-				ddata->reason = rdata->reason;
-				ddata->aconf = NULL;
-			}
-			else
-			{
-				ddata->aconf = NULL;
-				ddata->reason = NULL;
-			}
-			ddata->F = F;
-			rb_dlinkAdd(ddata, &ddata->node, &delay_exit);
-			return 1;
-		}
+	rdata = pnode->data;
+	rdata->time = rb_current_time();
+
+	if (rdata->count <= (unsigned long)ConfigFileEntry.reject_after_count)
+		return 0;
+
+	if (rdata->aconf != NULL && rdata->aconf->status & CONF_ILLEGAL)
+	{
+		rb_dlinkDelete(&rdata->rnode, &reject_list);
+		reject_free(rdata);
+		rb_patricia_remove(reject_tree, pnode);
+		return 0;
 	}
-	/* Caller does what it wants */
-	return 0;
+
+	ddata = rb_malloc(sizeof(delay_t));
+	ServerStats.is_rej++;
+	rb_setselect(F, RB_SELECT_WRITE | RB_SELECT_READ, NULL, NULL);
+	if (rdata->aconf)
+	{
+		ddata->aconf = rdata->aconf;
+		ddata->aconf->clients++;
+		ddata->reason = NULL;
+	}
+	else if (rdata->reason)
+	{
+		ddata->reason = rdata->reason;
+		ddata->aconf = NULL;
+	}
+	else
+	{
+		ddata->aconf = NULL;
+		ddata->reason = NULL;
+	}
+	ddata->F = F;
+	rb_dlinkAdd(ddata, &ddata->node, &delay_exit);
+	return 1;
 }
 
 int
