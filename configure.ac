@@ -617,6 +617,14 @@ AC_HELP_STRING([--with-topiclen=NUMBER],[Set the max topic length to NUMBER (def
 AC_DEFINE_UNQUOTED(TOPICLEN, ${TOPICLEN}, [Maximum topic length (<=390)])
 AC_DEFINE_UNQUOTED(NICKLEN, (${NICKLEN}+1), [Nickname length])
 
+
+AC_ARG_WITH(asan,
+AC_HELP_STRING([--with-asan],[Build with Address Sanitizer]),
+[
+    CFLAGS="$CFLAGS -fsanitize=address"
+    LDFLAGS="$LDFLAGS -fsanitize=address"
+])
+
 # rpath, for finding librb.so at run time
 hold_ldflags=$LDFLAGS
 AC_MSG_CHECKING(for the ld -rpath flag)
