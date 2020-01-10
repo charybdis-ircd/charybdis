@@ -622,7 +622,7 @@ AC_ARG_WITH(asan,
 AC_HELP_STRING([--with-asan],[Build with Address Sanitizer]),
 [
     CFLAGS="$CFLAGS -fsanitize=address"
-    LDFLAGS="$LDFLAGS -lasan"
+    LDFLAGS="$LDFLAGS -fsanitize=address"
 ])
 
 # rpath, for finding librb.so at run time
