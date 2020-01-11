@@ -4673,6 +4673,126 @@ static void sendto_wallops_flags1__tags(void)
 	remove_local_person(oper4);
 }
 
+static void sendto_wallops_flags2(void)
+{
+	struct Client *user1 = make_local_person_nick("user1");
+	struct Client *user2 = make_local_person_nick("user2");
+	struct Client *oper1 = make_local_person_nick("oper1");
+	struct Client *oper2 = make_local_person_nick("oper2");
+	struct Client *oper3 = make_local_person_nick("oper3");
+	struct Client *oper4 = make_local_person_nick("oper4");
+
+	make_local_person_oper(oper1);
+	make_local_person_oper(oper2);
+	make_local_person_oper(oper3);
+	make_local_person_oper(oper4);
+
+	user1->umodes |= UMODE_WALLOP;
+	oper1->umodes |= UMODE_WALLOP | UMODE_OPERWALL;
+	oper2->umodes |= UMODE_WALLOP | UMODE_OPERWALL | UMODE_ADMIN;
+	oper3->umodes |= UMODE_WALLOP;
+	oper4->umodes |= UMODE_OPERWALL;
+
+	sendto_wallops_flags(UMODE_WALLOP, oper1, "Test to users %s", "42");
+	is_client_sendq(":oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, user1, "User is +w; " MSG);
+	is_client_sendq_empty(user2, "User is -w; " MSG);
+	is_client_sendq(":oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper1, "User is +w; " MSG);
+	is_client_sendq(":oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper2, "User is +w; " MSG);
+	is_client_sendq(":oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper3, "User is +w; " MSG);
+	is_client_sendq_empty(oper4, "User is -w; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	sendto_wallops_flags(UMODE_OPERWALL, oper2, "Test to opers %s", "42");
+	is_client_sendq_empty(user1, "Not an oper; " MSG);
+	is_client_sendq_empty(user2, "Not an oper; " MSG);
+	is_client_sendq(":oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper1, "Oper is +z; " MSG);
+	is_client_sendq(":oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper2, "Oper is +z; " MSG);
+	is_client_sendq_empty(oper3, "Oper is -z; " MSG);
+	is_client_sendq(":oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper4, "Oper is +z; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	sendto_wallops_flags(UMODE_ADMIN, &me, "Test to admins %s", "42");
+	is_client_sendq_empty(user1, "Not an admin; " MSG);
+	is_client_sendq_empty(user2, "Not an admin; " MSG);
+	is_client_sendq_empty(oper1, "Not an admin; " MSG);
+	is_client_sendq(":" TEST_ME_NAME " WALLOPS :Test to admins 42" CRLF, oper2, MSG);
+	is_client_sendq_empty(oper3, "Not an admin; " MSG);
+	is_client_sendq_empty(oper4, "Not an admin; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	remove_local_person(user1);
+	remove_local_person(user2);
+	remove_local_person(oper1);
+	remove_local_person(oper2);
+	remove_local_person(oper3);
+	remove_local_person(oper4);
+}
+
+static void sendto_wallops_flags2__tags(void)
+{
+	struct Client *user1 = make_local_person_nick("user1");
+	struct Client *user2 = make_local_person_nick("user2");
+	struct Client *oper1 = make_local_person_nick("oper1");
+	struct Client *oper2 = make_local_person_nick("oper2");
+	struct Client *oper3 = make_local_person_nick("oper3");
+	struct Client *oper4 = make_local_person_nick("oper4");
+
+	strcpy(oper1->user->suser, "test1");
+	strcpy(oper2->user->suser, "test2");
+	strcpy(oper3->user->suser, "test3");
+	strcpy(oper4->user->suser, "test4");
+
+	oper1->localClient->caps |= CAP_ACCOUNT_TAG;
+	oper1->localClient->caps |= CAP_SERVER_TIME;
+	oper2->localClient->caps |= CAP_SERVER_TIME;
+	oper3->localClient->caps |= CAP_ACCOUNT_TAG;
+
+	make_local_person_oper(oper1);
+	make_local_person_oper(oper2);
+	make_local_person_oper(oper3);
+	make_local_person_oper(oper4);
+
+	user1->umodes |= UMODE_WALLOP;
+	oper1->umodes |= UMODE_WALLOP | UMODE_OPERWALL;
+	oper2->umodes |= UMODE_WALLOP | UMODE_OPERWALL | UMODE_ADMIN;
+	oper3->umodes |= UMODE_WALLOP;
+	oper4->umodes |= UMODE_OPERWALL;
+
+	sendto_wallops_flags(UMODE_WALLOP, oper1, "Test to users %s", "42");
+	is_client_sendq(":oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, user1, "User is +w; " MSG);
+	is_client_sendq_empty(user2, "User is -w; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME ";account=test1 :oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper1, "User is +w; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME " :oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper2, "User is +w; " MSG);
+	is_client_sendq("@account=test1 :oper1" TEST_ID_SUFFIX " WALLOPS :Test to users 42" CRLF, oper3, "User is +w; " MSG);
+	is_client_sendq_empty(oper4, "User is -w; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	sendto_wallops_flags(UMODE_OPERWALL, oper2, "Test to opers %s", "42");
+	is_client_sendq_empty(user1, "Not an oper; " MSG);
+	is_client_sendq_empty(user2, "Not an oper; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME ";account=test2 :oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper1, "Oper is +z; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME " :oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper2, "Oper is +z; " MSG);
+	is_client_sendq_empty(oper3, "Oper is -z; " MSG);
+	is_client_sendq(":oper2" TEST_ID_SUFFIX " WALLOPS :Test to opers 42" CRLF, oper4, "Oper is +z; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	sendto_wallops_flags(UMODE_ADMIN, &me, "Test to admins %s", "42");
+	is_client_sendq_empty(user1, "Not an admin; " MSG);
+	is_client_sendq_empty(user2, "Not an admin; " MSG);
+	is_client_sendq_empty(oper1, "Not an admin; " MSG);
+	is_client_sendq("@time=" ADVENTURE_TIME " :" TEST_ME_NAME " WALLOPS :Test to admins 42" CRLF, oper2, MSG);
+	is_client_sendq_empty(oper3, "Not an admin; " MSG);
+	is_client_sendq_empty(oper4, "Not an admin; " MSG);
+	is_client_sendq_empty(server, MSG);
+
+	remove_local_person(user1);
+	remove_local_person(user2);
+	remove_local_person(oper1);
+	remove_local_person(oper2);
+	remove_local_person(oper3);
+	remove_local_person(oper4);
+}
+
 static void kill_client1(void)
 {
 	standard_init();
@@ -4856,6 +4976,8 @@ int main(int argc, char *argv[])
 	sendto_realops_snomask_from1__tags();
 	sendto_wallops_flags1();
 	sendto_wallops_flags1__tags();
+	sendto_wallops_flags2();
+	sendto_wallops_flags2__tags();
 
 	kill_client1();
 	kill_client1__tags();
