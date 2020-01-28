@@ -42,7 +42,7 @@ static int eb_ssl(const char *data, struct Client *client_p,
 		if (EmptyString(client_p->certfp))
 			return EXTBAN_NOMATCH;
 
-		if (strcmp(data, client_p->certfp) != 0)
+		if (irccmp(data, client_p->certfp) != 0)
 			return EXTBAN_NOMATCH;
 	}
 
