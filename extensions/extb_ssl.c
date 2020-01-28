@@ -36,13 +36,17 @@ static int eb_ssl(const char *data, struct Client *client_p,
 	(void)chptr;
 	(void)mode_type;
 
+	if (! IsSSLClient(client_p))
+		return EXTBAN_NOMATCH;
+
 	if (data != NULL)
 	{
 		if (EmptyString(client_p->certfp))
 			return EXTBAN_NOMATCH;
 
-		return !irccmp(data, client_p->certfp) ? EXTBAN_MATCH : EXTBAN_NOMATCH;
+		if (strcmp(data, client_p->certfp) != 0)
+			return EXTBAN_NOMATCH;
 	}
 
-	return IsSSLClient(client_p) ? EXTBAN_MATCH : EXTBAN_NOMATCH;
+	return EXTBAN_MATCH;
 }
