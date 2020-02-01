@@ -38,10 +38,9 @@
 #include "packet.h"
 #include "tgchange.h"
 
-static const char invite_desc[] = "Provides facilities for invite and related notifications";
+static const char invite_desc[] = "Provides /invite";
 
 static void m_invite(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
-static unsigned int CAP_INVITE_NOTIFY = 0;
 
 struct Message invite_msgtab = {
 	"INVITE", 0, 0, 0, 0,
@@ -58,12 +57,7 @@ mapi_hlist_av1 invite_hlist[] = {
 	{ NULL, NULL }
 };
 
-mapi_cap_list_av2 invite_cap_list[] = {
-	{ MAPI_CAP_CLIENT, "invite-notify", NULL, &CAP_INVITE_NOTIFY },
-	{ 0, NULL, NULL, NULL }
-};
-
-DECLARE_MODULE_AV2(invite, NULL, NULL, invite_clist, invite_hlist, NULL, invite_cap_list, NULL, invite_desc);
+DECLARE_MODULE_AV2(invite, NULL, NULL, invite_clist, invite_hlist, NULL, NULL, NULL, invite_desc);
 
 static bool add_invite(struct Channel *, struct Client *);
 
@@ -255,22 +249,13 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			   target_p->name, chptr->chname);
 
 		if(store_invite)
-		{
-			if (!add_invite(chptr, target_p))
-				return;
-
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, chptr,
-				":%s NOTICE %s :%s is inviting %s to %s.",
-				me.name, chptr->chname, source_p->name, target_p->name, chptr->chname);
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, chptr,
-				":%s!%s@%s INVITE %s %s", source_p->name, source_p->username,
-				source_p->host, target_p->name, chptr->chname);
-		}
+			add_invite(chptr, target_p);
 	}
-
-	sendto_server(source_p, chptr, CAP_TS6, 0, ":%s INVITE %s %s %lu",
-		      use_id(source_p), use_id(target_p),
-		      chptr->chname, (unsigned long) chptr->channelts);
+	else if (target_p->from != client_p)
+	{
+		sendto_one_prefix(target_p, source_p, "INVITE", "%s %lu",
+				  chptr->chname, (unsigned long) chptr->channelts);
+	}
 }
 
 /* add_invite()
