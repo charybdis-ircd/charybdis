@@ -53,6 +53,7 @@ extern rb_dlink_list xline_conf_list;
 extern rb_dlink_list resv_conf_list;
 extern rb_dlink_list nd_list;
 extern rb_dlink_list tgchange_list;
+extern rb_dlink_list vhost_conf_list;
 
 extern struct _rb_patricia_tree_t *tgchange_tree;
 
@@ -245,5 +246,16 @@ extern void add_nd_entry(const char *name);
 extern void free_nd_entry(struct nd_entry *);
 extern unsigned long get_nd_count(void);
 
-#endif
+struct vhost_conf
+{
+	char *hostname;
+	char *ssl_private_key;
+	char *ssl_cert;
+	char *ssl_dh_params;
+	char *ssl_cipher_list;
+	rb_dlink_node node;
+};
+extern struct vhost_conf *make_vhost_conf(void);
+extern void free_vhost_conf(struct vhost_conf *);
 
+#endif

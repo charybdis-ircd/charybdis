@@ -860,6 +860,12 @@ read_conf(void)
 static void
 validate_conf(void)
 {
+#ifdef HAVE_LIBCRYPTO
+	struct vhost_conf *vhost_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+#endif
+
 	if(ConfigFileEntry.default_ident_timeout < 1)
 		ConfigFileEntry.default_ident_timeout = IDENT_TIMEOUT_DEFAULT;
 
@@ -875,14 +881,30 @@ validate_conf(void)
 	if(ServerInfo.ssld_count < 1)
 		ServerInfo.ssld_count = 1;
 
-	if(!rb_setup_ssl_server(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list))
+	if(!rb_setup_ssl_server(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list, NULL))
 	{
 		ilog(L_MAIN, "WARNING: Unable to setup SSL.");
 		ircd_ssl_ok = 0;
 	} else {
 		ircd_ssl_ok = 1;
-		send_new_ssl_certs(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list, ConfigFileEntry.certfp_method);
+		send_new_ssl_certs(ServerInfo.ssl_cert, ServerInfo.ssl_private_key, ServerInfo.ssl_dh_params, ServerInfo.ssl_cipher_list, ConfigFileEntry.certfp_method, NULL);
 	}
+
+#ifdef HAVE_LIBCRYPTO
+	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, vhost_conf_list.head)
+	{
+		vhost_p = ptr->data;
+		if(rb_setup_ssl_server(vhost_p->ssl_cert, vhost_p->ssl_private_key,
+					vhost_p->ssl_dh_params,
+					vhost_p->ssl_cipher_list, vhost_p->hostname))
+		{
+			ircd_ssl_ok = 1;
+			send_new_ssl_certs(vhost_p->ssl_cert, vhost_p->ssl_private_key,
+						vhost_p->ssl_dh_params ? vhost_p->ssl_dh_params : ServerInfo.ssl_dh_params,
+						vhost_p->ssl_cipher_list ? vhost_p->ssl_cipher_list : ServerInfo.ssl_cipher_list, ConfigFileEntry.certfp_method, vhost_p->hostname);
+		}
+	}
+#endif
 
 	if(ServerInfo.ssld_count > get_ssld_count())
 	{
@@ -1462,6 +1484,7 @@ static void
 clear_out_old_conf(void)
 {
 	struct Class *cltmp;
+	struct vhost_conf *vhost_p;
 	rb_dlink_node *ptr;
 	rb_dlink_node *next_ptr;
 
@@ -1545,6 +1568,14 @@ clear_out_old_conf(void)
 	{
 		rb_free(ptr->data);
 		rb_dlinkDestroy(ptr, &service_list);
+	}
+
+	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, vhost_conf_list.head)
+	{
+		vhost_p = ptr->data;
+		send_remove_ssl_vhost(vhost_p->hostname);
+		rb_dlinkDelete(ptr, &vhost_conf_list);
+		free_vhost_conf(ptr->data);
 	}
 
 	/* remove any aliases... -- nenolod */

@@ -25,6 +25,7 @@
 #include "stdinc.h"
 
 #include "s_conf.h"
+#include "s_newconf.h"
 #include "logger.h"
 #include "listener.h"
 #include "sslproc.h"
@@ -70,7 +71,9 @@ struct _ssl_ctl
 
 static void send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert,
 				   const char *ssl_private_key, const char *ssl_dh_params,
-				   const char *ssl_cipher_list);
+				   const char *ssl_cipher_list, const char *hostname);
+static void send_remove_ssl_vhost_one(ssl_ctl_t * ctl, const char *hostname);
+
 static void send_init_prng(ssl_ctl_t * ctl, prng_seed_t seedtype, const char *path);
 static void send_certfp_method(ssl_ctl_t *ctl, int method);
 
@@ -256,6 +259,10 @@ start_ssldaemon(int count, const char *ssl_cert, const char *ssl_private_key, co
 	char s_pid[10];
 	pid_t pid;
 	int started = 0, i;
+	struct vhost_conf *vhost_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+
 
 	if(ssld_wait)
 		return 0;
@@ -341,8 +348,16 @@ start_ssldaemon(int count, const char *ssl_cert, const char *ssl_private_key, co
 			send_init_prng(ctl, RB_PRNG_DEFAULT, NULL);
 			send_certfp_method(ctl, ConfigFileEntry.certfp_method);
 
-			if(ssl_cert != NULL)
-				send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
+			if(ssl_cert != NULL) {
+				send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list, NULL);
+				RB_DLINK_FOREACH_SAFE(ptr, next_ptr, vhost_conf_list.head)
+				{
+					vhost_p = ptr->data;
+					send_new_ssl_certs_one(ctl, vhost_p->ssl_cert, vhost_p->ssl_private_key,
+									vhost_p->ssl_dh_params ? vhost_p->ssl_dh_params : ssl_dh_params,
+									vhost_p->ssl_cipher_list ? vhost_p->ssl_cipher_list : ssl_cipher_list, vhost_p->hostname);
+				}
+			}
 		}
 		ssl_read_ctl(ctl->F, ctl);
 		ssl_do_pipe(P2, ctl);
@@ -671,7 +686,7 @@ ssl_cmd_write_queue(ssl_ctl_t * ctl, rb_fde_t ** F, int count, const void *buf, 
 
 static void
 send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_private_key,
-                       const char *ssl_dh_params, const char *ssl_cipher_list)
+                       const char *ssl_dh_params, const char *ssl_cipher_list, const char *hostname)
 {
 	size_t len;
 
@@ -684,7 +699,10 @@ send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_pr
 	if (ssl_cipher_list == NULL)
 		ssl_cipher_list = "";
 
-	len = strlen(ssl_cert) + strlen(ssl_private_key) + strlen(ssl_dh_params) + strlen(ssl_cipher_list) + 6;
+	if (hostname == NULL)
+		hostname = "";
+
+	len = strlen(ssl_cert) + strlen(ssl_private_key) + strlen(ssl_dh_params) + strlen(ssl_cipher_list) + strlen(hostname) + 6;
 	if(len > sizeof(tmpbuf))
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
@@ -695,8 +713,47 @@ send_new_ssl_certs_one(ssl_ctl_t * ctl, const char *ssl_cert, const char *ssl_pr
 		     len, sizeof(tmpbuf));
 		return;
 	}
-	len = rb_snprintf(tmpbuf, sizeof(tmpbuf), "K%c%s%c%s%c%s%c%s%c", nul, ssl_cert,
-	                  nul, ssl_private_key, nul, ssl_dh_params, nul, ssl_cipher_list, nul);
+	len = rb_snprintf(tmpbuf, sizeof(tmpbuf), "K%c%s%c%s%c%s%c%s%c%s%c", nul, ssl_cert,
+	                  nul, ssl_private_key, nul, ssl_dh_params, nul, ssl_cipher_list, nul, hostname, nul);
+	ssl_cmd_write_queue(ctl, NULL, 0, tmpbuf, len);
+}
+
+void
+send_remove_ssl_vhost(const char *hostname)
+{
+	rb_dlink_node *ptr;
+	if(hostname == NULL)
+	{
+		return;
+	}
+	RB_DLINK_FOREACH(ptr, ssl_daemons.head)
+	{
+		ssl_ctl_t *ctl = ptr->data;
+		send_remove_ssl_vhost_one(ctl, hostname);
+	}
+}
+
+static void
+send_remove_ssl_vhost_one(ssl_ctl_t * ctl, const char *hostname)
+{
+	size_t len;
+
+	if(hostname == NULL)
+		return;
+
+	len = strlen(hostname) + 3;
+	if(len > sizeof(tmpbuf))
+	{
+		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+				       "Parameters for send_init_prng too long (%zd > %zd) to pass to ssld, not sending...",
+				       len, sizeof(tmpbuf));
+		ilog(L_MAIN,
+		     "Parameters for send_init_prng too long (%zd > %zd) to pass to ssld, not sending...",
+		     len, sizeof(tmpbuf));
+		return;
+
+	}
+	len = rb_snprintf(tmpbuf, sizeof(tmpbuf), "D%c%s%c", nul, hostname, nul);
 	ssl_cmd_write_queue(ctl, NULL, 0, tmpbuf, len);
 }
 
@@ -739,7 +796,7 @@ send_certfp_method(ssl_ctl_t *ctl, int method)
 }
 
 void
-send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list, const int method)
+send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char *ssl_dh_params, const char *ssl_cipher_list, const int method, const char *hostname)
 {
 	rb_dlink_node *ptr;
 	if(ssl_cert == NULL)
@@ -755,7 +812,7 @@ send_new_ssl_certs(const char *ssl_cert, const char *ssl_private_key, const char
 			continue;
 
 		send_certfp_method(ctl, method);
-		send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list);
+		send_new_ssl_certs_one(ctl, ssl_cert, ssl_private_key, ssl_dh_params, ssl_cipher_list, hostname);
 	}
 }
 

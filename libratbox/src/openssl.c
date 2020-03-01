@@ -41,9 +41,31 @@ typedef enum
 
 #define SSL_P(x) ((SSL *)((x)->ssl))
 
-
+typedef struct ssl_vhost_s
+{
+	char *hostname;
+	SSL_CTX *ctx;
+	rb_dlink_node node;
+} ssl_vhost;
 
 static SSL_CTX *ssl_ctx = NULL;
+rb_dlink_list ssl_vhosts;
+
+rb_dlink_node *
+find_ssl_vhost(const char *hostname)
+{
+	ssl_vhost *vhost_p;
+	rb_dlink_node *ptr;
+
+	RB_DLINK_FOREACH(ptr, ssl_vhosts.head)
+	{
+		vhost_p = ptr->data;
+
+		if(!strcmp(hostname,vhost_p->hostname))
+			return ptr;
+	}
+	return NULL;
+}
 
 struct ssl_connect
 {
@@ -337,9 +359,65 @@ rb_init_ssl(void)
 	return 1;
 }
 
+static int rb_ssl_servername_cb(SSL *s, int *ad, void *arg)
+{
+	ssl_vhost *vhost_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+
+	const char * servername = SSL_get_servername(s, TLSEXT_NAMETYPE_host_name);
+
+	rb_lib_log("Hostname in TLS extension?");
+	if (servername)
+	{
+		rb_lib_log("Hostname in TLS extension %s", servername);
+
+		RB_DLINK_FOREACH_SAFE(ptr, next_ptr, ssl_vhosts.head)
+		{
+			vhost_p = ptr->data;
+
+			if (strcmp(servername, vhost_p->hostname) != 0)
+				continue;
+
+			if (vhost_p->ctx)
+			{
+				rb_lib_log("Switching server context %s", servername);
+				SSL_set_SSL_CTX(s,vhost_p->ctx);
+			}
+		}
+	}
+	return SSL_TLSEXT_ERR_OK;
+}
+
+void
+free_ssl_vhost(ssl_vhost *vhost_p)
+{
+	if(vhost_p == NULL)
+		return;
+
+	rb_free(vhost_p->hostname);
+
+	SSL_CTX_free(vhost_p->ctx);
+	rb_free(vhost_p);
+}
+
+int
+rb_remove_ssl_vserver(const char *hostname)
+{
+	rb_dlink_node *ptr  = find_ssl_vhost(hostname);
+	if(ptr != NULL && ptr) {
+		rb_dlinkDelete(ptr, &ssl_vhosts);
+		free_ssl_vhost(ptr->data);
+		return 1;
+	}
+
+	return 0;
+}
+
 int
 rb_setup_ssl_server(const char *const certfile, const char *keyfile,
-                    const char *const dhfile, const char *cipherlist)
+                    const char *const dhfile, const char *cipherlist,
+                    const char *hostname)
 {
 	if(certfile == NULL)
 	{
@@ -419,6 +497,7 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 		SSL_CTX_free(ssl_ctx_new);
 		return 0;
 	}
+	SSL_CTX_set_tlsext_servername_callback(ssl_ctx_new, rb_ssl_servername_cb);
 
 	SSL_CTX_set_session_cache_mode(ssl_ctx_new, SSL_SESS_CACHE_OFF);
 	SSL_CTX_set_verify(ssl_ctx_new, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, verify_accept_all_cb);
@@ -472,14 +551,33 @@ rb_setup_ssl_server(const char *const certfile, const char *keyfile,
 	#  endif
 	#endif
 
+		rb_lib_log("%s: TLS configuration successful", __func__);
+	if(hostname == NULL) {
+		if(ssl_ctx)
+			SSL_CTX_free(ssl_ctx);
 
-	if(ssl_ctx)
-		SSL_CTX_free(ssl_ctx);
+		ssl_ctx = ssl_ctx_new;
+	} else {
+		ssl_vhost *vhost_p = NULL;
 
-	ssl_ctx = ssl_ctx_new;
+			rb_lib_log("rb_setup_ssl_server: SETUP [%s]", hostname);
+			rb_dlink_node *ptr  = find_ssl_vhost(hostname);
+			if(ptr != NULL && ptr)
+				vhost_p = ptr->data;
 
+			if(vhost_p == NULL) {
+				vhost_p = rb_malloc(sizeof(ssl_vhost));
+				vhost_p->hostname = rb_strdup(hostname);
 
-	rb_lib_log("%s: TLS configuration successful", __func__);
+				rb_dlinkAdd(vhost_p, &vhost_p->node, &ssl_vhosts);
+			}
+
+			if(vhost_p->ctx)
+				SSL_CTX_free(vhost_p->ctx);
+
+			vhost_p->ctx = ssl_ctx_new;
+	}
+
 	return 1;
 }
 

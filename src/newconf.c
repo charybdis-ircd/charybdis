@@ -46,6 +46,7 @@ static struct Class *yy_class = NULL;
 
 static struct remote_conf *yy_shared = NULL;
 static struct server_conf *yy_server = NULL;
+static struct vhost_conf *yy_vhost = NULL;
 
 static rb_dlink_list yy_aconf_list;
 static rb_dlink_list yy_oper_list;
@@ -1439,6 +1440,71 @@ conf_set_connect_class(void *data)
 	yy_server->class_name = rb_strdup(data);
 }
 
+static int
+conf_begin_vhost(struct TopConf *tc)
+{
+	if(yy_vhost)
+		free_vhost_conf(yy_vhost);
+
+	yy_vhost = make_vhost_conf();
+
+	if(conf_cur_block_name != NULL) {
+		yy_vhost->hostname = rb_strdup(conf_cur_block_name);
+	}
+
+	return 0;
+}
+
+static int
+conf_end_vhost(struct TopConf *tc)
+{
+	if(EmptyString(yy_vhost->hostname))
+	{
+		conf_report_error("Ignoring vhost block -- missing hostname.");
+		return 0;
+	}
+
+	if(EmptyString(yy_vhost->ssl_cert) || EmptyString(yy_vhost->ssl_private_key))
+	{
+		conf_report_error("Ignoring vhost block for %s -- no ssl_cert or ssl_private_key file provided.",
+					yy_vhost->hostname);
+		return 0;
+	}
+
+	rb_dlinkAdd(yy_vhost, &yy_vhost->node, &vhost_conf_list);
+	yy_vhost = NULL;
+	return 0;
+}
+
+static void
+conf_set_vhost_ssl_private_key(void *data)
+{
+	if (yy_vhost->ssl_private_key)
+		rb_free(yy_vhost->ssl_private_key);
+	yy_vhost->ssl_private_key = rb_strdup((char *) data);
+}
+static void
+conf_set_vhost_ssl_cert(void *data)
+{
+	if (yy_vhost->ssl_cert)
+		rb_free(yy_vhost->ssl_cert);
+	yy_vhost->ssl_cert = rb_strdup((char *) data);
+}
+static void
+conf_set_vhost_ssl_dh_params(void *data)
+{
+	if (yy_vhost->ssl_dh_params)
+		rb_free(yy_vhost->ssl_dh_params);
+	yy_vhost->ssl_dh_params = rb_strdup((char *) data);
+}
+static void
+conf_set_vhost_ssl_cipher_list(void *data)
+{
+	if (yy_vhost->ssl_cipher_list)
+		rb_free(yy_vhost->ssl_cipher_list);
+	yy_vhost->ssl_cipher_list = rb_strdup((char *) data);
+}
+
 static void
 conf_set_exempt_ip(void *data)
 {
@@ -1456,6 +1522,15 @@ conf_set_exempt_ip(void *data)
 	yy_tmp->status = CONF_EXEMPTDLINE;
 	add_conf_by_address(yy_tmp->host, CONF_EXEMPTDLINE, NULL, NULL, yy_tmp);
 }
+
+static struct ConfEntry conf_vhost_table[] =
+{
+	{ "ssl_private_key",    CF_QSTRING, conf_set_vhost_ssl_private_key, 0, NULL },
+	{ "ssl_cert",           CF_QSTRING, conf_set_vhost_ssl_cert, 0, NULL },
+	{ "ssl_dh_params",      CF_QSTRING, conf_set_vhost_ssl_dh_params, 0, NULL },
+	{ "ssl_cipher_list",    CF_QSTRING, conf_set_vhost_ssl_cipher_list, 0, NULL },
+	{ "\0",	0, NULL, 0, NULL }
+};
 
 static int
 conf_cleanup_cluster(struct TopConf *tc)
@@ -2612,6 +2687,7 @@ newconf_init()
 	add_conf_item("shared", "flags", CF_STRING | CF_FLIST, conf_set_shared_flags);
 
 	add_top_conf("connect", conf_begin_connect, conf_end_connect, conf_connect_table);
+	add_top_conf("vhost", conf_begin_vhost, conf_end_vhost, conf_vhost_table);
 
 	add_top_conf("exempt", NULL, NULL, NULL);
 	add_conf_item("exempt", "ip", CF_QSTRING, conf_set_exempt_ip);

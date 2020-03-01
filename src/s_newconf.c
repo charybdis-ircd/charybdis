@@ -56,6 +56,7 @@ rb_dlink_list xline_conf_list;
 rb_dlink_list resv_conf_list;	/* nicks only! */
 rb_dlink_list nd_list;		/* nick delay */
 rb_dlink_list tgchange_list;
+rb_dlink_list vhost_conf_list;
 
 rb_patricia_tree_t *tgchange_tree;
 
@@ -805,3 +806,42 @@ find_tgchange(const char *host)
 	return NULL;
 }
 
+struct vhost_conf *
+find_ssl_vhost(const char *hostname)
+{
+	struct vhost_conf *vhost_p;
+	rb_dlink_node *ptr;
+
+	RB_DLINK_FOREACH(ptr, vhost_conf_list.head)
+	{
+		vhost_p = ptr->data;
+
+		if(!strcmp(hostname,vhost_p->hostname))
+			return vhost_p;
+	}
+	return NULL;
+}
+
+struct vhost_conf *
+make_vhost_conf(void)
+{
+	struct vhost_conf *vhost_p = rb_malloc(sizeof(struct vhost_conf));
+	return vhost_p;
+}
+
+void
+free_vhost_conf(struct vhost_conf *vhost_p)
+{
+	s_assert(vhost_p != NULL);
+	if(vhost_p == NULL)
+		return;
+
+	rb_free(vhost_p->hostname);
+	rb_free(vhost_p->ssl_private_key);
+	rb_free(vhost_p->ssl_cert);
+	rb_free(vhost_p->ssl_dh_params);
+	rb_free(vhost_p->ssl_cipher_list);
+
+	rb_free(vhost_p);
+}
+// TODO: Free vhost_conf_list
