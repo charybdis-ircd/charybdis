@@ -27,7 +27,7 @@ problems, please file a bug.
 
 * FreeBSD 10.x and above (i386 and amd64)
 * Linux 2.6.x and above with glibc or musl (i386, x86_64, and ARM)
-* Mac OS X 10.7 and above
+* macOS 10.7 and above
 * Windows Vista/Server 2008 and above (x86 or x64)
 
 ## Tier 2
@@ -50,12 +50,13 @@ Anything else that hasn't been tested. Charybdis may or may not work on it; patc
 
 These are known issues and workarounds for supported platforms.
 
- * **Mac OS X and macOS **: you must set the LIBTOOLIZE environment
-   variable to point to glibtoolize before running autogen.sh:
-   `$ brew install libtool`
-   `$ LIBTOOLIZE="/opt/local/bin/glibtoolize"`
-   `$ export LIBTOOLIZE`
-   `$ ./autogen.sh`
+ * **macOS**: you must set the `LIBTOOLIZE` environment variable to point to glibtoolize before running autogen.sh:
+
+   ```bash
+   brew install libtool
+   export LIBTOOLIZE="/usr/local/bin/glibtoolize"
+   ./autogen.sh
+   ```
 
  * **FreeBSD**: if you are compiling with ipv6 you may experience
    problems with ipv4 due to the way the socket code is written.  To
