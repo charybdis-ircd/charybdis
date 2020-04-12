@@ -594,7 +594,12 @@ void matchset_for_client(struct Client *who, struct matchset *m)
 	struct sockaddr_in ip4;
 
 	sprintf(m->host[hostn++], "%s!%s@%s", who->name, who->username, who->host);
-	sprintf(m->ip[ipn++], "%s!%s@%s", who->name, who->username, who->sockhost);
+
+	if (!IsIPSpoof(who))
+	{
+		sprintf(m->ip[ipn++], "%s!%s@%s", who->name, who->username, who->sockhost);
+	}
+
 	if (who->localClient->mangledhost != NULL)
 	{
 		/* if host mangling mode enabled, also check their real host */
@@ -609,7 +614,7 @@ void matchset_for_client(struct Client *who, struct matchset *m)
 			sprintf(m->host[hostn++], "%s!%s@%s", who->name, who->username, who->localClient->mangledhost);
 		}
 	}
-	if (GET_SS_FAMILY(&who->localClient->ip) == AF_INET6 &&
+	if (!IsIPSpoof(who) && GET_SS_FAMILY(&who->localClient->ip) == AF_INET6 &&
 			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)&who->localClient->ip, &ip4))
 	{
 		int n = sprintf(m->ip[ipn++], "%s!%s@", who->name, who->username);
