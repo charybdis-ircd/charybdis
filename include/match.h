@@ -59,6 +59,17 @@ int comp_with_mask_sock(struct sockaddr *addr, struct sockaddr *dest, unsigned i
 extern char *collapse(char *pattern);
 extern char *collapse_esc(char *pattern);
 
+struct matchset {
+	char host[2][NAMELEN + USERLEN + HOSTLEN + 6];
+	char ip[2][NAMELEN + USERLEN + HOSTIPLEN + 6];
+};
+
+struct Client;
+
+void matchset_for_client(struct Client *who, struct matchset *m);
+bool client_matches_mask(struct Client *who, const char *mask);
+bool matches_mask(const struct matchset *m, const char *mask);
+
 /*
  * irccmp - case insensitive comparison of s1 and s2
  */

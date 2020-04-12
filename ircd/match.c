@@ -586,6 +586,75 @@ int ircncmp(const char *s1, const char *s2, int n)
 	return (res);
 }
 
+void matchset_for_client(struct Client *who, struct matchset *m)
+{
+	unsigned hostn = 0;
+	unsigned ipn = 0;
+
+	struct sockaddr_in ip4;
+
+	sprintf(m->host[hostn++], "%s!%s@%s", who->name, who->username, who->host);
+	sprintf(m->ip[ipn++], "%s!%s@%s", who->name, who->username, who->sockhost);
+	if (who->localClient->mangledhost != NULL)
+	{
+		/* if host mangling mode enabled, also check their real host */
+		if (!strcmp(who->host, who->localClient->mangledhost))
+		{
+			sprintf(m->host[hostn++], "%s!%s@%s", who->name, who->username, who->orighost);
+		}
+		/* if host mangling mode not enabled and no other spoof,
+		 * also check the mangled form of their host */
+		else if (!IsDynSpoof(who))
+		{
+			sprintf(m->host[hostn++], "%s!%s@%s", who->name, who->username, who->localClient->mangledhost);
+		}
+	}
+	if (GET_SS_FAMILY(&who->localClient->ip) == AF_INET6 &&
+			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)&who->localClient->ip, &ip4))
+	{
+		int n = sprintf(m->ip[ipn++], "%s!%s@", who->name, who->username);
+		rb_inet_ntop_sock((struct sockaddr *)&ip4,
+				m->ip[ipn] + n, sizeof m->ip[ipn] - n);
+	}
+
+	for (int i = hostn; i < ARRAY_SIZE(m->host); i++)
+	{
+		m->host[i][0] = '\0';
+	}
+	for (int i = ipn; i < ARRAY_SIZE(m->ip); i++)
+	{
+		m->ip[i][0] = '\0';
+	}
+}
+
+bool client_matches_mask(struct Client *who, const char *mask)
+{
+	static struct matchset ms;
+	matchset_for_client(who, &ms);
+	return matches_mask(&ms, mask);
+}
+
+bool matches_mask(const struct matchset *m, const char *mask)
+{
+	for (int i = 0; i < ARRAY_SIZE(m->host); i++)
+	{
+		if (m->host[i][0] == '\0')
+			break;
+		if (match(mask, m->host[i]))
+			return true;
+	}
+	for (int i = 0; i < ARRAY_SIZE(m->ip); i++)
+	{
+		if (m->ip[i][0] == '\0')
+			break;
+		if (match(mask, m->ip[i]))
+			return true;
+		if (match_cidr(mask, m->ip[i]))
+			return true;
+	}
+	return false;
+}
+
 const unsigned char irctolower_tab[] = {
 	0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa,
 	0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x13, 0x14,
