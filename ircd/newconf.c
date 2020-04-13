@@ -353,6 +353,7 @@ static struct mode_table auth_table[] = {
 	{"need_sasl",		CONF_FLAGS_NEED_SASL		},
 	{"extend_chans",	CONF_FLAGS_EXTEND_CHANS		},
 	{"allow_sctp",		CONF_FLAGS_ALLOW_SCTP		},
+	{"kline_spoof_ip",	CONF_FLAGS_KLINE_SPOOF		},
 	{NULL, 0}
 };
 

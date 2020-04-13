@@ -383,33 +383,37 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 	if(IsConfExemptKline(iconf))
 		return iconf;
 
-	/* Find the best K-line... -A1kmm */
-	kconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_KILL, aftype, user, NULL);
-
-	/* If they are K-lined, return the K-line */
-	if(kconf)
-		return kconf;
-
 	/* if theres a spoof, check it against klines.. */
 	if(IsConfDoSpoofIp(iconf))
 	{
 		char *p = strchr(iconf->info.name, '@');
 
 		/* note, we dont need to pass sockhost here, as its
-		 * guaranteed to not match by whats above.. --anfl
+		 * guaranteed to not match by whats below.. --anfl
 		 */
 		if(p)
 		{
 			*p = '\0';
-			kconf = find_conf_by_address(p+1, NULL, NULL, ip, CONF_KILL, aftype, iconf->info.name, NULL);
+			kconf = find_conf_by_address(p+1, NULL, NULL, NULL, CONF_KILL, aftype, iconf->info.name, NULL);
 			*p = '@';
 		}
 		else
-			kconf = find_conf_by_address(iconf->info.name, NULL, NULL, ip, CONF_KILL, aftype, vuser, NULL);
+			kconf = find_conf_by_address(iconf->info.name, NULL, NULL, NULL, CONF_KILL, aftype, vuser, NULL);
 
 		if(kconf)
 			return kconf;
+
+		/* everything else checks real hosts, if they're kline_spoof_ip we're done */
+		if(IsConfKlineSpoof(iconf))
+			return iconf;
 	}
+
+	/* Find the best K-line... -A1kmm */
+	kconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_KILL, aftype, user, NULL);
+
+	/* If they are K-lined, return the K-line */
+	if(kconf)
+		return kconf;
 
 	/* if no_tilde, check the username without tilde against klines too
 	 * -- jilles */
