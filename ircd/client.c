@@ -602,13 +602,15 @@ check_one_kline(struct ConfItem *kline)
 		/* match one kline */
 		switch (masktype) {
 		case HM_IPV4:
-			if (client_p->localClient->ip.ss_family == AF_INET6 &&
+		case HM_IPV6:
+			if (IsConfDoSpoofIp(client_p->localClient->att_conf) &&
+					IsConfKlineSpoof(client_p->localClient->att_conf))
+				continue;
+			if (client_p->localClient->ip.ss_family == AF_INET6 && sockaddr.ss_family == AF_INET &&
 					rb_ipv4_from_ipv6((struct sockaddr_in6 *)&client_p->localClient->ip, &ip4)
 						&& comp_with_mask_sock((struct sockaddr *)&ip4, (struct sockaddr *)&sockaddr, bits))
 				matched = 1;
-			/* fallthrough */
-		case HM_IPV6:
-			if (client_p->localClient->ip.ss_family == sockaddr.ss_family &&
+			else if (client_p->localClient->ip.ss_family == sockaddr.ss_family &&
 					comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
 						(struct sockaddr *)&sockaddr, bits))
 				matched = 1;
@@ -616,6 +618,9 @@ check_one_kline(struct ConfItem *kline)
 		case HM_HOST:
 			if (match(kline->host, client_p->orighost))
 				matched = 1;
+			if (IsConfDoSpoofIp(client_p->localClient->att_conf) &&
+					IsConfKlineSpoof(client_p->localClient->att_conf))
+				continue;
 			if (match(kline->host, client_p->sockhost))
 				matched = 1;
 			break;
