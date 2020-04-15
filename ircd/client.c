@@ -580,9 +580,16 @@ check_one_kline(struct ConfItem *kline)
 	struct Client *client_p;
 	rb_dlink_node *ptr;
 	rb_dlink_node *next_ptr;
+	int masktype;
+	int bits;
+	struct rb_sockaddr_storage sockaddr;
+
+	masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
 
 	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, lclient_list.head)
 	{
+		int matched = 0;
+
 		client_p = ptr->data;
 
 		if(IsMe(client_p) || !IsPerson(client_p))
@@ -592,28 +599,19 @@ check_one_kline(struct ConfItem *kline)
 			continue;
 
 		/* match one kline */
-		{
-			int matched = 0;
-			int masktype;
-			int bits;
-			struct rb_sockaddr_storage sockaddr;
-
-			masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
-
-			switch (masktype) {
-			case HM_IPV4:
-			case HM_IPV6:
-				if(comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
-						(struct sockaddr *)&sockaddr, bits))
-					matched = 1;
-			case HM_HOST:
-				if (match(kline->host, client_p->orighost))
-					matched = 1;
-			}
-
-			if (!matched)
-				continue;
+		switch (masktype) {
+		case HM_IPV4:
+		case HM_IPV6:
+			if (comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
+					(struct sockaddr *)&sockaddr, bits))
+				matched = 1;
+		case HM_HOST:
+			if (match(kline->host, client_p->orighost))
+				matched = 1;
 		}
+
+		if (!matched)
+			continue;
 
 		if(IsExemptKline(client_p))
 		{
