@@ -605,9 +605,13 @@ check_one_kline(struct ConfItem *kline)
 			if (comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
 					(struct sockaddr *)&sockaddr, bits))
 				matched = 1;
+			break;
 		case HM_HOST:
 			if (match(kline->host, client_p->orighost))
 				matched = 1;
+			if (match(kline->host, client_p->sockhost))
+				matched = 1;
+			break;
 		}
 
 		if (!matched)
