@@ -537,84 +537,41 @@ del_invite(struct Channel *chptr, struct Client *who)
 static int
 is_banned_list(struct Channel *chptr, rb_dlink_list *list,
 	       struct Client *who, struct membership *msptr,
-	       const char *s, const char *s2, const char **forward)
+	       const struct matchset *ms, const char **forward)
 {
-	char src_host[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_iphost[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_althost[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_ip4host[NAMELEN + USERLEN + HOSTLEN + 6];
-	char *s3 = NULL;
-	char *s4 = NULL;
-	struct sockaddr_in ip4;
+	struct matchset ms_;
 	rb_dlink_node *ptr;
 	struct Ban *actualBan = NULL;
 	struct Ban *actualExcept = NULL;
 
-	if(!MyClient(who))
+	if (!MyClient(who))
 		return 0;
 
-	/* if the buffers havent been built, do it here */
-	if(s == NULL)
+	if (ms == NULL)
 	{
-		sprintf(src_host, "%s!%s@%s", who->name, who->username, who->host);
-		sprintf(src_iphost, "%s!%s@%s", who->name, who->username, who->sockhost);
-
-		s = src_host;
-		s2 = src_iphost;
-	}
-	if(who->localClient->mangledhost != NULL)
-	{
-		/* if host mangling mode enabled, also check their real host */
-		if(!strcmp(who->host, who->localClient->mangledhost))
-		{
-			sprintf(src_althost, "%s!%s@%s", who->name, who->username, who->orighost);
-			s3 = src_althost;
-		}
-		/* if host mangling mode not enabled and no other spoof,
-		 * also check the mangled form of their host */
-		else if (!IsDynSpoof(who))
-		{
-			sprintf(src_althost, "%s!%s@%s", who->name, who->username, who->localClient->mangledhost);
-			s3 = src_althost;
-		}
-	}
-	if(GET_SS_FAMILY(&who->localClient->ip) == AF_INET6 &&
-			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)&who->localClient->ip, &ip4))
-	{
-		sprintf(src_ip4host, "%s!%s@", who->name, who->username);
-		s4 = src_ip4host + strlen(src_ip4host);
-		rb_inet_ntop_sock((struct sockaddr *)&ip4,
-				s4, src_ip4host + sizeof src_ip4host - s4);
-		s4 = src_ip4host;
+		matchset_for_client(who, &ms_);
+		ms = &ms_;
 	}
 
 	RB_DLINK_FOREACH(ptr, list->head)
 	{
 		actualBan = ptr->data;
-		if(match(actualBan->banstr, s) ||
-		   match(actualBan->banstr, s2) ||
-		   match_cidr(actualBan->banstr, s2) ||
-		   match_extban(actualBan->banstr, who, chptr, CHFL_BAN) ||
-		   (s3 != NULL && match(actualBan->banstr, s3)) ||
-		   (s4 != NULL && (match(actualBan->banstr, s4) || match_cidr(actualBan->banstr, s4)))
-		   )
+		if (matches_mask(ms, actualBan->banstr))
 			break;
-		else
-			actualBan = NULL;
+		if (match_extban(actualBan->banstr, who, chptr, CHFL_BAN))
+			break;
+		actualBan = NULL;
 	}
 
-	if((actualBan != NULL) && ConfigChannel.use_except)
+	if ((actualBan != NULL) && ConfigChannel.use_except)
 	{
 		RB_DLINK_FOREACH(ptr, chptr->exceptlist.head)
 		{
 			actualExcept = ptr->data;
 
 			/* theyre exempted.. */
-			if(match(actualExcept->banstr, s) ||
-			   match(actualExcept->banstr, s2) ||
-			   match_cidr(actualExcept->banstr, s2) ||
-			   match_extban(actualExcept->banstr, who, chptr, CHFL_EXCEPTION) ||
-			   (s3 != NULL && match(actualExcept->banstr, s3)))
+			if (matches_mask(ms, actualExcept->banstr) ||
+					match_extban(actualExcept->banstr, who, chptr, CHFL_BAN))
 			{
 				/* cache the fact theyre not banned */
 				if(msptr != NULL)
@@ -660,7 +617,7 @@ is_banned_list(struct Channel *chptr, rb_dlink_list *list,
  */
 int
 is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
-	  const char *s, const char *s2, const char **forward)
+	  const struct matchset *ms, const char **forward)
 {
 #if 0
 	if (chptr->last_checked_client != NULL &&
@@ -676,7 +633,7 @@ is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
 
 	return chptr->last_checked_result;
 #else
-	return is_banned_list(chptr, &chptr->banlist, who, msptr, s, s2, forward);
+	return is_banned_list(chptr, &chptr->banlist, who, msptr, ms, forward);
 #endif
 }
 
@@ -689,7 +646,7 @@ is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
  */
 int
 is_quieted(struct Channel *chptr, struct Client *who, struct membership *msptr,
-	   const char *s, const char *s2)
+	   const struct matchset *ms)
 {
 #if 0
 	if (chptr->last_checked_client != NULL &&
@@ -705,7 +662,7 @@ is_quieted(struct Channel *chptr, struct Client *who, struct membership *msptr,
 
 	return chptr->last_checked_result;
 #else
-	return is_banned_list(chptr, &chptr->quietlist, who, msptr, s, s2, NULL);
+	return is_banned_list(chptr, &chptr->quietlist, who, msptr, ms, NULL);
 #endif
 }
 
@@ -722,10 +679,7 @@ can_join(struct Client *source_p, struct Channel *chptr, const char *key, const 
 	rb_dlink_node *invite = NULL;
 	rb_dlink_node *ptr;
 	struct Ban *invex = NULL;
-	char src_host[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_iphost[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_althost[NAMELEN + USERLEN + HOSTLEN + 6];
-	int use_althost = 0;
+	struct matchset ms;
 	int i = 0;
 	hook_data_channel moduledata;
 
@@ -735,26 +689,9 @@ can_join(struct Client *source_p, struct Channel *chptr, const char *key, const 
 	moduledata.chptr = chptr;
 	moduledata.approved = 0;
 
-	sprintf(src_host, "%s!%s@%s", source_p->name, source_p->username, source_p->host);
-	sprintf(src_iphost, "%s!%s@%s", source_p->name, source_p->username, source_p->sockhost);
-	if(source_p->localClient->mangledhost != NULL)
-	{
-		/* if host mangling mode enabled, also check their real host */
-		if(!strcmp(source_p->host, source_p->localClient->mangledhost))
-		{
-			sprintf(src_althost, "%s!%s@%s", source_p->name, source_p->username, source_p->orighost);
-			use_althost = 1;
-		}
-		/* if host mangling mode not enabled and no other spoof,
-		 * also check the mangled form of their host */
-		else if (!IsDynSpoof(source_p))
-		{
-			sprintf(src_althost, "%s!%s@%s", source_p->name, source_p->username, source_p->localClient->mangledhost);
-			use_althost = 1;
-		}
-	}
+	matchset_for_client(source_p, &ms);
 
-	if((is_banned(chptr, source_p, NULL, src_host, src_iphost, forward)) == CHFL_BAN)
+	if((is_banned(chptr, source_p, NULL, &ms, forward)) == CHFL_BAN)
 	{
 		moduledata.approved = ERR_BANNEDFROMCHAN;
 		goto finish_join_check;
@@ -784,11 +721,8 @@ can_join(struct Client *source_p, struct Channel *chptr, const char *key, const 
 			RB_DLINK_FOREACH(ptr, chptr->invexlist.head)
 			{
 				invex = ptr->data;
-				if(match(invex->banstr, src_host)
-				   || match(invex->banstr, src_iphost)
-				   || match_cidr(invex->banstr, src_iphost)
-			   	   || match_extban(invex->banstr, source_p, chptr, CHFL_INVEX)
-				   || (use_althost && match(invex->banstr, src_althost)))
+				if (matches_mask(&ms, invex->banstr) ||
+						match_extban(invex->banstr, source_p, chptr, CHFL_INVEX))
 					break;
 			}
 			if(ptr == NULL)
@@ -879,8 +813,8 @@ can_send(struct Channel *chptr, struct Client *source_p, struct membership *mspt
 			if(can_send_banned(msptr))
 				moduledata.approved = CAN_SEND_NO;
 		}
-		else if(is_banned(chptr, source_p, msptr, NULL, NULL, NULL) == CHFL_BAN
-			|| is_quieted(chptr, source_p, msptr, NULL, NULL) == CHFL_BAN)
+		else if(is_banned(chptr, source_p, msptr, NULL, NULL) == CHFL_BAN
+			|| is_quieted(chptr, source_p, msptr, NULL) == CHFL_BAN)
 			moduledata.approved = CAN_SEND_NO;
 	}
 
@@ -964,14 +898,12 @@ find_bannickchange_channel(struct Client *client_p)
 	struct Channel *chptr;
 	struct membership *msptr;
 	rb_dlink_node *ptr;
-	char src_host[NAMELEN + USERLEN + HOSTLEN + 6];
-	char src_iphost[NAMELEN + USERLEN + HOSTLEN + 6];
+	struct matchset ms;
 
 	if (!MyClient(client_p))
 		return NULL;
 
-	sprintf(src_host, "%s!%s@%s", client_p->name, client_p->username, client_p->host);
-	sprintf(src_iphost, "%s!%s@%s", client_p->name, client_p->username, client_p->sockhost);
+	matchset_for_client(client_p, &ms);
 
 	RB_DLINK_FOREACH(ptr, client_p->user->channel.head)
 	{
@@ -985,8 +917,8 @@ find_bannickchange_channel(struct Client *client_p)
 			if (can_send_banned(msptr))
 				return chptr;
 		}
-		else if (is_banned(chptr, client_p, msptr, src_host, src_iphost, NULL) == CHFL_BAN
-			|| is_quieted(chptr, client_p, msptr, src_host, src_iphost) == CHFL_BAN)
+		else if (is_banned(chptr, client_p, msptr, &ms, NULL) == CHFL_BAN
+			|| is_quieted(chptr, client_p, msptr, &ms) == CHFL_BAN)
 			return chptr;
 	}
 	return NULL;
