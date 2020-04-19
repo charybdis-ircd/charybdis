@@ -67,7 +67,7 @@ struct Message
 	unsigned int flags;
 
 	/* handlers:
-	 * UNREGISTERED, CLIENT, RCLIENT, SERVER, ENCAP, OPER, LAST
+	 * UNREGISTERED, CLIENT, RCLIENT, SERVER, ENCAP, OPER
 	 */
 	struct MessageEntry handlers[LAST_HANDLER_TYPE];
 };
