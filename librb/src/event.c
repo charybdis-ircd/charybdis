@@ -250,6 +250,7 @@ rb_event_run(void)
 			else
 			{
 				rb_dlinkDelete(&ev->node, &event_list);
+				rb_free(ev->name);
 				rb_free(ev);
 			}
 		}
