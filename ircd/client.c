@@ -583,6 +583,7 @@ check_one_kline(struct ConfItem *kline)
 	int masktype;
 	int bits;
 	struct rb_sockaddr_storage sockaddr;
+	struct sockaddr_in ip4;
 
 	masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
 
@@ -601,9 +602,15 @@ check_one_kline(struct ConfItem *kline)
 		/* match one kline */
 		switch (masktype) {
 		case HM_IPV4:
+			if (client_p->localClient->ip.ss_family == AF_INET6 &&
+					rb_ipv4_from_ipv6((struct sockaddr_in6 *)&client_p->localClient->ip, &ip4)
+						&& comp_with_mask_sock((struct sockaddr *)&ip4, (struct sockaddr *)&sockaddr, bits))
+				matched = 1;
+			/* fallthrough */
 		case HM_IPV6:
-			if (comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
-					(struct sockaddr *)&sockaddr, bits))
+			if (client_p->localClient->ip.ss_family == sockaddr.ss_family &&
+					comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
+						(struct sockaddr *)&sockaddr, bits))
 				matched = 1;
 			break;
 		case HM_HOST:
