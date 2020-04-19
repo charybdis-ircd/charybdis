@@ -216,6 +216,8 @@ find_conf_by_address(const char *name, const char *sockhost,
 	unsigned long hprecv = 0;
 	struct ConfItem *hprec = NULL;
 	struct AddressRec *arec;
+	struct sockaddr_in ip4;
+	struct sockaddr *pip4 = NULL;
 	int b;
 
 	if(username == NULL)
@@ -223,9 +225,13 @@ find_conf_by_address(const char *name, const char *sockhost,
 
 	if(addr)
 	{
-		/* Check for IPV6 matches... */
-		if(fam == AF_INET6)
+		if (fam == AF_INET)
+			pip4 = addr;
+
+		if (fam == AF_INET6)
 		{
+			if (type == CONF_KILL && rb_ipv4_from_ipv6((struct sockaddr_in6 *)addr, &ip4))
+				pip4 = (struct sockaddr *)&ip4;
 
 			for (b = 128; b >= 0; b -= 16)
 			{
@@ -244,15 +250,15 @@ find_conf_by_address(const char *name, const char *sockhost,
 					}
 			}
 		}
-		else
-		if(fam == AF_INET)
+
+		if (pip4 != NULL)
 		{
 			for (b = 32; b >= 0; b -= 8)
 			{
-				for (arec = atable[hash_ipv4(addr, b)]; arec; arec = arec->next)
+				for (arec = atable[hash_ipv4(pip4, b)]; arec; arec = arec->next)
 					if(arec->type == (type & ~0x1) &&
 					   arec->masktype == HM_IPV4 &&
-					   comp_with_mask_sock(addr, (struct sockaddr *)&arec->Mask.ipa.addr,
+					   comp_with_mask_sock(pip4, (struct sockaddr *)&arec->Mask.ipa.addr,
 							       arec->Mask.ipa.bits) &&
 						(type & 0x1 || match(arec->username, username)) &&
 						(type != CONF_CLIENT || !arec->auth_user ||
@@ -364,7 +370,6 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 {
 	struct ConfItem *iconf, *kconf;
 	const char *vuser;
-	struct sockaddr_in ip4;
 
 	/* Find the best I-line... If none, return NULL -A1kmm */
 	if(!(iconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_CLIENT, aftype, user, auth_user)))
@@ -411,14 +416,6 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 	if(user != vuser)
 	{
 		kconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_KILL, aftype, vuser, NULL);
-		if(kconf)
-			return kconf;
-	}
-
-	if(ip != NULL && ip->sa_family == AF_INET6 &&
-			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)(const void *)ip, &ip4))
-	{
-		kconf = find_conf_by_address(NULL, NULL, NULL, (struct sockaddr *)&ip4, CONF_KILL, AF_INET, vuser, NULL);
 		if(kconf)
 			return kconf;
 	}
