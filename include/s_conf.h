@@ -112,6 +112,7 @@ struct ConfItem
 #define CONF_FLAGS_EXEMPTDNSBL		0x04000000
 #define CONF_FLAGS_EXEMPTPROXY		0x08000000
 #define CONF_FLAGS_ALLOW_SCTP		0x10000000
+#define CONF_FLAGS_KLINE_SPOOF		0x20000000
 
 
 /* Macros for struct ConfItem */
@@ -136,6 +137,7 @@ struct ConfItem
 #define IsConfExtendChans(x)	((x)->flags & CONF_FLAGS_EXTEND_CHANS)
 #define IsConfSSLNeeded(x)	((x)->flags & CONF_FLAGS_NEED_SSL)
 #define IsConfAllowSCTP(x)	((x)->flags & CONF_FLAGS_ALLOW_SCTP)
+#define IsConfKlineSpoof(x)	((x)->flags & CONF_FLAGS_KLINE_SPOOF)
 
 /* flag definitions for opers now in client.h */
 

@@ -49,8 +49,9 @@ struct ConfItem *find_address_conf(const char *host, const char *sockhost,
 
 struct ConfItem *find_dline(struct sockaddr *, int);
 
-#define find_kline(x)	(find_conf_by_address((x)->host, (x)->sockhost, \
-			 (x)->orighost, \
+#define find_kline(x)	((IsConfDoSpoofIp((x)->localClient->att_conf) && IsConfKlineSpoof((x)->localClient->att_conf)) ? \
+		find_conf_by_address((x)->orighost, NULL, NULL, NULL, CONF_KILL, AF_INET, (x)->username, NULL) : \
+		find_conf_by_address((x)->host, (x)->sockhost, (x)->orighost, \
 			 (struct sockaddr *)&(x)->localClient->ip, CONF_KILL,\
 			 GET_SS_FAMILY(&(x)->localClient->ip), (x)->username, NULL))
 
