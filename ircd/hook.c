@@ -198,7 +198,7 @@ add_hook_prio(const char *name, hookfn fn, enum hook_priority priority)
 	entry->fn = fn;
 	entry->priority = priority;
 
-	RB_DLINK_FOREACH(ptr, &hooks[i].hooks.head)
+	RB_DLINK_FOREACH(ptr, hooks[i].hooks.head)
 	{
 		struct hook_entry *o = ptr->data;
 		if (entry->priority < o->priority)
@@ -223,7 +223,7 @@ remove_hook(const char *name, hookfn fn)
 	if((i = find_hook(name)) < 0)
 		return;
 
-	RB_DLINK_FOREACH_SAFE(ptr, scratch, &hooks[i].hooks.head)
+	RB_DLINK_FOREACH_SAFE(ptr, scratch, hooks[i].hooks.head)
 	{
 		struct hook_entry *entry = ptr->data;
 		if (entry->fn == fn)
