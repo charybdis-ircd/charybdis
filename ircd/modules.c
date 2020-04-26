@@ -586,7 +586,12 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			{
 				mapi_hfn_list_av1 *m;
 				for (m = mheader->mapi_hfn_list; m->hapi_name; ++m)
+				{
+					int priority = m->priority;
+					if (priority == 0)
+						priority = HOOK_NORMAL;
 					add_hook(m->hapi_name, m->fn);
+				}
 			}
 
 			/* New in MAPI v2 - version replacement */
