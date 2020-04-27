@@ -201,7 +201,7 @@ add_hook_prio(const char *name, hookfn fn, enum hook_priority priority)
 	RB_DLINK_FOREACH(ptr, hooks[i].hooks.head)
 	{
 		struct hook_entry *o = ptr->data;
-		if (entry->priority < o->priority)
+		if (entry->priority <= o->priority)
 		{
 			rb_dlinkAddBefore(ptr, entry, &entry->node, &hooks[i].hooks);
 			return;
