@@ -40,4 +40,4 @@ check-local: $(check_PROGRAMS) \
 	$(patsubst ../modules/%.c,../modules/.libs/%.so,$(wildcard ../modules/*.c)) \
 	$(patsubst ../modules/core/%.c,../modules/core/.libs/%.so,$(wildcard ../modules/core/*.c))
 
-	./runtests -l $(abs_top_srcdir)/tests/TESTS
+	ASAN_OPTIONS="${ASAN_OPTIONS}:detect_leaks=false" ./runtests -l $(abs_top_srcdir)/tests/TESTS
