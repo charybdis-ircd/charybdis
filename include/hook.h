@@ -95,6 +95,7 @@ typedef struct
 	int approved;
 	int dir;
 	const char *modestr;
+	const char *error;
 } hook_data_channel_approval;
 
 typedef struct

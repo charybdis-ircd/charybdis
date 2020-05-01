@@ -38,24 +38,26 @@
 #include "packet.h"
 #include "tgchange.h"
 
-static const char invite_desc[] = "Provides facilities for invite and related notifications";
+static const char invite_desc[] = "Provides /invite";
 
 static void m_invite(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
-static unsigned int CAP_INVITE_NOTIFY = 0;
 
 struct Message invite_msgtab = {
 	"INVITE", 0, 0, 0, 0,
 	{mg_unreg, {m_invite, 3}, {m_invite, 3}, mg_ignore, mg_ignore, {m_invite, 3}}
 };
 
-mapi_clist_av1 invite_clist[] = { &invite_msgtab, NULL };
+static int can_invite_hook;
+static int invite_hook;
 
-mapi_cap_list_av2 invite_cap_list[] = {
-	{ MAPI_CAP_CLIENT, "invite-notify", NULL, &CAP_INVITE_NOTIFY },
-	{ 0, NULL, NULL, NULL }
+mapi_clist_av1 invite_clist[] = { &invite_msgtab, NULL };
+mapi_hlist_av1 invite_hlist[] = {
+	{ "can_invite",	&can_invite_hook },
+	{ "invite",	&invite_hook },
+	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV2(invite, NULL, NULL, invite_clist, NULL, NULL, invite_cap_list, NULL, invite_desc);
+DECLARE_MODULE_AV2(invite, NULL, NULL, invite_clist, invite_hlist, NULL, NULL, NULL, invite_desc);
 
 static bool add_invite(struct Channel *, struct Client *);
 
@@ -70,6 +72,7 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	struct Channel *chptr;
 	struct membership *msptr;
 	int store_invite = 0;
+	hook_data_channel_approval hdata = { 0 };
 
 	if(MyClient(source_p) && !IsFloodDone(source_p))
 		flood_endgrace(source_p);
@@ -142,14 +145,24 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		return;
 	}
 
-	/* unconditionally require ops, unless the channel is +g */
-	/* treat remote clients as chanops */
-	if(MyClient(source_p) && !is_chanop(msptr) &&
-			!(chptr->mode.mode & MODE_FREEINVITE))
+	if (MyClient(source_p))
 	{
-		sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
-			   me.name, source_p->name, parv[2]);
-		return;
+		hdata.chptr = chptr;
+		hdata.msptr = msptr;
+		hdata.client = source_p;
+		hdata.target = target_p;
+		hdata.approved = !(is_chanop(msptr) || (chptr->mode.mode & MODE_FREEINVITE));
+
+		call_hook(can_invite_hook, &hdata);
+		if (hdata.approved)
+		{
+			if (hdata.error)
+				sendto_one_numeric(source_p, hdata.approved, "%s", hdata.error);
+			else
+				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
+						 me.name, source_p->name, parv[2]);
+			return;
+		}
 	}
 
 	/* store invites when they could affect the ability to join
@@ -214,28 +227,35 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 				target_p->localClient->last_caller_id_time = rb_current_time();
 			}
 		}
+
+		hdata.chptr = chptr;
+		hdata.msptr = msptr;
+		hdata.client = source_p;
+		hdata.target = target_p;
+		hdata.approved = 0;
+
+		call_hook(invite_hook, &hdata);
+
+		if (hdata.approved)
+		{
+			if (hdata.error)
+				sendto_one_numeric(source_p, hdata.approved, "%s", hdata.error);
+			return;
+		}
+
 		add_reply_target(target_p, source_p);
 		sendto_one(target_p, ":%s!%s@%s INVITE %s :%s",
 			   source_p->name, source_p->username, source_p->host,
 			   target_p->name, chptr->chname);
 
 		if(store_invite)
-		{
-			if (!add_invite(chptr, target_p))
-				return;
-
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, chptr,
-				":%s NOTICE %s :%s is inviting %s to %s.",
-				me.name, chptr->chname, source_p->name, target_p->name, chptr->chname);
-			sendto_channel_local_with_capability(source_p, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, chptr,
-				":%s!%s@%s INVITE %s %s", source_p->name, source_p->username,
-				source_p->host, target_p->name, chptr->chname);
-		}
+			add_invite(chptr, target_p);
 	}
-
-	sendto_server(source_p, chptr, CAP_TS6, 0, ":%s INVITE %s %s %lu",
-		      use_id(source_p), use_id(target_p),
-		      chptr->chname, (unsigned long) chptr->channelts);
+	else if (target_p->from != client_p)
+	{
+		sendto_one_prefix(target_p, source_p, "INVITE", "%s %lu",
+				  chptr->chname, (unsigned long) chptr->channelts);
+	}
 }
 
 /* add_invite()
