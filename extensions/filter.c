@@ -55,6 +55,7 @@ static const char filter_desc[] = "Filter messages using a precompiled Hyperscan
 
 static void filter_msg_user(void *data);
 static void filter_msg_channel(void *data);
+static void filter_client_quit(void *data);
 static void on_client_exit(void *data);
 
 static void mo_setfilter(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
@@ -91,6 +92,7 @@ static unsigned filter_chmode, filter_umode;
 mapi_hfn_list_av1 filter_hfnlist[] = {
 	{ "privmsg_user", (hookfn) filter_msg_user },
 	{ "privmsg_channel", (hookfn) filter_msg_channel },
+	{ "client_quit", (hookfn) filter_client_quit },
 	{ "client_exit", (hookfn) on_client_exit },
 	{ NULL, NULL }
 };
@@ -346,7 +348,7 @@ unsigned match_message(const char *prefix,
 		return 0;
 	if (!command)
 		return 0;
-	snprintf(check_buffer, sizeof check_buffer, "%s:%s!%s@%s#%c %s %s :%s",
+	snprintf(check_buffer, sizeof check_buffer, "%s:%s!%s@%s#%c %s%s%s :%s",
 	         prefix,
 #if FILTER_NICK
 	         source->name,
@@ -364,7 +366,10 @@ unsigned match_message(const char *prefix,
 	         "*",
 #endif
 	         source->user && source->user->suser[0] != '\0' ? '1' : '0',
-	         command, target, msg);
+	         command,
+	         target ? " " : "",
+	         target ? target : "",
+	         msg);
 	hs_error_t r = hs_scan(filter_db, check_buffer, strlen(check_buffer), 0, filter_scratch, match_callback, &state);
 	if (r != HS_SUCCESS && r != HS_SCAN_TERMINATED)
 		return 0;
@@ -452,6 +457,30 @@ filter_msg_channel(void *data_)
 		data->approved = 1;
 		exit_client(NULL, s, s, FILTER_EXIT_MSG);
 	}
+}
+
+void
+filter_client_quit(void *data_)
+{
+	hook_data_client_quit *data = data_;
+	struct Client *s = data->client;
+	if (IsOper(s)) {
+		return;
+	}
+	char *text = strcpy(clean_buffer, data->orig_reason);
+	strip_colour(text);
+	strip_unprintable(text);
+	unsigned r = match_message("0", s, "QUIT", NULL, data->orig_reason) |
+	             match_message("1", s, "QUIT", NULL, text);
+	if (r & ACT_DROP) {
+		data->reason = NULL;
+	}
+	if (r & ACT_ALARM) {
+		sendto_realops_snomask(SNO_GENERAL, L_ALL | L_NETWIDE,
+			"FILTER: %s!%s@%s [%s]",
+			s->name, s->username, s->host, s->sockhost);
+	}
+	/* No point in doing anything with ACT_KILL */
 }
 
 void
