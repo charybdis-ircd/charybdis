@@ -70,6 +70,7 @@ static int filter_enable = 1;
 static const char *cmdname[MESSAGE_TYPE_COUNT] = {
 	[MESSAGE_TYPE_PRIVMSG] = "PRIVMSG",
 	[MESSAGE_TYPE_NOTICE] = "NOTICE",
+	[MESSAGE_TYPE_PART] = "PART",
 };
 
 enum filter_state {
@@ -343,6 +344,8 @@ unsigned match_message(const char *prefix,
 		return 0;
 	if (!filter_db)
 		return 0;
+	if (!command)
+		return 0;
 	snprintf(check_buffer, sizeof check_buffer, "%s:%s!%s@%s#%c %s %s :%s",
 	         prefix,
 #if FILTER_NICK
@@ -361,8 +364,7 @@ unsigned match_message(const char *prefix,
 	         "*",
 #endif
 	         source->user && source->user->suser[0] != '\0' ? '1' : '0',
-	         command, target,
-	         msg);
+	         command, target, msg);
 	hs_error_t r = hs_scan(filter_db, check_buffer, strlen(check_buffer), 0, filter_scratch, match_callback, &state);
 	if (r != HS_SUCCESS && r != HS_SCAN_TERMINATED)
 		return 0;
@@ -464,4 +466,3 @@ on_client_exit(void *data_)
 		state = filter_db ? FILTER_LOADED : FILTER_EMPTY;
 	}
 }
-
