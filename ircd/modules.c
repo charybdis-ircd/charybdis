@@ -424,6 +424,7 @@ unload_one_module(const char *name, bool warn)
 
 	rb_dlinkDelete(&mod->node, &module_list);
 	rb_free(mod->name);
+	rb_free(mod->path);
 	rb_free(mod);
 
 	if(warn)
@@ -653,6 +654,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	mod->mapi_header = mapi_version;
 	mod->mapi_version = MAPI_VERSION(*mapi_version);
 	mod->origin = origin;
+	mod->path = rb_strdup(path);
 	rb_dlinkAdd(mod, &mod->node, &module_list);
 
 	if(warn)
@@ -691,6 +693,7 @@ modules_do_reload(void *info_)
 	int check_core;
 	int origin;
 	char *m_bn = rb_basename(info->module);
+	char *path;
 	struct Client *source_p = find_id(info->id);
 
 	if((mod = findmodule_byname(m_bn)) == NULL)
@@ -703,6 +706,7 @@ modules_do_reload(void *info_)
 
 	origin = mod->origin;
 	check_core = mod->core;
+	path = rb_strdup(mod->path);
 
 	mod_remember_clicaps();
 
@@ -711,10 +715,11 @@ modules_do_reload(void *info_)
 		if (source_p) sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
 		rb_free(info);
 		rb_free(m_bn);
+		rb_free(path);
 		return;
 	}
 
-	if((load_one_module(m_bn, origin, check_core) == false) && check_core)
+	if((load_a_module(path, true, origin, check_core) == false) && check_core)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Error reloading core module: %s: terminating ircd", m_bn);
@@ -726,6 +731,7 @@ modules_do_reload(void *info_)
 
 	rb_free(info);
 	rb_free(m_bn);
+	rb_free(path);
 }
 
 void
