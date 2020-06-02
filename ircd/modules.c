@@ -405,8 +405,7 @@ unload_one_module(const char *name, bool warn)
 						continue;
 					}
 
-					if (m->cap_id != NULL)
-						capability_orphan(idx, m->cap_name);
+					capability_orphan(idx, m->cap_name);
 				}
 			}
 			break;
@@ -535,6 +534,38 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 		{
 			struct mapi_mheader_av2 *mheader = (struct mapi_mheader_av2 *)(void *)mapi_version;     /* see above */
 
+			if(mheader->mapi_cap_list)
+			{
+				mapi_cap_list_av2 *m;
+				for (m = mheader->mapi_cap_list; m->cap_name; ++m)
+				{
+					struct CapabilityIndex *idx;
+					int result;
+
+					switch (m->cap_index)
+					{
+					case MAPI_CAP_CLIENT:
+						idx = cli_capindex;
+						break;
+					case MAPI_CAP_SERVER:
+						idx = serv_capindex;
+						break;
+					default:
+						sendto_realops_snomask(SNO_GENERAL, L_ALL,
+							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
+							m->cap_index, m->cap_name, mod_displayname);
+						ilog(L_MAIN,
+							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
+							m->cap_index, m->cap_name, mod_displayname);
+						continue;
+					}
+
+					result = capability_put(idx, m->cap_name, m->cap_ownerdata);
+					if (m->cap_id != NULL)
+						*(m->cap_id) = result;
+				}
+			}
+
 			/* XXX duplicated code :( */
 			if(mheader->mapi_register && (mheader->mapi_register() == -1))
 			{
@@ -543,6 +574,26 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
 						     "Module %s indicated failure during load.",
 						     mod_displayname);
+				if(mheader->mapi_cap_list)
+				{
+					mapi_cap_list_av2 *m;
+					for (m = mheader->mapi_cap_list; m->cap_name; ++m)
+					{
+						struct CapabilityIndex *idx;
+						switch (m->cap_index)
+						{
+						case MAPI_CAP_CLIENT:
+							idx = cli_capindex;
+							break;
+						case MAPI_CAP_SERVER:
+							idx = serv_capindex;
+							break;
+						default:
+							continue;
+						}
+						capability_orphan(idx, m->cap_name);
+					}
+				}
 				lt_dlclose(tmpptr);
 				rb_free(mod_displayname);
 				return false;
@@ -592,38 +643,6 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			/* New in MAPI v2 - version replacement */
 			ver = mheader->mapi_module_version ? mheader->mapi_module_version : ircd_version;
 			description = mheader->mapi_module_description;
-
-			if(mheader->mapi_cap_list)
-			{
-				mapi_cap_list_av2 *m;
-				for (m = mheader->mapi_cap_list; m->cap_name; ++m)
-				{
-					struct CapabilityIndex *idx;
-					int result;
-
-					switch (m->cap_index)
-					{
-					case MAPI_CAP_CLIENT:
-						idx = cli_capindex;
-						break;
-					case MAPI_CAP_SERVER:
-						idx = serv_capindex;
-						break;
-					default:
-						sendto_realops_snomask(SNO_GENERAL, L_ALL,
-							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
-							m->cap_index, m->cap_name, mod_displayname);
-						ilog(L_MAIN,
-							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
-							m->cap_index, m->cap_name, mod_displayname);
-						continue;
-					}
-
-					result = capability_put(idx, m->cap_name, m->cap_ownerdata);
-					if (m->cap_id != NULL)
-						*(m->cap_id) = result;
-				}
-			}
 		}
 
 		break;
