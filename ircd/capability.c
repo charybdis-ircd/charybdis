@@ -67,6 +67,11 @@ capability_put(struct CapabilityIndex *idx, const char *cap, void *ownerdata)
 	if ((entry = rb_dictionary_retrieve(idx->cap_dict, cap)) != NULL)
 	{
 		entry->flags &= ~CAP_ORPHANED;
+		if (ownerdata != NULL)
+		{
+			s_assert(entry->ownerdata == NULL);
+			entry->ownerdata = ownerdata;
+		}
 		return (1 << entry->value);
 	}
 
