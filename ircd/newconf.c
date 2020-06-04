@@ -2386,7 +2386,7 @@ conf_report_error(const char *fmt, ...)
 	}
 
 	ierror("\"%s\", line %d: %s", current_file, lineno + 1, msg);
-	sendto_realops_snomask(SNO_GENERAL, L_ALL, "error: \"%s\", line %d: %s", current_file, lineno + 1, msg);
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "error: \"%s\", line %d: %s", current_file, lineno + 1, msg);
 }
 
 void
@@ -2406,7 +2406,7 @@ conf_report_warning(const char *fmt, ...)
 	}
 
 	iwarn("\"%s\", line %d: %s", current_file, lineno + 1, msg);
-	sendto_realops_snomask(SNO_GENERAL, L_ALL, "warning: \"%s\", line %d: %s", current_file, lineno + 1, msg);
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "warning: \"%s\", line %d: %s", current_file, lineno + 1, msg);
 }
 
 int
