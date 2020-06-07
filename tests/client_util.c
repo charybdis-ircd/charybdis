@@ -98,6 +98,8 @@ void make_local_person_oper(struct Client *client)
 	rb_dlinkAddAlloc(client, &local_oper_list);
 	rb_dlinkAddAlloc(client, &oper_list);
 	SetOper(client);
+	struct PrivilegeSet *p = privilegeset_set_new("test", "test:test", 0);
+	client->user->privset = privilegeset_ref(p);
 }
 
 void remove_local_person(struct Client *client)

@@ -1574,7 +1574,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, channel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not an oper; " MSG);
@@ -1603,7 +1603,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1664,7 +1664,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, channel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not an oper; " MSG);
@@ -1696,7 +1696,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("@account=test Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1715,7 +1715,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, oper2, "Is an oper; " MSG);
