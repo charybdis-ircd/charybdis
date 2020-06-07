@@ -1116,11 +1116,6 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 				if(MyConnect(source_p))
 				{
 					source_p->umodes &= ~ConfigFileEntry.oper_only_umodes;
-					if (!(source_p->umodes & UMODE_SERVNOTICE) && source_p->snomask != 0)
-					{
-						source_p->snomask = 0;
-						showsnomask = true;
-					}
 					source_p->flags &= ~OPER_FLAGS;
 
 					rb_dlinkFindDestroy(source_p, &local_oper_list);
@@ -1158,8 +1153,8 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 		case 's':
 			if (MyConnect(source_p))
 			{
-				if(!IsOper(source_p)
-						&& (ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE))
+				if((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+						(!IsOper(source_p) || !HasPrivilege(source_p, "usermode:servnotice")))
 				{
 					if (what == MODE_ADD || source_p->umodes & UMODE_SERVNOTICE)
 						badflag = true;
@@ -1217,6 +1212,18 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 
 	if(badflag)
 		sendto_one(source_p, form_str(ERR_UMODEUNKNOWNFLAG), me.name, source_p->name);
+
+	if(MyClient(source_p))
+	{
+		if ((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+				!HasPrivilege(source_p, "usermode:servnotice"))
+			source_p->umodes &= ~UMODE_SERVNOTICE;
+		if (!(source_p->umodes & UMODE_SERVNOTICE) && source_p->snomask != 0)
+		{
+			source_p->snomask = 0;
+			showsnomask = true;
+		}
+	}
 
 	if(MyClient(source_p) && (source_p->snomask & SNO_NCHANGE) && !IsOperN(source_p))
 	{
@@ -1437,6 +1444,12 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 		source_p->snomask &= ~SNO_NCHANGE;
 	if(!IsOperOperwall(source_p))
 		source_p->umodes &= ~UMODE_OPERWALL;
+	if((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+			!HasPrivilege(source_p, "usermode:servnotice"))
+	{
+		source_p->umodes &= ~UMODE_SERVNOTICE;
+		source_p->snomask = 0;
+	}
 	hdata.client = source_p;
 	hdata.oldumodes = old;
 	hdata.oldsnomask = oldsnomask;
