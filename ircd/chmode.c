@@ -1742,7 +1742,13 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 
 	for(j = 0; j < 3; j++)
 	{
-		flags = flags_list[j];
+		int send_flags = flags = flags_list[j];
+		const char *priv = "";
+		if (flags == ONLY_OPERS)
+		{
+			send_flags = ALL_MEMBERS;
+			priv = "auspex:cmodes";
+		}
 		cur_len = mlen;
 		mbuf = modebuf + mlen;
 		pbuf = parabuf;
@@ -1775,8 +1781,8 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 				*mbuf = '\0';
 
 				if(cur_len > mlen)
-					sendto_channel_local(IsServer(source_p) ? fakesource_p : source_p,
-							flags, chptr, "%s %s", modebuf, parabuf);
+					sendto_channel_local_priv(IsServer(source_p) ? fakesource_p : source_p,
+							send_flags, priv, chptr, "%s %s", modebuf, parabuf);
 				else
 					continue;
 
@@ -1812,8 +1818,8 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 
 		*mbuf = '\0';
 		if(cur_len > mlen)
-			sendto_channel_local(IsServer(source_p) ? fakesource_p : source_p,
-				flags, chptr, "%s %s", modebuf, parabuf);
+			sendto_channel_local_priv(IsServer(source_p) ? fakesource_p : source_p,
+				send_flags, priv, chptr, "%s %s", modebuf, parabuf);
 	}
 
 	/* only propagate modes originating locally, or if we're hubbing */
