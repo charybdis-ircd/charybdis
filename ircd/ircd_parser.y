@@ -242,6 +242,9 @@ single: oneitem
 			{
 				add_cur_list(CF_INT, 0, i);
 			}
+
+			rb_free($1);
+			rb_free($3);
 		}
 	}
 	;
