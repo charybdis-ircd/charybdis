@@ -127,6 +127,13 @@ typedef struct
 typedef struct
 {
 	struct Client *client;
+	const char *reason;
+	const char *orig_reason;
+} hook_data_client_quit;
+
+typedef struct
+{
+	struct Client *client;
 	unsigned int oldumodes;
 	unsigned int oldsnomask;
 } hook_data_umode_changed;
