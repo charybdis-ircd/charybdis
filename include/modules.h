@@ -70,8 +70,8 @@ typedef struct
 {
 	const char *hapi_name;
 	hookfn fn;
+	enum hook_priority priority;
 } mapi_hfn_list_av1;
-
 
 #define MAPI_CAP_CLIENT		1
 #define MAPI_CAP_SERVER		2
