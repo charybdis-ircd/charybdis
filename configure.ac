@@ -4,7 +4,7 @@ dnl said functions need to be just about as complex as they already are.
 
 AC_PREREQ(2.60)
 
-AC_INIT([charybdis], [4.1.3-dev])
+AC_INIT([ophion], [0.0.1])
 
 AC_LANG(C)
 AC_USE_SYSTEM_EXTENSIONS
@@ -13,7 +13,7 @@ AC_GNU_SOURCE
 AC_PROG_CC_C99
 
 if test x"$ac_cv_prog_cc_c99" = "xno"; then
-	AC_ERROR([charybdis requires a C99 capable compiler])
+	AC_ERROR([Ophion requires a C99 capable compiler])
 fi
 
 AC_PREFIX_DEFAULT($HOME/ircd)
@@ -183,7 +183,7 @@ AC_SUBST(CRYPT_LIB)
 AC_C_BIGENDIAN
 
 dnl Check for stdarg.h - if we can't find it, halt configure
-AC_CHECK_HEADER(stdarg.h, , [AC_MSG_ERROR([** stdarg.h could not be found - charybdis will not compile without it **])])
+AC_CHECK_HEADER(stdarg.h, , [AC_MSG_ERROR([** stdarg.h could not be found - ophion will not compile without it **])])
 AC_CHECK_FUNCS([strlcat strlcpy])
 
 AC_TYPE_INT16_T

@@ -1,3 +1,11 @@
+Ophion is a fork of charybdis adding partial IRCX support by its
+original author which is serving as a temporary ircd until a
+better one can be written in Elixir.  Its development is fueled
+by a lack of anything better to do on weekends now that Live PD
+(and its related drinking game) are cancelled.
+
+Original charybdis credits below:
+
 Charybdis started as an evolution from ircd-ratbox. Its development
 is led by a team of dedicated developers who have put a lot of time
 into the project and it has seen use on a variety of different
@@ -8,7 +16,7 @@ The Charybdis core team, listed in nick-alphabetical order:
 amdj, Aaron Jones <aaronmdjones -at- gmail.com>
 Elizafox, Elizabeth Myers <elizabeth -at- interlinked.me>
 jilles, Jilles Tjoelker <jilles -at- stack.nl>
-kaniini, William Pitcock <nenolod -at- dereferenced.org>
+kaniini, Ariadne Conill <ariadne -at- dereferenced.org>
 mr_flea, Keith Buck <mr_flea -at- esper.net>
 Simon, Simon Arlott <charybdis -at- uuid.uk>
 
