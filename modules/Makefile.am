@@ -33,6 +33,7 @@ auto_load_mod_LTLIBRARIES = \
   m_help.la \
   m_info.la \
   m_invite.la \
+  m_ircx_base.la \
   m_ison.la \
   m_kline.la \
   m_knock.la \

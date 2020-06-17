@@ -240,6 +240,7 @@
 #define NUMERIC_STR_743      "%s %c %s :Invalid ban mask"
 #define NUMERIC_STR_750      "%d :matches"
 #define NUMERIC_STR_751      "%s %s %s %s %s %s :%s"
+#define NUMERIC_STR_800      "1 0 PLAIN,EXTERNAL 512 *"
 #define NUMERIC_STR_900      ":%s 900 %s %s!%s@%s %s :You are now logged in as %s"
 #define NUMERIC_STR_901      ":%s 901 %s %s!%s@%s :You are now logged out"
 #define NUMERIC_STR_902      ":%s 902 %s :You must use a nick assigned to you"
