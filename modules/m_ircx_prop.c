@@ -143,7 +143,7 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 
 		prop_list = &chan->prop_list;
 
-		if (msptr != NULL && get_channel_access(source_p, chan, msptr, MODE_ADD, NULL) >= CHFL_CHANOP)
+		if (!MyClient(source_p) || (msptr != NULL && get_channel_access(source_p, chan, msptr, MODE_ADD, NULL) >= CHFL_CHANOP))
 			write_allowed = true;
 	}
 	else
