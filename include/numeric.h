@@ -375,6 +375,9 @@
 
 #define RPL_IRCX		800
 
+#define RPL_PROPLIST		818
+#define RPL_PROPEND		819
+
 #define RPL_LOGGEDIN		900
 #define RPL_LOGGEDOUT		901
 #define ERR_NICKLOCKED		902

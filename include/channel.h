@@ -81,6 +81,8 @@ struct Channel
 	time_t last_checked_ts;
 	unsigned int last_checked_type;
 	int last_checked_result;
+
+	rb_dlink_list prop_list;
 };
 
 struct membership
