@@ -255,4 +255,6 @@
 #define NUMERIC_STR_907      ":%s 907 %s :You have already completed SASL authentication"
 #define NUMERIC_STR_908      ":%s 908 %s %s :are available SASL mechanisms"
 
+#define NUMERIC_STR_918      "%s :You cannot edit properties on this object"
+
 #endif

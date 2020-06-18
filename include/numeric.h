@@ -389,6 +389,8 @@
 #define ERR_SASLALREADY		907
 #define RPL_SASLMECHS		908
 
+#define ERR_PROPDENIED		918
+
 #define ERR_LAST_ERR_MSG     999
 
 #endif /* INCLUDED_numeric_h */

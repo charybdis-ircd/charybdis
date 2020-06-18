@@ -128,10 +128,12 @@ static void
 m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	rb_dlink_list *prop_list;
+	bool write_allowed = false;
 
 	if (IsChanPrefix(*parv[1]))
 	{
 		struct Channel *chan = find_channel(parv[1]);
+		struct membership *msptr = find_channel_membership(chan, source_p);
 
 		if (chan == NULL)
 		{
@@ -140,6 +142,9 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		}
 
 		prop_list = &chan->prop_list;
+
+		if (msptr != NULL && get_channel_access(source_p, chan, msptr, MODE_ADD, NULL) >= CHFL_CHANOP)
+			write_allowed = true;
 	}
 	else
 		return;
@@ -155,6 +160,12 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		break;
 
 	case 4:
+		if (!write_allowed && MyClient(source_p))
+		{
+			sendto_one_numeric(source_p, ERR_PROPDENIED, form_str(ERR_PROPDENIED), parv[1]);
+			return;
+		}
+
 		handle_prop_upsert_or_delete(parv[1], prop_list, source_p, parv[2], parv[3]);
 		break;
 
