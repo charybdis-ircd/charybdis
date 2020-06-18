@@ -110,15 +110,18 @@ handle_prop_upsert_or_delete(const char *target, rb_dlink_list *prop_list, struc
 	}
 
 	property = propertyset_add(prop_list, prop, value, source_p);
-	if (property == NULL)
-		return;
 
 	sendto_one(source_p, ":%s!%s@%s PROP %s %s :%s", source_p->name, source_p->username, source_p->host,
 		target, property->name, property->value);
 
 	// XXX: enforce CAP_IRCX
 	// XXX: rewrite target to UID if needed
-	sendto_server(source_p, chptr, CAP_TS6, NOCAPS,
+
+	// don't redistribute updates for local channels
+	if (IsChanPrefix(*target) && *target == '&')
+		return;
+
+	sendto_server(source_p, NULL, CAP_TS6, NOCAPS,
 			":%s PROP %s %s :%s", use_id(source_p), target, property->name, property->value);
 }
 
