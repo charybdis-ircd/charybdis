@@ -52,7 +52,6 @@ struct Message prop_msgtab = {
 	{mg_ignore, {m_prop, 2}, {m_prop, 2}, mg_ignore, mg_ignore, {m_prop, 2}}
 };
 
-#ifdef NOTYET
 /* :source TPROP target creationTS updateTS propName [:propValue] */
 static void ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[]);
 
@@ -60,14 +59,15 @@ struct Message tprop_msgtab = {
 	"TPROP", 0, 0, 0, 0,
 	{mg_ignore, mg_ignore, mg_ignore, {ms_tprop, 5}, mg_ignore, mg_ignore}
 };
-#endif
 
 mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, NULL };
 
 static void h_prop_channel_join(void *);
+static void h_prop_burst_channel(void *);
 
 mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 	{ "channel_join", (hookfn) h_prop_channel_join },
+	{ "burst_channel", (hookfn) h_prop_burst_channel },
 	{ NULL, NULL }
 };
 
@@ -198,4 +198,55 @@ h_prop_channel_join(void *vdata)
 
 	if (prop != NULL)
 		sendto_one(source_p, ":%s PRIVMSG %s :%s", chptr->chname, chptr->chname, prop->value);
+}
+
+/* bursting */
+static void
+h_prop_burst_channel(void *vdata)
+{
+	hook_data_channel *hchaninfo = vdata;
+	struct Channel *chptr = hchaninfo->chptr;
+	struct Client *client_p = hchaninfo->client;
+	rb_dlink_node *it;
+
+	RB_DLINK_FOREACH(it, chptr->prop_list.head)
+	{
+		struct Property *prop = it->data;
+
+		/* :source TPROP target creationTS updateTS propName [:propValue] */
+		sendto_one(client_p, ":%s TPROP %s %ld %ld %s :%s",
+			use_id(&me), chptr->chname, chptr->channelts, prop->set_at, prop->name, prop->value);
+	}
+}
+
+/* :source TPROP target creationTS updateTS propName [:propValue] */
+static void
+ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
+{
+	rb_dlink_list *prop_list = NULL;
+	time_t creation_ts = atol(parv[2]);
+	time_t update_ts = atol(parv[3]);
+
+	if (IsChanPrefix(*parv[1]))
+	{
+		struct Channel *chptr = find_channel(parv[1]);
+		if (chptr == NULL)
+			return;
+
+		/* if creation_ts is newer than channelts, reject the TPROP */
+		if (creation_ts > chptr->channelts)
+			return;
+
+		prop_list = &chptr->prop_list;
+	}
+
+	/* couldn't figure out what to mutate, bail */
+	if (prop_list == NULL)
+		return;
+
+	/* do the upsert */
+	struct Property *prop = propertyset_add(prop_list, parv[4], parv[5], source_p);
+	prop->set_at = update_ts;
+
+	// XXX: prop-notify???
 }
