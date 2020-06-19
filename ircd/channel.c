@@ -39,6 +39,7 @@
 #include "s_newconf.h"
 #include "logger.h"
 #include "s_assert.h"
+#include "propertyset.h"
 
 struct config_channel_entry ConfigChannel;
 rb_dlink_list global_channel_list;
@@ -398,6 +399,9 @@ destroy_channel(struct Channel *chptr)
 	free_channel_list(&chptr->exceptlist);
 	free_channel_list(&chptr->invexlist);
 	free_channel_list(&chptr->quietlist);
+
+	/* free properties */
+	propertyset_clear(&chptr->prop_list);
 
 	/* Free the topic */
 	free_topic(chptr);
