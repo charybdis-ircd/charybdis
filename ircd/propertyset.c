@@ -109,4 +109,6 @@ propertyset_add(rb_dlink_list *prop_list, const char *name, const char *value, s
 	prop->setter = rb_strdup(setter_p->name);
 
 	rb_dlinkAdd(prop, &prop->prop_node, prop_list);
+
+	return prop;
 }
