@@ -219,7 +219,15 @@ h_prop_burst_channel(void *vdata)
 	}
 }
 
-/* :source TPROP target creationTS updateTS propName [:propValue] */
+/*
+ * TPROP
+ *
+ * parv[1] = target
+ * parv[2] = creation TS
+ * parv[3] = modification TS
+ * parv[4] = key
+ * parv[5] = value
+ */
 static void
 ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
