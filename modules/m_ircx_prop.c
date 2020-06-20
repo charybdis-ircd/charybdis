@@ -62,11 +62,9 @@ struct Message tprop_msgtab = {
 
 mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
-static void h_prop_channel_join(void *);
 static void h_prop_burst_channel(void *);
 
 mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
-	{ "channel_join", (hookfn) h_prop_channel_join },
 	{ "burst_channel", (hookfn) h_prop_burst_channel },
 	{ NULL, NULL }
 };
@@ -180,24 +178,6 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 	default:
 		break;
 	}
-}
-
-/* handle ONJOIN property */
-static void
-h_prop_channel_join(void *vdata)
-{
-	hook_data_channel_activity *data = (hook_data_channel_activity *)vdata;
-	struct Channel *chptr = data->chptr;
-	struct Client *source_p = data->client;
-
-	if (!MyClient(source_p))
-		return;
-
-	rb_dlink_list *prop_list = &chptr->prop_list;
-	struct Property *prop = propertyset_find(prop_list, "ONJOIN");
-
-	if (prop != NULL)
-		sendto_one(source_p, ":%s PRIVMSG %s :%s", chptr->chname, chptr->chname, prop->value);
 }
 
 /* bursting */
