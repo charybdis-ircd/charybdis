@@ -60,7 +60,7 @@ struct Message tprop_msgtab = {
 	{mg_ignore, mg_ignore, mg_ignore, {ms_tprop, 5}, mg_ignore, mg_ignore}
 };
 
-mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, NULL };
+mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
 static void h_prop_channel_join(void *);
 static void h_prop_burst_channel(void *);
