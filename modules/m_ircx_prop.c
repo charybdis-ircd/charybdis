@@ -72,7 +72,7 @@ mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 DECLARE_MODULE_AV2(ircx_prop, NULL, NULL, ircx_prop_clist, NULL, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
 
 static void
-handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys)
+handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys, int alevel)
 {
 	rb_dlink_node *iter;
 
@@ -135,6 +135,7 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 {
 	rb_dlink_list *prop_list;
 	bool write_allowed = false;
+	int alevel = CHFL_PEON;
 
 	if (IsChanPrefix(*parv[1]))
 	{
@@ -149,7 +150,7 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 
 		prop_list = &chan->prop_list;
 
-		if (!MyClient(source_p) || (msptr != NULL && get_channel_access(source_p, chan, msptr, MODE_ADD, NULL) >= CHFL_CHANOP))
+		if (!MyClient(source_p) || (msptr != NULL && (alevel = get_channel_access(source_p, chan, msptr, MODE_ADD, NULL)) >= CHFL_CHANOP))
 			write_allowed = true;
 	}
 	else
@@ -158,11 +159,11 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 	switch (parc)
 	{
 	case 2:
-		handle_prop_list(parv[1], prop_list, source_p, NULL);
+		handle_prop_list(parv[1], prop_list, source_p, NULL, alevel);
 		break;
 
 	case 3:
-		handle_prop_list(parv[1], prop_list, source_p, parv[2]);
+		handle_prop_list(parv[1], prop_list, source_p, parv[2], alevel);
 		break;
 
 	case 4:
