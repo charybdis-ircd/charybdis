@@ -99,9 +99,10 @@ typedef struct
 
 typedef struct
 {
-	struct Client *client;
+	const struct Client *client;
 	int alevel;			// for client props, 1 if client == source_p
-	rb_dlink_list *prop_list;
+	const rb_dlink_list *prop_list;
+	const char *target;
 	const char *key;
 	const char *value;
 	int approved;

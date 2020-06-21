@@ -62,6 +62,13 @@ struct Message tprop_msgtab = {
 
 mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
+static int h_prop_show;
+
+mapi_hlist_av1 ircx_prop_hlist[] = {
+	{ "prop_show", &h_prop_show },
+	{ NULL, NULL }
+};
+
 static void h_prop_burst_channel(void *);
 
 mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
@@ -69,7 +76,7 @@ mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV2(ircx_prop, NULL, NULL, ircx_prop_clist, NULL, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
+DECLARE_MODULE_AV2(ircx_prop, NULL, NULL, ircx_prop_clist, ircx_prop_hlist, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
 
 static void
 handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys, int alevel)
@@ -81,8 +88,21 @@ handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Clie
 	RB_DLINK_FOREACH(iter, prop_list->head)
 	{
 		struct Property *prop = iter->data;
+		hook_data_prop_activity prop_activity;
 
 		if (keys != NULL && rb_strcasestr(keys, prop->name) == NULL)
+			continue;
+
+		prop_activity.client = source_p;
+		prop_activity.target = target;
+		prop_activity.prop_list = prop_list;
+		prop_activity.key = prop->name;
+		prop_activity.alevel = alevel;
+		prop_activity.approved = 1;
+
+		call_hook(h_prop_show, &prop_activity);
+
+		if (!prop_activity.approved)
 			continue;
 
 		sendto_one_numeric(source_p, RPL_PROPLIST, form_str(RPL_PROPLIST),
