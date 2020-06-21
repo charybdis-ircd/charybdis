@@ -100,6 +100,16 @@ typedef struct
 typedef struct
 {
 	struct Client *client;
+	int alevel;			// for client props, 1 if client == source_p
+	rb_dlink_list *prop_list;
+	const char *key;
+	const char *value;
+	int approved;
+} hook_data_prop_activity;
+
+typedef struct
+{
+	struct Client *client;
 	struct Channel *chptr;
 	struct membership *msptr;
 	struct Client *target;
