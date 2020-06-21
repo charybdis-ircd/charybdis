@@ -609,6 +609,7 @@ general {
 	no_oper_flood = yes;
 	max_targets = 4;
 	client_flood_max_lines = 20;
+	post_registration_delay = 0 seconds;
 	use_whois_actually = no;
 	oper_only_umodes = operwall, locops, servnotice;
 	oper_umodes = locops, servnotice, operwall, wallop;
