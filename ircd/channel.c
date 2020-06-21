@@ -193,10 +193,17 @@ find_channel_membership(struct Channel *chptr, struct Client *client_p)
 const char *
 find_channel_status(struct membership *msptr, int combine)
 {
-	static char buffer[3];
+	static char buffer[4];
 	char *p;
 
 	p = buffer;
+
+	if(is_admin(msptr))
+	{
+		if(!combine)
+			return ".";
+		*p++ = '.';
+	}
 
 	if(is_chanop(msptr))
 	{

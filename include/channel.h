@@ -145,18 +145,20 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define CHFL_PEON		0x0000	/* normal member of channel */
 #define CHFL_VOICE      	0x0001	/* the power to speak */
 #define CHFL_CHANOP	     	0x0002	/* Channel operator */
+#define CHFL_ADMIN		0x0004	/* channel admin */
 
 #define CHFL_BANNED		0x0008  /* cached as banned */
 #define CHFL_QUIETED		0x0010  /* cached as being +q victim */
 #define ONLY_SERVERS		0x0020
 #define ONLY_OPERS		0x0040
 #define ALL_MEMBERS		CHFL_PEON
-#define ONLY_CHANOPS		CHFL_CHANOP
-#define ONLY_CHANOPSVOICED	(CHFL_CHANOP|CHFL_VOICE)
+#define ONLY_CHANOPS		(CHFL_CHANOP|CHFL_ADMIN)
+#define ONLY_CHANOPSVOICED	(ONLY_CHANOPS|CHFL_VOICE)
 
+#define is_admin(x)	((x) && (x)->flags & CHFL_ADMIN)
 #define is_chanop(x)	((x) && (x)->flags & CHFL_CHANOP)
 #define is_voiced(x)	((x) && (x)->flags & CHFL_VOICE)
-#define is_chanop_voiced(x) ((x) && (x)->flags & (CHFL_CHANOP|CHFL_VOICE))
+#define is_chanop_voiced(x) ((x) && (x)->flags & (CHFL_CHANOP|CHFL_VOICE|CHFL_ADMIN))
 #define can_send_banned(x) ((x) && (x)->flags & (CHFL_BANNED|CHFL_QUIETED))
 
 /* channel modes ONLY */

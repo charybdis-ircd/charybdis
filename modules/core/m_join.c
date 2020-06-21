@@ -778,9 +778,14 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	{
 		fl = 0;
 
-		for (i = 0; i < 2; i++)
+		for (;;)
 		{
-			if(*s == '@')
+			if(*s == '.')
+			{
+				fl |= CHFL_ADMIN;
+				s++;
+			}
+			else if(*s == '@')
 			{
 				fl |= CHFL_CHANOP;
 				s++;
@@ -790,6 +795,8 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 				fl |= CHFL_VOICE;
 				s++;
 			}
+			else
+				break;
 		}
 
 		/* if the client doesnt exist or is fake direction, skip. */
@@ -810,6 +817,11 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 		if(keep_new_modes)
 		{
+			if(fl & CHFL_ADMIN)
+			{
+				*ptr_uid++ = '.';
+				len_uid++;
+			}
 			if(fl & CHFL_CHANOP)
 			{
 				*ptr_uid++ = '@';
@@ -837,54 +849,66 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			joins++;
 		}
 
+		if(fl & CHFL_ADMIN)
+		{
+			*mbuf++ = 'a';
+			para[pargs++] = target_p->name;
+
+			if(pargs >= MAXMODEPARAMS)
+			{
+				*mbuf = '\0';
+				sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     fakesource_p->name,
+						     chptr->chname,
+						     modebuf, para[0], para[1], para[2], para[3]);
+				mbuf = modebuf;
+				*mbuf++ = '+';
+				para[0] = para[1] = para[2] = para[3] = NULL;
+				pargs = 0;
+			}
+		}
+
 		if(fl & CHFL_CHANOP)
 		{
 			*mbuf++ = 'o';
 			para[pargs++] = target_p->name;
 
-			/* a +ov user.. bleh */
-			if(fl & CHFL_VOICE)
+			if(pargs >= MAXMODEPARAMS)
 			{
-				/* its possible the +o has filled up MAXMODEPARAMS, if so, start
-				 * a new buffer
-				 */
-				if(pargs >= MAXMODEPARAMS)
-				{
-					*mbuf = '\0';
-					sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
-							     ":%s MODE %s %s %s %s %s %s",
-							     fakesource_p->name, chptr->chname,
-							     modebuf,
-							     para[0], para[1], para[2], para[3]);
-					mbuf = modebuf;
-					*mbuf++ = '+';
-					para[0] = para[1] = para[2] = para[3] = NULL;
-					pargs = 0;
-				}
-
-				*mbuf++ = 'v';
-				para[pargs++] = target_p->name;
+				*mbuf = '\0';
+				sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     fakesource_p->name,
+						     chptr->chname,
+						     modebuf, para[0], para[1], para[2], para[3]);
+				mbuf = modebuf;
+				*mbuf++ = '+';
+				para[0] = para[1] = para[2] = para[3] = NULL;
+				pargs = 0;
 			}
 		}
-		else if(fl & CHFL_VOICE)
+
+		if(fl & CHFL_VOICE)
 		{
 			*mbuf++ = 'v';
 			para[pargs++] = target_p->name;
+
+			if(pargs >= MAXMODEPARAMS)
+			{
+				*mbuf = '\0';
+				sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     fakesource_p->name,
+						     chptr->chname,
+						     modebuf, para[0], para[1], para[2], para[3]);
+				mbuf = modebuf;
+				*mbuf++ = '+';
+				para[0] = para[1] = para[2] = para[3] = NULL;
+				pargs = 0;
+			}
 		}
 
-		if(pargs >= MAXMODEPARAMS)
-		{
-			*mbuf = '\0';
-			sendto_channel_local(fakesource_p, ALL_MEMBERS, chptr,
-					     ":%s MODE %s %s %s %s %s %s",
-					     fakesource_p->name,
-					     chptr->chname,
-					     modebuf, para[0], para[1], para[2], para[3]);
-			mbuf = modebuf;
-			*mbuf++ = '+';
-			para[0] = para[1] = para[2] = para[3] = NULL;
-			pargs = 0;
-		}
 
 	      nextnick:
 		/* p points to the next nick */
