@@ -1214,43 +1214,77 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 	{
 		msptr = ptr->data;
 
+		if(is_admin(msptr))
+		{
+			msptr->flags &= ~CHFL_ADMIN;
+			lpara[count++] = msptr->client_p->name;
+			*mbuf++ = 'a';
+
+			if(count >= MAXMODEPARAMS)
+			{
+				*mbuf = '\0';
+				sendto_channel_local(source_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     source_p->name, chptr->chname,
+						     lmodebuf, lpara[0], lpara[1],
+						     lpara[2], lpara[3]);
+
+				/* preserve the initial '-' */
+				mbuf = lmodebuf;
+				*mbuf++ = '-';
+				count = 0;
+
+				for(i = 0; i < MAXMODEPARAMS; i++)
+					lpara[i] = NULL;
+			}
+		}
 		if(is_chanop(msptr))
 		{
 			msptr->flags &= ~CHFL_CHANOP;
 			lpara[count++] = msptr->client_p->name;
 			*mbuf++ = 'o';
 
-			/* +ov, might not fit so check. */
-			if(is_voiced(msptr))
+			if(count >= MAXMODEPARAMS)
 			{
-				if(count >= MAXMODEPARAMS)
-				{
-					*mbuf = '\0';
-					sendto_channel_local(source_p, ALL_MEMBERS, chptr,
-							     ":%s MODE %s %s %s %s %s %s",
-							     source_p->name, chptr->chname,
-							     lmodebuf, lpara[0], lpara[1],
-							     lpara[2], lpara[3]);
+				*mbuf = '\0';
+				sendto_channel_local(source_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     source_p->name, chptr->chname,
+						     lmodebuf, lpara[0], lpara[1],
+						     lpara[2], lpara[3]);
 
-					/* preserve the initial '-' */
-					mbuf = lmodebuf;
-					*mbuf++ = '-';
-					count = 0;
+				/* preserve the initial '-' */
+				mbuf = lmodebuf;
+				*mbuf++ = '-';
+				count = 0;
 
-					for(i = 0; i < MAXMODEPARAMS; i++)
-						lpara[i] = NULL;
-				}
-
-				msptr->flags &= ~CHFL_VOICE;
-				lpara[count++] = msptr->client_p->name;
-				*mbuf++ = 'v';
+				for(i = 0; i < MAXMODEPARAMS; i++)
+					lpara[i] = NULL;
 			}
 		}
-		else if(is_voiced(msptr))
+		if(is_voiced(msptr))
 		{
 			msptr->flags &= ~CHFL_VOICE;
 			lpara[count++] = msptr->client_p->name;
 			*mbuf++ = 'v';
+
+			if(count >= MAXMODEPARAMS)
+			{
+				*mbuf = '\0';
+				sendto_channel_local(source_p, ALL_MEMBERS, chptr,
+						     ":%s MODE %s %s %s %s %s %s",
+						     source_p->name, chptr->chname,
+						     lmodebuf, lpara[0], lpara[1],
+						     lpara[2], lpara[3]);
+
+				/* preserve the initial '-' */
+				mbuf = lmodebuf;
+				*mbuf++ = '-';
+				count = 0;
+
+				for(i = 0; i < MAXMODEPARAMS; i++)
+					lpara[i] = NULL;
+			}
 		}
 		else
 			continue;
