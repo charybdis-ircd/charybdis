@@ -35,6 +35,7 @@ auto_load_mod_LTLIBRARIES = \
   m_invite.la \
   m_ircx_base.la \
   m_ircx_prop.la \
+  m_ircx_prop_adminkey.la \
   m_ircx_prop_onjoin.la \
   m_ison.la \
   m_kline.la \
