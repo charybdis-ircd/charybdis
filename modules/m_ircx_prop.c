@@ -63,9 +63,11 @@ struct Message tprop_msgtab = {
 mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
 static int h_prop_show;
+static int h_prop_chan_write;
 
 mapi_hlist_av1 ircx_prop_hlist[] = {
 	{ "prop_show", &h_prop_show },
+	{ "prop_chan_write", &h_prop_chan_write },
 	{ NULL, NULL }
 };
 
@@ -143,6 +145,23 @@ handle_prop_upsert_or_delete(const char *target, rb_dlink_list *prop_list, struc
 			":%s PROP %s %s :%s", use_id(source_p), target, property->name, property->value);
 }
 
+static bool
+can_write_to_channel_property(struct Client *source_p, struct Channel *chptr, const char *key, int alevel)
+{
+	hook_data_prop_activity prop_activity;
+
+	prop_activity.client = source_p;
+	prop_activity.target = chptr->chname;
+	prop_activity.prop_list = &chptr->prop_list;
+	prop_activity.key = key;
+	prop_activity.alevel = alevel;
+	prop_activity.approved = alevel >= CHFL_CHANOP;
+
+	call_hook(h_prop_chan_write, &prop_activity);
+
+	return prop_activity.approved;
+}
+
 /*
  * LIST: PROP target [filters] (parc <= 3)
  * SET: PROP target key :value (parc == 4)
@@ -170,8 +189,16 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 
 		prop_list = &chan->prop_list;
 
-		if (!MyClient(source_p) || (msptr != NULL && (alevel = get_channel_access(source_p, chan, msptr, MODE_ADD, NULL)) >= CHFL_CHANOP))
-			write_allowed = true;
+		if (msptr != NULL)
+			alevel = get_channel_access(source_p, chan, msptr, MODE_ADD, NULL);
+
+		if (parc == 4)
+		{
+			if (!MyClient(source_p))
+				write_allowed = true;
+			else
+				write_allowed = can_write_to_channel_property(source_p, chan, parv[2], alevel);
+		}
 	}
 	else
 		return;
