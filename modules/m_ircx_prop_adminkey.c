@@ -90,6 +90,7 @@ h_prop_channel_join(void *vdata)
 			":%s TMODE %ld %s +a %s",
 			me.id, (long) chptr->channelts, chptr->chname,
 			source_p->id);
+	msptr->flags |= CHFL_ADMIN;
 
 #if 0
 	const char *para[] = {"+a", source_p->name};
