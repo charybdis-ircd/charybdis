@@ -274,7 +274,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 				continue;
 			}
 
-			flags = CHFL_CHANOP;
+			flags = CHFL_ADMIN;
 		}
 
 		if((rb_dlink_list_length(&source_p->user->channel) >=
@@ -339,7 +339,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		send_channel_join(chptr, source_p);
 
 		/* its a new channel, set +nt and burst. */
-		if(flags & CHFL_CHANOP)
+		if(flags & CHFL_ADMIN)
 		{
 			chptr->channelts = rb_current_time();
 			chptr->mode.mode |= ConfigChannel.autochanmodes;
