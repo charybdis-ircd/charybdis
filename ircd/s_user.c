@@ -386,7 +386,9 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	if(source_p->preClient->auth.cid)
 		return -1;
 
-	client_p->localClient->last = rb_current_time();
+	/* Set firsttime here so that post_registration_delay works from registration,
+	 * rather than initial connection.  */
+	source_p->localClient->firsttime = client_p->localClient->last = rb_current_time();
 
 	/* XXX - fixme. we shouldnt have to build a users buffer twice.. */
 	if(!IsGotId(source_p) && (strchr(source_p->username, '[') != NULL))
