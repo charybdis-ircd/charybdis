@@ -113,7 +113,10 @@ struct AccessEntry
 {
 	char *mask;
 	char *who;
+
 	time_t when;
+	unsigned int flags;
+
 	rb_dlink_node node;
 };
 
