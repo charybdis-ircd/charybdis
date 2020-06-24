@@ -83,6 +83,7 @@ struct Channel
 	int last_checked_result;
 
 	rb_dlink_list prop_list;
+	rb_dlink_list access_list;
 };
 
 struct membership
@@ -105,6 +106,14 @@ struct Ban
 	char *who;
 	time_t when;
 	char *forward;
+	rb_dlink_node node;
+};
+
+struct AccessEntry
+{
+	char *mask;
+	char *who;
+	time_t when;
 	rb_dlink_node node;
 };
 
