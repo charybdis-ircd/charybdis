@@ -45,6 +45,7 @@ struct module
 	lt_dlhandle address;
 	int core;	/* This is int for backwards compat reasons */
 	int origin;	/* Ditto */
+	char *path;
 	int mapi_version;
 	void *mapi_header; /* actually struct mapi_mheader_av<mapi_version> */
 	rb_dlink_node node;
