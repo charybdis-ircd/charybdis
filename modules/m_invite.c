@@ -213,18 +213,26 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			}
 			else
 			{
-				/* instead of sending RPL_UMODEGMSG,
-				 * just let the invite through
-				 */
+				sendto_one_numeric(source_p, ERR_TARGUMODEG,
+						   form_str(ERR_TARGUMODEG),
+						   target_p->name);
+
 				if((target_p->localClient->last_caller_id_time +
-				    ConfigFileEntry.caller_id_wait) >= rb_current_time())
+				    ConfigFileEntry.caller_id_wait) < rb_current_time())
 				{
-					sendto_one_numeric(source_p, ERR_TARGUMODEG,
-							   form_str(ERR_TARGUMODEG),
-							   target_p->name);
-					return;
+					sendto_one_numeric(source_p, RPL_TARGNOTIFY,
+								form_str(RPL_TARGNOTIFY),
+								target_p->name);
+
+					add_reply_target(target_p, source_p);
+					sendto_one(target_p, form_str(RPL_UMODEGMSG),
+						   me.name, target_p->name, source_p->name,
+						   source_p->username, source_p->host);
+
+					target_p->localClient->last_caller_id_time = rb_current_time();
 				}
-				target_p->localClient->last_caller_id_time = rb_current_time();
+
+				return;
 			}
 		}
 
