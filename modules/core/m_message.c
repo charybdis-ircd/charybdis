@@ -958,7 +958,6 @@ handle_special(enum message_type msgtype, struct Client *client_p,
 {
 	struct Client *target_p;
 	char *server;
-	char *s;
 
 	/* user[%host]@server addressed?
 	 * NOTE: users can send to user@server, but not user%host@server
@@ -1032,22 +1031,6 @@ handle_special(enum message_type msgtype, struct Client *client_p,
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
 				   me.name, source_p->name, "mass_notice");
-			return;
-		}
-
-		if((s = strrchr(nick, '.')) == NULL)
-		{
-			sendto_one_numeric(source_p, ERR_NOTOPLEVEL,
-					   form_str(ERR_NOTOPLEVEL), nick);
-			return;
-		}
-		while(*++s)
-			if(*s == '.' || *s == '*' || *s == '?')
-				break;
-		if(*s == '*' || *s == '?')
-		{
-			sendto_one_numeric(source_p, ERR_WILDTOPLEVEL,
-					   form_str(ERR_WILDTOPLEVEL), nick);
 			return;
 		}
 
