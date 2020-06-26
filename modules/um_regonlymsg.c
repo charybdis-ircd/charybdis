@@ -100,6 +100,7 @@ h_hdl_invite(void *vdata)
 	hook_data_channel_approval *data = vdata;
 	struct Client *source_p = data->client;
 	struct Client *target_p = data->target;
+	static char errorbuf[BUFSIZE];
 
 	if (data->approved)
 		return;
@@ -107,10 +108,11 @@ h_hdl_invite(void *vdata)
 	if (allow_message(source_p, target_p))
 		return;
 
-	sendto_one_numeric(source_p, ERR_NONONREG, form_str(ERR_NONONREG),
-			   target_p->name);
+	snprintf(errorbuf, sizeof errorbuf, form_str(ERR_NONONREG),
+		 target_p->name);
 
 	data->approved = ERR_NONONREG;
+	data->error = errorbuf;
 }
 
 static void
