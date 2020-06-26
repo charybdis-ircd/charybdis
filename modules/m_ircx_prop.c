@@ -262,10 +262,11 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	rb_dlink_list *prop_list = NULL;
 	time_t creation_ts = atol(parv[2]);
 	time_t update_ts = atol(parv[3]);
+	struct Channel *chptr = NULL;
 
 	if (IsChanPrefix(*parv[1]))
 	{
-		struct Channel *chptr = find_channel(parv[1]);
+		chptr = find_channel(parv[1]);
 		if (chptr == NULL)
 			return;
 
@@ -283,6 +284,10 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	/* do the upsert */
 	struct Property *prop = propertyset_add(prop_list, parv[4], parv[5], source_p);
 	prop->set_at = update_ts;
+
+	sendto_server(source_p, chptr, CAP_TS6, NOCAPS,
+		":%s TPROP %s %ld %ld %s :%s",
+		use_id(&me), parv[1], creation_ts, prop->set_at, prop->name, prop->value);
 
 	// XXX: prop-notify???
 }
