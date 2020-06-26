@@ -718,32 +718,6 @@ msg_client(enum message_type msgtype,
 
 	if(MyClient(source_p))
 	{
-		/*
-		 * XXX: Controversial? Allow target users to send replies
-		 * through a +g.  Rationale is that people can presently use +g
-		 * as a way to taunt users, e.g. harass them and hide behind +g
-		 * as a way of griefing.  --nenolod
-		 */
-		if(msgtype != MESSAGE_TYPE_NOTICE &&
-				IsSetCallerId(source_p) &&
-				!accept_message(target_p, source_p) &&
-				!IsOper(target_p))
-		{
-			if(rb_dlink_list_length(&source_p->localClient->allow_list) <
-					(unsigned long)ConfigFileEntry.max_accept)
-			{
-				rb_dlinkAddAlloc(target_p, &source_p->localClient->allow_list);
-				rb_dlinkAddAlloc(source_p, &target_p->on_allow_list);
-			}
-			else
-			{
-				sendto_one_numeric(source_p, ERR_OWNMODE,
-						form_str(ERR_OWNMODE),
-						target_p->name, "+g");
-				return;
-			}
-		}
-
 		/* reset idle time for message only if its not to self
 		 * and its not a notice */
 		if(msgtype != MESSAGE_TYPE_NOTICE)
@@ -816,50 +790,8 @@ msg_client(enum message_type msgtype,
 			return;
 		}
 
-		/* XXX Controversial? allow opers always to send through a +g */
-		if(!IsServer(source_p) && IsSetCallerId(target_p))
-		{
-			/* Here is the anti-flood bot/spambot code -db */
-			if(accept_message(source_p, target_p) || IsOper(source_p))
-			{
-				add_reply_target(target_p, source_p);
-				sendto_one(target_p, ":%s!%s@%s %s %s :%s",
-					   source_p->name,
-					   source_p->username,
-					   source_p->host, cmdname[msgtype], target_p->name, text);
-			}
-			else
-			{
-				/* check for accept, flag recipient incoming message */
-				if(msgtype != MESSAGE_TYPE_NOTICE)
-				{
-					sendto_one_numeric(source_p, ERR_TARGUMODEG,
-							   form_str(ERR_TARGUMODEG),
-							   target_p->name);
-				}
-
-				if((target_p->localClient->last_caller_id_time +
-				    ConfigFileEntry.caller_id_wait) < rb_current_time())
-				{
-					if(msgtype != MESSAGE_TYPE_NOTICE)
-						sendto_one_numeric(source_p, RPL_TARGNOTIFY,
-								   form_str(RPL_TARGNOTIFY),
-								   target_p->name);
-
-					add_reply_target(target_p, source_p);
-					sendto_one(target_p, form_str(RPL_UMODEGMSG),
-						   me.name, target_p->name, source_p->name,
-						   source_p->username, source_p->host);
-
-					target_p->localClient->last_caller_id_time = rb_current_time();
-				}
-			}
-		}
-		else
-		{
-			add_reply_target(target_p, source_p);
-			sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
-		}
+		add_reply_target(target_p, source_p);
+		sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
 	}
 	else
 		sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
