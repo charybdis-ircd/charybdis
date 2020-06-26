@@ -447,7 +447,6 @@ struct ListClient
 #define UMODE_WALLOP       0x0002	/* send wallops to them */
 #define UMODE_OPERWALL     0x0004	/* Operwalls */
 #define UMODE_INVISIBLE    0x0008	/* makes user invisible */
-#define UMODE_CALLERID     0x0010	/* block unless caller id's */
 #define UMODE_LOCOPS       0x0020	/* show locops */
 #define UMODE_SERVICE      0x0040
 #define UMODE_DEAF	   0x0080
@@ -538,7 +537,6 @@ struct ListClient
 #define SendLocops(x)           ((x)->umodes & UMODE_LOCOPS)
 #define SendServNotice(x)       ((x)->umodes & UMODE_SERVNOTICE)
 #define SendOperwall(x)         ((x)->umodes & UMODE_OPERWALL)
-#define IsSetCallerId(x)	((x)->umodes & UMODE_CALLERID)
 #define IsService(x)		((x)->umodes & UMODE_SERVICE)
 #define IsDeaf(x)		((x)->umodes & UMODE_DEAF)
 #define IsNoForward(x)		((x)->umodes & UMODE_NOFORWARD)
