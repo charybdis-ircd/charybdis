@@ -91,6 +91,9 @@ h_can_invite(void *vdata)
 	struct Client *source_p = data->client;
 	struct Client *target_p = data->target;
 
+	if (data->approved)
+		return;
+
 	if (allow_message(source_p, target_p))
 		return;
 
@@ -106,6 +109,9 @@ h_hdl_privmsg_user(void *vdata)
 	hook_data_privmsg_user *data = vdata;
 	struct Client *source_p = data->source_p;
 	struct Client *target_p = data->target_p;
+
+	if (data->approved)
+		return;
 
 	if (allow_message(source_p, target_p))
 		return;
