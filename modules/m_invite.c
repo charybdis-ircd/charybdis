@@ -145,28 +145,27 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		return;
 	}
 
-	if (MyClient(source_p))
-	{
-		hdata.chptr = chptr;
-		hdata.msptr = msptr;
-		hdata.client = source_p;
-		hdata.target = target_p;
-		hdata.approved = !((is_admin(msptr) || is_chanop(msptr)) || (chptr->mode.mode & MODE_FREEINVITE));
+	hdata.chptr = chptr;
+	hdata.msptr = msptr;
+	hdata.client = source_p;
+	hdata.target = target_p;
+	hdata.approved = !((is_admin(msptr) || is_chanop(msptr)) || (chptr->mode.mode & MODE_FREEINVITE));
 
-		call_hook(can_invite_hook, &hdata);
-		if (hdata.approved)
+	call_hook(can_invite_hook, &hdata);
+	if (hdata.approved)
+	{
+		if (MyClient(target_p))
 		{
 			if (hdata.error)
 				sendto_one_numeric(source_p, hdata.approved, "%s", hdata.error);
 			else if (hdata.approved == ERR_CHANOPRIVSNEEDED)
 				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
-						 me.name, source_p->name, parv[2]);
+					   me.name, source_p->name, parv[2]);
 
-			if (MyClient(target_p))
-				add_reply_target(target_p, source_p);
-
-			return;
+			add_reply_target(target_p, source_p);
 		}
+
+		return;
 	}
 
 	/* store invites when they could affect the ability to join
