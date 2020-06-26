@@ -187,6 +187,7 @@ h_hdl_invite(void *vdata)
 	hook_data_channel_approval *data = vdata;
 	struct Client *source_p = data->client;
 	struct Client *target_p = data->target;
+	static char errorbuf[BUFSIZE];
 
 	if (data->approved)
 		return;
@@ -200,9 +201,11 @@ h_hdl_invite(void *vdata)
 	if (allow_message(source_p, target_p))
 		return;
 
-	send_callerid_notice(MESSAGE_TYPE_PRIVMSG, source_p, target_p);
+	snprintf(errorbuf, sizeof errorbuf, form_str(ERR_TARGUMODEG),
+		 target_p->name);
 
 	data->approved = ERR_TARGUMODEG;
+	data->error = errorbuf;
 }
 
 static void
