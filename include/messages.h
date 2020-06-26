@@ -242,6 +242,11 @@
 #define NUMERIC_STR_751      "%s %s %s %s %s %s :%s"
 
 #define NUMERIC_STR_800      "1 0 PLAIN,EXTERNAL 512 *"
+#define NUMERIC_STR_801      "%s %s %s %ld %s :%s"
+#define NUMERIC_STR_802      "%s %s %s :Access entry deleted"
+#define NUMERIC_STR_803      "%s :Start of access entries"
+#define NUMERIC_STR_804      "%s %s %s %ld %s :%s"
+#define NUMERIC_STR_805      "%s :End of access entries"
 #define NUMERIC_STR_818      "%s %s :%s"
 #define NUMERIC_STR_819      "%s :End of property list"
 
@@ -255,6 +260,7 @@
 #define NUMERIC_STR_907      ":%s 907 %s :You have already completed SASL authentication"
 #define NUMERIC_STR_908      ":%s 908 %s %s :are available SASL mechanisms"
 
+#define NUMERIC_STR_915      "%s %s :Missing access entry"
 #define NUMERIC_STR_918      "%s :You cannot edit properties on this object"
 
 #endif
