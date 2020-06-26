@@ -65,6 +65,9 @@ static const char um_regonlymsg_desc[] =
 static bool
 allow_message(struct Client *source_p, struct Client *target_p)
 {
+	if (!MyClient(target_p))
+		return true;
+
 	if (!IsSetRegOnlyMsg(target_p))
 		return true;
 
