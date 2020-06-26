@@ -47,6 +47,7 @@ static int
 um_callerid_modinit(void)
 {
 	user_modes['g'] = find_umode_slot();
+	user_modes['G'] = find_umode_slot();
 	construct_umodebuf();
 
 	add_isupport("CALLERID", isupport_string, "g");
@@ -58,15 +59,32 @@ static void
 um_callerid_moddeinit(void)
 {
 	user_modes['g'] = 0;
+	user_modes['G'] = 0;
 	construct_umodebuf();
 
 	delete_isupport("CALLERID");
 }
 
 #define IsSetCallerID(c)	((c->umodes & user_modes['g']) == user_modes['g'])
+#define IsSetRelaxedCallerID(c)	((c->umodes & user_modes['G']) == user_modes['G'])
 
 static const char um_callerid_desc[] =
 	"Provides usermode +g which restricts messages from unauthorized users.";
+
+static bool
+has_common_channel(struct Client *source_p, struct Client *target_p)
+{
+	rb_dlink_node *ptr;
+
+	RB_DLINK_FOREACH(ptr, source_p->user->channel.head)
+	{
+		struct membership *msptr = ptr->data;
+		if (IsMember(target_p, msptr->chptr))
+			return msptr->chptr;
+	}
+
+	return NULL;
+}
 
 static bool
 allow_message(struct Client *source_p, struct Client *target_p)
@@ -75,6 +93,9 @@ allow_message(struct Client *source_p, struct Client *target_p)
 		return true;
 
 	if (!IsSetCallerID(target_p))
+		return true;
+
+	if (IsSetRelaxedCallerID(target_p) && has_common_channel(source_p, target_p))
 		return true;
 
 	if (IsServer(source_p))
