@@ -66,22 +66,22 @@ static bool
 allow_message(struct Client *source_p, struct Client *target_p)
 {
 	if (!IsSetRegOnlyMsg(target_p))
-		return false;
+		return true;
 
 	if (IsServer(source_p))
-		return false;
+		return true;
 
 	/* XXX: controversial?  allow opers to send through +R */
 	if (IsOper(source_p))
-		return false;
+		return true;
 
 	if (accept_message(source_p, target_p))
-		return false;
+		return true;
 
 	if (source_p->user->suser[0])
-		return false;
+		return true;
 
-	return true;
+	return false;
 }
 
 static void
