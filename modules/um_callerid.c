@@ -49,7 +49,7 @@ um_callerid_modinit(void)
 	user_modes['g'] = find_umode_slot();
 	construct_umodebuf();
 
-        add_isupport("CALLERID", isupport_stringptr, "g");
+	add_isupport("CALLERID", isupport_string, "g");
 
 	return 0;
 }
