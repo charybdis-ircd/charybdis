@@ -725,8 +725,7 @@ msg_client(enum message_type msgtype,
 		 * as a way of griefing.  --nenolod
 		 */
 		if(msgtype != MESSAGE_TYPE_NOTICE &&
-				(IsSetCallerId(source_p) ||
-				 (IsSetRegOnlyMsg(source_p) && !target_p->user->suser[0])) &&
+				IsSetCallerId(source_p) &&
 				!accept_message(target_p, source_p) &&
 				!IsOper(target_p))
 		{
@@ -818,8 +817,7 @@ msg_client(enum message_type msgtype,
 		}
 
 		/* XXX Controversial? allow opers always to send through a +g */
-		if(!IsServer(source_p) && (IsSetCallerId(target_p) ||
-					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])))
+		if(!IsServer(source_p) && IsSetCallerId(target_p))
 		{
 			/* Here is the anti-flood bot/spambot code -db */
 			if(accept_message(source_p, target_p) || IsOper(source_p))
@@ -829,13 +827,6 @@ msg_client(enum message_type msgtype,
 					   source_p->name,
 					   source_p->username,
 					   source_p->host, cmdname[msgtype], target_p->name, text);
-			}
-			else if (IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])
-			{
-				if (msgtype != MESSAGE_TYPE_NOTICE)
-					sendto_one_numeric(source_p, ERR_NONONREG,
-							form_str(ERR_NONONREG),
-							target_p->name);
 			}
 			else
 			{
