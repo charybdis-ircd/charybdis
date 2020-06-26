@@ -40,6 +40,7 @@
 #include "chmode.h"
 #include "ratelimit.h"
 #include "s_assert.h"
+#include "hook.h"
 
 static const char join_desc[] = "Provides the JOIN and TS6 SJOIN commands to facilitate joining and creating channels";
 
@@ -49,6 +50,7 @@ static void ms_sjoin(struct MsgBuf *, struct Client *, struct Client *, int, con
 
 static int h_can_create_channel;
 static int h_channel_join;
+static int h_channel_lowerts;
 
 struct Message join_msgtab = {
 	"JOIN", 0, 0, 0, 0,
@@ -65,6 +67,7 @@ mapi_clist_av1 join_clist[] = { &join_msgtab, &sjoin_msgtab, NULL };
 mapi_hlist_av1 join_hlist[] = {
 	{ "can_create_channel", &h_can_create_channel },
 	{ "channel_join", &h_channel_join },
+	{ "channel_lowerts", &h_channel_lowerts },
 	{ NULL, NULL },
 };
 
@@ -482,6 +485,12 @@ ms_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 
 		/* since we're dropping our modes, we want to clear the mlock as well. --nenolod */
 		set_channel_mlock(client_p, source_p, chptr, NULL, false);
+
+		hook_data_channel hookdata;
+		hookdata.client = source_p;
+		hookdata.chptr = chptr;
+
+		call_hook(h_channel_lowerts, &hookdata);
 	}
 
 	if(!IsMember(source_p, chptr))
