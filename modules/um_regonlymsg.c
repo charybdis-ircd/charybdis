@@ -88,7 +88,7 @@ allow_message(struct Client *source_p, struct Client *target_p)
 }
 
 static void
-h_can_invite(void *vdata)
+h_hdl_invite(void *vdata)
 {
 	hook_data_channel_approval *data = vdata;
 	struct Client *source_p = data->client;
@@ -129,7 +129,7 @@ h_hdl_privmsg_user(void *vdata)
 }
 
 static mapi_hfn_list_av1 um_regonlymsg_hfnlist[] = {
-	{ "can_invite", h_can_invite },
+	{ "invite", h_hdl_invite },
 	{ "privmsg_user", h_hdl_privmsg_user },
 	{ NULL, NULL }
 };
