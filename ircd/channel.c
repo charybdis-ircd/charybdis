@@ -40,6 +40,7 @@
 #include "logger.h"
 #include "s_assert.h"
 #include "propertyset.h"
+#include "channel_access.h"
 
 struct config_channel_entry ConfigChannel;
 rb_dlink_list global_channel_list;
@@ -409,6 +410,9 @@ destroy_channel(struct Channel *chptr)
 
 	/* free properties */
 	propertyset_clear(&chptr->prop_list);
+
+	/* free access list */
+	channel_access_clear(chptr);
 
 	/* Free the topic */
 	free_topic(chptr);

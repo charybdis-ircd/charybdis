@@ -193,6 +193,8 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define CHFL_INVEX      0x40000000
 #define CHFL_QUIET      0x80000000
 
+#define CHFL_ACL	(CHFL_EXCEPTION | CHFL_INVEX)
+
 /* mode flags for direction indication */
 #define MODE_QUERY     0
 #define MODE_ADD       1

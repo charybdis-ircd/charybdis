@@ -24,6 +24,7 @@ libircd_la_SOURCES =                  \
   cache.c                       \
   capability.c			\
   channel.c                     \
+  channel_access.c		\
   chmode.c                      \
   class.c                       \
   client.c                      \
