@@ -335,6 +335,15 @@ handle_access_upsert(struct Channel *chptr, struct Client *source_p, const char 
 		return;
 	}
 
+	/* only enforce ACL limit on non-upsert condition */
+	if (rb_dlink_list_length(&chptr->access_list) + 1 > ConfigChannel.max_bans &&
+	    channel_access_find(chptr, mask) == NULL)
+	{
+		sendto_one_numeric(source_p, ERR_ACCESS_TOOMANY, form_str(ERR_ACCESS_TOOMANY),
+			chptr->chname);
+		return;
+	}
+
 	struct AccessEntry *ae = channel_access_upsert(chptr, source_p, mask, newflags);
 
 	if (MyClient(source_p))
