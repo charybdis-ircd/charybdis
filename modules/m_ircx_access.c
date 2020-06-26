@@ -307,8 +307,12 @@ handle_access_delete(struct Channel *chptr, struct Client *source_p, const char 
 		return;
 	}
 
-	sendto_one_numeric(source_p, RPL_ACCESSDELETE, form_str(RPL_ACCESSDELETE),
-		chptr->chname, ae_level_name(ae->flags), ae->mask);
+	if (MyClient(source_p))
+	{
+		sendto_one_numeric(source_p, RPL_ACCESSDELETE, form_str(RPL_ACCESSDELETE),
+			chptr->chname, ae_level_name(ae->flags), ae->mask);
+	}
+
 	sendto_server(source_p, chptr, CAP_TS6, NOCAPS,
 		":%s ACCESS %s DELETE %s %s",
 		use_id(source_p), chptr->chname, ae_level_name(ae->flags),
@@ -331,9 +335,13 @@ handle_access_upsert(struct Channel *chptr, struct Client *source_p, const char 
 
 	struct AccessEntry *ae = channel_access_upsert(chptr, source_p, mask, newflags);
 
-	sendto_one_numeric(source_p, RPL_ACCESSADD, form_str(RPL_ACCESSADD),
-		chptr->chname, ae_level_name(ae->flags), ae->mask,
-		(long) 0, ae->who, "");
+	if (MyClient(source_p))
+	{
+		sendto_one_numeric(source_p, RPL_ACCESSADD, form_str(RPL_ACCESSADD),
+			chptr->chname, ae_level_name(ae->flags), ae->mask,
+			(long) 0, ae->who, "");
+	}
+
 	sendto_server(source_p, chptr, CAP_TS6, NOCAPS,
 		":%s ACCESS %s ADD %s %s",
 		use_id(source_p), chptr->chname, ae_level_name(ae->flags), ae->mask);
