@@ -321,7 +321,6 @@ static struct mode_table umode_table[] = {
 	{"invisible",	UMODE_INVISIBLE	},
 	{"locops",	UMODE_LOCOPS	},
 	{"noforward",	UMODE_NOFORWARD	},
-	{"regonlymsg",	UMODE_REGONLYMSG},
 	{"servnotice",	UMODE_SERVNOTICE},
 	{"wallop",	UMODE_WALLOP	},
 	{"operwall",	UMODE_OPERWALL	},
