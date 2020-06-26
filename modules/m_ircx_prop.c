@@ -72,9 +72,11 @@ mapi_hlist_av1 ircx_prop_hlist[] = {
 };
 
 static void h_prop_burst_channel(void *);
+static void h_prop_channel_lowerts(void *);
 
 mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 	{ "burst_channel", (hookfn) h_prop_burst_channel },
+	{ "channel_lowerts", (hookfn) h_prop_channel_lowerts },
 	{ NULL, NULL }
 };
 
@@ -245,6 +247,15 @@ h_prop_burst_channel(void *vdata)
 		sendto_one(client_p, ":%s TPROP %s %ld %ld %s :%s",
 			use_id(&me), chptr->chname, chptr->channelts, prop->set_at, prop->name, prop->value);
 	}
+}
+
+static void
+h_prop_channel_lowerts(void *vdata)
+{
+	hook_data_channel *hchaninfo = vdata;
+	struct Channel *chptr = hchaninfo->chptr;
+
+	propertyset_clear(&chptr->prop_list);
 }
 
 /*
