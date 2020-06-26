@@ -203,7 +203,7 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	if(MyConnect(target_p))
 	{
-		if(!IsOper(source_p) && (IsSetCallerId(target_p)) && !accept_message(source_p, target_p))
+		if(!IsOper(source_p) && IsSetCallerId(target_p) && !accept_message(source_p, target_p))
 		{
 			sendto_one_numeric(source_p, ERR_TARGUMODEG,
 					   form_str(ERR_TARGUMODEG),
