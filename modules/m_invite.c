@@ -151,7 +151,7 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		hdata.msptr = msptr;
 		hdata.client = source_p;
 		hdata.target = target_p;
-		hdata.approved = !(is_chanop(msptr) || (chptr->mode.mode & MODE_FREEINVITE));
+		hdata.approved = !((is_admin(msptr) || is_chanop(msptr)) || (chptr->mode.mode & MODE_FREEINVITE));
 
 		call_hook(can_invite_hook, &hdata);
 		if (hdata.approved)
