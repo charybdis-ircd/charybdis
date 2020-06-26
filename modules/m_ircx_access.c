@@ -67,10 +67,12 @@ mapi_clist_av1 ircx_access_clist[] = { &access_msgtab, &taccess_msgtab, NULL };
 
 static void h_access_channel_join(void *);
 static void h_access_burst_channel(void *);
+static void h_access_channel_lowerts(void *);
 
 mapi_hfn_list_av1 ircx_access_hfnlist[] = {
 	{ "channel_join", (hookfn) h_access_channel_join },
 	{ "burst_channel", (hookfn) h_access_burst_channel },
+	{ "channel_lowerts", (hookfn) h_access_channel_lowerts },
 	{ NULL, NULL }
 };
 
@@ -448,4 +450,13 @@ h_access_burst_channel(void *vdata)
 			use_id(&me), chptr->chname, (long) chptr->channelts, ae->when,
 			ae->mask, ae_level_name(ae->flags));
 	}
+}
+
+static void
+h_access_channel_lowerts(void *vdata)
+{
+	hook_data_channel *hchaninfo = vdata;
+	struct Channel *chptr = hchaninfo->chptr;
+
+	channel_access_clear(chptr);
 }
