@@ -40,12 +40,19 @@
 #include "numeric.h"
 #include "privilege.h"
 #include "s_newconf.h"
+#include "logger.h"
 
 static int
 um_regonlymsg_modinit(void)
 {
 	user_modes['R'] = find_umode_slot();
 	construct_umodebuf();
+
+	if (!user_modes['R'])
+	{
+		ierror("um_regonlymsg: unable to allocate usermode slot for +R, unloading module");
+		return -1;
+	}
 
 	return 0;
 }
