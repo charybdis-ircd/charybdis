@@ -42,12 +42,25 @@
 #include "s_newconf.h"
 #include "hook.h"
 #include "supported.h"
+#include "logger.h"
 
 static int
 um_callerid_modinit(void)
 {
 	user_modes['g'] = find_umode_slot();
+	if (!user_modes['g'])
+	{
+		ierror("um_callerid: unable to allocate usermode slot for +g; unloading module.");
+		return -1;
+	}
+
 	user_modes['G'] = find_umode_slot();
+	if (!user_modes['G'])
+	{
+		ierror("um_callerid: unable to allocate usermode slot for +G; unloading module.");
+		return -1;
+	}
+
 	construct_umodebuf();
 
 	add_isupport("CALLERID", isupport_string, "g");
