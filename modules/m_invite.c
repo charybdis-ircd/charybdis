@@ -158,7 +158,7 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		{
 			if (hdata.error)
 				sendto_one_numeric(source_p, hdata.approved, "%s", hdata.error);
-			else if (hdata.approved == ERR_CHANOPRIVSNEEDED)
+			else
 				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
 						 me.name, source_p->name, parv[2]);
 
