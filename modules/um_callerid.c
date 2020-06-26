@@ -154,6 +154,9 @@ h_can_invite(void *vdata)
 	struct Client *source_p = data->client;
 	struct Client *target_p = data->target;
 
+	if (data->approved)
+		return;
+
 	if (!add_callerid_accept_for_source(MESSAGE_TYPE_PRIVMSG, source_p, target_p))
 	{
 		data->approved = ERR_TARGUMODEG;
@@ -175,6 +178,9 @@ h_hdl_privmsg_user(void *vdata)
 	enum message_type msgtype = data->msgtype;
 	struct Client *source_p = data->source_p;
 	struct Client *target_p = data->target_p;
+
+	if (data->approved)
+		return;
 
 	if (!add_callerid_accept_for_source(msgtype, source_p, target_p))
 	{
