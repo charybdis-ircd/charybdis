@@ -65,7 +65,7 @@ um_callerid_modinit(void)
 
 	construct_umodebuf();
 
-	add_isupport("CALLERID", isupport_string, "g");
+	add_isupport("CALLERID", isupport_umode, "g");
 
 	return 0;
 }
