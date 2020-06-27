@@ -84,7 +84,7 @@ um_callerid_moddeinit(void)
 #define IsSetRelaxedCallerID(c)	((c->umodes & user_modes['G']) == user_modes['G'])
 
 static const char um_callerid_desc[] =
-	"Provides usermode +g which restricts messages from unauthorized users.";
+	"Provides usermodes +g and +G which restrict messages from unauthorized users.";
 
 static bool
 has_common_channel(struct Client *source_p, struct Client *target_p)
