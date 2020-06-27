@@ -13,6 +13,7 @@ User modes: (? designates that the umode is provided by an extension
          +w     - Can see oper wallops.
        ? +C     - Prevents you from receiving CTCPs other than ACTION.
          +D     - Deaf - ignores all channel messages.
+         +G     - Allow users with common channels to bypass "caller id" mode.
          +Q     - Prevents you from being affected by channel forwarding.
          +R     - Prevents unidentified users that you have not accepted from
                   messaging you.
