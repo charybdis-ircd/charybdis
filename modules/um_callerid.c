@@ -95,10 +95,10 @@ has_common_channel(struct Client *source_p, struct Client *target_p)
 	{
 		struct membership *msptr = ptr->data;
 		if (IsMember(target_p, msptr->chptr))
-			return msptr->chptr;
+			return true;
 	}
 
-	return NULL;
+	return false;
 }
 
 static bool
