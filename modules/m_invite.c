@@ -161,6 +161,10 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			else
 				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
 						 me.name, source_p->name, parv[2]);
+
+			if (MyClient(target_p))
+				add_reply_target(target_p, source_p);
+
 			return;
 		}
 	}
@@ -200,40 +204,28 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	if(MyConnect(target_p))
 	{
-		if(!IsOper(source_p) && (IsSetCallerId(target_p) ||
-					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])) &&
-				!accept_message(source_p, target_p))
+		if(!IsOper(source_p) && IsSetCallerId(target_p) && !accept_message(source_p, target_p))
 		{
-			if (IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])
+			sendto_one_numeric(source_p, ERR_TARGUMODEG,
+					   form_str(ERR_TARGUMODEG),
+					   target_p->name);
+
+			if((target_p->localClient->last_caller_id_time +
+			    ConfigFileEntry.caller_id_wait) < rb_current_time())
 			{
-				sendto_one_numeric(source_p, ERR_NONONREG,
-						form_str(ERR_NONONREG),
-						target_p->name);
-				return;
+				sendto_one_numeric(source_p, RPL_TARGNOTIFY,
+							form_str(RPL_TARGNOTIFY),
+							target_p->name);
+
+				add_reply_target(target_p, source_p);
+				sendto_one(target_p, form_str(RPL_UMODEGMSG),
+					   me.name, target_p->name, source_p->name,
+					   source_p->username, source_p->host);
+
+				target_p->localClient->last_caller_id_time = rb_current_time();
 			}
-			else
-			{
-				sendto_one_numeric(source_p, ERR_TARGUMODEG,
-						   form_str(ERR_TARGUMODEG),
-						   target_p->name);
 
-				if((target_p->localClient->last_caller_id_time +
-				    ConfigFileEntry.caller_id_wait) < rb_current_time())
-				{
-					sendto_one_numeric(source_p, RPL_TARGNOTIFY,
-								form_str(RPL_TARGNOTIFY),
-								target_p->name);
-
-					add_reply_target(target_p, source_p);
-					sendto_one(target_p, form_str(RPL_UMODEGMSG),
-						   me.name, target_p->name, source_p->name,
-						   source_p->username, source_p->host);
-
-					target_p->localClient->last_caller_id_time = rb_current_time();
-				}
-
-				return;
-			}
+			return;
 		}
 
 		hdata.chptr = chptr;
