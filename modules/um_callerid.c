@@ -154,8 +154,8 @@ send_callerid_notice(enum message_type msgtype, struct Client *source_p, struct 
 static bool
 add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_p, struct Client *target_p)
 {
-	/* only do this on target_p's server */
-	if (!MyClient(target_p))
+	/* only do this on source_p's server */
+	if (!MyClient(source_p))
 		return true;
 
 	/*
