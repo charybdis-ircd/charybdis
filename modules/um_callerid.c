@@ -57,6 +57,8 @@ um_callerid_modinit(void)
 	user_modes['G'] = find_umode_slot();
 	if (!user_modes['G'])
 	{
+		user_modes['g'] = 0;
+
 		ierror("um_callerid: unable to allocate usermode slot for +G; unloading module.");
 		return -1;
 	}
