@@ -162,9 +162,6 @@ m_invite(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
 						 me.name, source_p->name, parv[2]);
 
-			if (MyClient(target_p))
-				add_reply_target(target_p, source_p);
-
 			return;
 		}
 	}
