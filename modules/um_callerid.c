@@ -154,6 +154,10 @@ send_callerid_notice(enum message_type msgtype, struct Client *source_p, struct 
 static bool
 add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_p, struct Client *target_p)
 {
+	/* only do this on target_p's server */
+	if (!MyClient(target_p))
+		return true;
+
 	/*
 	 * XXX: Controversial? Allow target users to send replies
 	 * through a +g.  Rationale is that people can presently use +g
@@ -161,9 +165,9 @@ add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_
 	 * as a way of griefing.  --nenolod
 	 */
 	if(msgtype != MESSAGE_TYPE_NOTICE &&
-			IsSetCallerID(source_p) &&
-			!accept_message(target_p, source_p) &&
-			!IsOper(target_p))
+		IsSetCallerID(source_p) &&
+		!accept_message(target_p, source_p) &&
+		!IsOper(target_p))
 	{
 		if(rb_dlink_list_length(&source_p->localClient->allow_list) <
 				(unsigned long)ConfigFileEntry.max_accept)
