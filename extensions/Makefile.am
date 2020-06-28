@@ -21,7 +21,6 @@ extension_LTLIBRARIES =		\
   chm_sslonly_compat.la		\
   createauthonly.la		\
   createoperonly.la		\
-  extb_account.la		\
   extb_canjoin.la		\
   extb_channel.la		\
   extb_hostmask.la		\
