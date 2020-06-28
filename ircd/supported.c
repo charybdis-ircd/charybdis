@@ -223,7 +223,7 @@ isupport_stringptr(const void *ptr)
 	return *(char * const *)ptr;
 }
 
-static const char *
+const char *
 isupport_umode(const void *ptr)
 {
 	const char *str;

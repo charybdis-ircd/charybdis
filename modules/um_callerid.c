@@ -57,13 +57,15 @@ um_callerid_modinit(void)
 	user_modes['G'] = find_umode_slot();
 	if (!user_modes['G'])
 	{
+		user_modes['g'] = 0;
+
 		ierror("um_callerid: unable to allocate usermode slot for +G; unloading module.");
 		return -1;
 	}
 
 	construct_umodebuf();
 
-	add_isupport("CALLERID", isupport_string, "g");
+	add_isupport("CALLERID", isupport_umode, "g");
 
 	return 0;
 }
@@ -82,7 +84,7 @@ um_callerid_moddeinit(void)
 #define IsSetRelaxedCallerID(c)	((c->umodes & user_modes['G']) == user_modes['G'])
 
 static const char um_callerid_desc[] =
-	"Provides usermode +g which restricts messages from unauthorized users.";
+	"Provides usermodes +g and +G which restrict messages from unauthorized users.";
 
 static bool
 has_common_channel(struct Client *source_p, struct Client *target_p)
@@ -93,10 +95,10 @@ has_common_channel(struct Client *source_p, struct Client *target_p)
 	{
 		struct membership *msptr = ptr->data;
 		if (IsMember(target_p, msptr->chptr))
-			return msptr->chptr;
+			return true;
 	}
 
-	return NULL;
+	return false;
 }
 
 static bool
@@ -152,6 +154,10 @@ send_callerid_notice(enum message_type msgtype, struct Client *source_p, struct 
 static bool
 add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_p, struct Client *target_p)
 {
+	/* only do this on source_p's server */
+	if (!MyClient(source_p))
+		return true;
+
 	/*
 	 * XXX: Controversial? Allow target users to send replies
 	 * through a +g.  Rationale is that people can presently use +g
@@ -159,9 +165,9 @@ add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_
 	 * as a way of griefing.  --nenolod
 	 */
 	if(msgtype != MESSAGE_TYPE_NOTICE &&
-			IsSetCallerID(source_p) &&
-			!accept_message(target_p, source_p) &&
-			!IsOper(target_p))
+		IsSetCallerID(source_p) &&
+		!accept_message(target_p, source_p) &&
+		!IsOper(target_p))
 	{
 		if(rb_dlink_list_length(&source_p->localClient->allow_list) <
 				(unsigned long)ConfigFileEntry.max_accept)
