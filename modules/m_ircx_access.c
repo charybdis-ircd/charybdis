@@ -285,6 +285,15 @@ handle_access_clear(struct Channel *chptr, struct Client *source_p, const char *
 static void
 handle_access_delete(struct Channel *chptr, struct Client *source_p, const char *mask)
 {
+	if (mask == NULL)
+	{
+		sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
+			   me.name,
+			   EmptyString(source_p->name) ? "*" : source_p->name,
+			   "ACCESS DELETE");
+		return;
+	}
+
 	/* first, we make sure we can read the ACL at all, to prevent bruteforcing */
 	if (!can_read_from_access_list(chptr, source_p, CHFL_CHANOP))
 	{
@@ -327,6 +336,15 @@ static void
 handle_access_upsert(struct Channel *chptr, struct Client *source_p, const char *level, const char *mask)
 {
 	unsigned int newflags = ae_level_from_name(level);
+
+	if (level == NULL || mask == NULL)
+	{
+		sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
+			   me.name,
+			   EmptyString(source_p->name) ? "*" : source_p->name,
+			   "ACCESS ADD");
+		return;
+	}
 
 	if (!can_upsert_on_access_list(chptr, source_p, mask, newflags))
 	{
