@@ -642,7 +642,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 					int priority = m->priority;
 					if (priority == 0)
 						priority = HOOK_NORMAL;
-					add_hook(m->hapi_name, m->fn);
+					add_hook_prio(m->hapi_name, m->fn, priority);
 				}
 			}
 
