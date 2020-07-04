@@ -297,6 +297,10 @@ load_one_module(const char *path, int origin, bool coremodule)
 	}
 
 	sendto_realops_snomask(SNO_GENERAL, L_ALL, "Cannot locate module %s", path);
+
+	if (server_state_foreground)
+		ierror("cannot locate module %s", path);
+
 	return false;
 }
 
