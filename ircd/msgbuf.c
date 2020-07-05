@@ -154,6 +154,7 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 	if (*ch == '\0')
 		return 2;
 
+	msgbuf->endp = &ch[strlen(ch)];
 	msgbuf->n_para = rb_string_to_array(ch, (char **)msgbuf->para, MAXPARA);
 	if (msgbuf->n_para == 0)
 		return 3;
@@ -161,6 +162,40 @@ msgbuf_parse(struct MsgBuf *msgbuf, char *line)
 	msgbuf->cmd = msgbuf->para[0];
 	return 0;
 }
+
+/*
+ * Unparse the tail of a msgbuf perfectly, preserving framing details
+ * msgbuf->para[n] will reach to the end of the line
+ */
+
+void
+msgbuf_reconstruct_tail(struct MsgBuf *msgbuf, size_t n)
+{
+	if (msgbuf->endp == NULL || n > msgbuf->n_para)
+		return;
+
+	char *c;
+	const char *c_;
+
+	if (n == 0)
+		c_ = msgbuf->para[n];
+	else
+		c_ = msgbuf->para[n-1] + strlen(msgbuf->para[n-1]) + 1;
+
+	if (n == msgbuf->n_para && c_ == msgbuf->endp)
+		return;
+
+	msgbuf->para[n] = c_;
+	/* promote to non-const. msgbuf->endp witnesses that this is allowed */
+	c = msgbuf->endp - (msgbuf->endp - c_);
+
+	for ( ; c < msgbuf->endp; c++)
+	{
+		if (*c == '\0')
+			*c = ' ';
+	}
+}
+
 
 /*
  * Unparse msgbuf tags into a buffer
