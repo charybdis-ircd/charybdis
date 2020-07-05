@@ -35,18 +35,12 @@ static unsigned long hash_ipv6(struct sockaddr *, int);
 static unsigned long hash_ipv4(struct sockaddr *, int);
 
 
-/* int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
- * Input: A hostmask, or an IPV4/6 address.
- * Output: An integer describing whether it is an IPV4, IPV6 address or a
- *         hostmask, an address(if it is an IP mask),
- *         a bitlength(if it is IP mask).
- * Side effects: None
- */
-int
-parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
+static int
+_parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb, bool strict)
 {
 	char *ip = LOCAL_COPY(text);
 	char *ptr;
+	char *endp;
 	struct rb_sockaddr_storage *addr, xaddr;
 	int *b, xb;
 	if(nb == NULL)
@@ -69,11 +63,15 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 		{
 			*ptr = '\0';
 			ptr++;
-			*b = atoi(ptr);
-			if(*b > 128)
-				*b = 128;
-			else if(*b < 0)
+			long n = strtol(ptr, &endp, 10);
+			if (endp == ptr || n < 0)
 				return HM_HOST;
+			if (n > 128 || *endp != '\0')
+				if (strict)
+					return HM_ERROR;
+				else
+					n = 128;
+			*b = n;
 		} else
 			*b = 128;
 		if(rb_inet_pton_sock(ip, addr) > 0)
@@ -87,11 +85,15 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 		{
 			*ptr = '\0';
 			ptr++;
-			*b = atoi(ptr);
-			if(*b > 32)
-				*b = 32;
-			else if(*b < 0)
+			long n = strtol(ptr, &endp, 10);
+			if (endp == ptr || n < 0)
 				return HM_HOST;
+			if (n > 32 || *endp != '\0')
+				if (strict)
+					return HM_ERROR;
+				else
+					n = 32;
+			*b = n;
 		} else
 			*b = 32;
 		if(rb_inet_pton_sock(ip, addr) > 0)
@@ -100,6 +102,23 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 			return HM_HOST;
 	}
 	return HM_HOST;
+}
+
+/* int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
+ * Input: A hostmask, or an IPV4/6 address.
+ * Output: An integer describing whether it is an IPV4, IPV6 address or a
+ *         hostmask, an address(if it is an IP mask),
+ *         a bitlength(if it is IP mask).
+ * Side effects: None
+ */
+int parse_netmask(const char *mask, struct rb_sockaddr_storage *addr, int *blen)
+{
+	return _parse_netmask(mask, addr, blen, false);
+}
+
+int parse_netmask_strict(const char *mask, struct rb_sockaddr_storage *addr, int *blen)
+{
+	return _parse_netmask(mask, addr, blen, true);
 }
 
 /* Hashtable stuff...now external as its used in m_stats.c */
