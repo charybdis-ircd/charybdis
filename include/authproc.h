@@ -30,7 +30,7 @@
 #include "rb_dictionary.h"
 #include "client.h"
 
-struct BlacklistStats
+struct DNSBLEntryStats
 {
 	char *host;
 	uint8_t iptype;
@@ -60,7 +60,7 @@ enum
 
 extern rb_helper *authd_helper;
 
-extern rb_dictionary *bl_stats;
+extern rb_dictionary *dnsbl_stats;
 extern rb_dlink_list opm_list;
 extern struct OPMListener opm_listeners[LISTEN_LAST];
 
@@ -76,9 +76,9 @@ void authd_accept_client(struct Client *client_p, const char *ident, const char 
 void authd_reject_client(struct Client *client_p, const char *ident, const char *host, char cause, const char *data, const char *reason);
 void authd_abort_client(struct Client *);
 
-void add_blacklist(const char *host, const char *reason, uint8_t iptype, rb_dlink_list *filters);
-void del_blacklist(const char *host);
-void del_blacklist_all(void);
+void add_dnsbl_entry(const char *host, const char *reason, uint8_t iptype, rb_dlink_list *filters);
+void del_dnsbl_entry(const char *host);
+void del_dnsbl_entry_all(void);
 
 bool set_authd_timeout(const char *key, int timeout);
 void ident_check_enable(bool enabled);
