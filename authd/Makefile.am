@@ -12,7 +12,7 @@ authd_SOURCES =	\
 	res.c \
 	reslib.c \
 	reslist.c \
-	providers/blacklist.c \
+	providers/dnsbl.c \
 	providers/ident.c \
 	providers/rdns.c \
 	providers/opm.c

@@ -105,7 +105,7 @@ struct auth_provider
 
 extern struct auth_provider rdns_provider;
 extern struct auth_provider ident_provider;
-extern struct auth_provider blacklist_provider;
+extern struct auth_provider dnsbl_provider;
 extern struct auth_provider opm_provider;
 
 extern rb_dlink_list auth_providers;
