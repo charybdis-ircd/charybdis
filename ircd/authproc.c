@@ -67,7 +67,7 @@ uint32_t cid;
 static rb_dictionary *cid_clients;
 static struct ev_entry *timeout_ev;
 
-rb_dictionary *bl_stats;
+rb_dictionary *dnsbl_stats;
 
 rb_dlink_list opm_list;
 struct OPMListener opm_listeners[LISTEN_LAST];
@@ -581,17 +581,17 @@ timeout_dead_authd_clients(void *notused __unused)
 	}
 }
 
-/* Send a new blacklist to authd */
+/* Send a new DNSBL entry to authd */
 void
-add_blacklist(const char *host, const char *reason, uint8_t iptype, rb_dlink_list *filters)
+add_dnsbl_entry(const char *host, const char *reason, uint8_t iptype, rb_dlink_list *filters)
 {
 	rb_dlink_node *ptr;
-	struct BlacklistStats *stats = rb_malloc(sizeof(struct BlacklistStats));
+	struct DNSBLEntryStats *stats = rb_malloc(sizeof(*stats));
 	char filterbuf[BUFSIZE] = "*";
 	size_t s = 0;
 
-	if(bl_stats == NULL)
-		bl_stats = rb_dictionary_create("blacklist statistics", rb_strcasecmp);
+	if(dnsbl_stats == NULL)
+		dnsbl_stats = rb_dictionary_create("dnsbl statistics", rb_strcasecmp);
 
 	/* Build a list of comma-separated values for authd.
 	 * We don't check for validity - do it elsewhere.
@@ -615,19 +615,19 @@ add_blacklist(const char *host, const char *reason, uint8_t iptype, rb_dlink_lis
 	stats->host = rb_strdup(host);
 	stats->iptype = iptype;
 	stats->hits = 0;
-	rb_dictionary_add(bl_stats, stats->host, stats);
+	rb_dictionary_add(dnsbl_stats, stats->host, stats);
 
 	rb_helper_write(authd_helper, "O rbl %s %hhu %s :%s", host, iptype, filterbuf, reason);
 }
 
-/* Delete a blacklist */
+/* Delete a DNSBL entry. */
 void
-del_blacklist(const char *host)
+del_dnsbl_entry(const char *host)
 {
-	struct BlacklistStats *stats = rb_dictionary_retrieve(bl_stats, host);
+	struct DNSBLEntryStats *stats = rb_dictionary_retrieve(dnsbl_stats, host);
 	if(stats != NULL)
 	{
-		rb_dictionary_delete(bl_stats, host);
+		rb_dictionary_delete(dnsbl_stats, host);
 		rb_free(stats->host);
 		rb_free(stats);
 	}
@@ -636,21 +636,21 @@ del_blacklist(const char *host)
 }
 
 static void
-blacklist_delete(rb_dictionary_element *delem, void *unused)
+dnsbl_delete_elem(rb_dictionary_element *delem, void *unused)
 {
-	struct BlacklistStats *stats = delem->data;
+	struct DNSBLEntryStats *stats = delem->data;
 
 	rb_free(stats->host);
 	rb_free(stats);
 }
 
-/* Delete all the blacklists */
+/* Delete all the DNSBL entries. */
 void
-del_blacklist_all(void)
+del_dnsbl_entry_all(void)
 {
-	if(bl_stats != NULL)
-		rb_dictionary_destroy(bl_stats, blacklist_delete, NULL);
-	bl_stats = NULL;
+	if(dnsbl_stats != NULL)
+		rb_dictionary_destroy(dnsbl_stats, dnsbl_delete_elem, NULL);
+	dnsbl_stats = NULL;
 
 	rb_helper_write(authd_helper, "O rbl_del_all");
 }

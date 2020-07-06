@@ -2060,7 +2060,7 @@ conf_set_blacklist_reason(void *data)
 			}
 		}
 
-		add_blacklist(yy_blacklist_host, yy_blacklist_reason, yy_blacklist_iptype, &yy_blacklist_filters);
+		add_dnsbl_entry(yy_blacklist_host, yy_blacklist_reason, yy_blacklist_iptype, &yy_blacklist_filters);
 	}
 
 cleanup_bl:
