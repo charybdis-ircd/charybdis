@@ -16,6 +16,7 @@ auto_load_mod_LTLIBRARIES = \
   chm_nocolour.la \
   chm_noctcp.la \
   extb_account.la \
+  extb_ssl.la \
   um_callerid.la \
   um_regonlymsg.la \
   m_accept.la \

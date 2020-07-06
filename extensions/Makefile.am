@@ -26,7 +26,6 @@ extension_LTLIBRARIES =		\
   extb_hostmask.la		\
   extb_oper.la			\
   extb_server.la		\
-  extb_ssl.la			\
   extb_realname.la		\
   extb_usermode.la		\
   extb_extgecos.la		\
