@@ -67,10 +67,12 @@ _parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb, boo
 			if (endp == ptr || n < 0)
 				return HM_HOST;
 			if (n > 128 || *endp != '\0')
+			{
 				if (strict)
 					return HM_ERROR;
 				else
 					n = 128;
+			}
 			*b = n;
 		} else
 			*b = 128;
@@ -89,10 +91,12 @@ _parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb, boo
 			if (endp == ptr || n < 0)
 				return HM_HOST;
 			if (n > 32 || *endp != '\0')
+			{
 				if (strict)
 					return HM_ERROR;
 				else
 					n = 32;
+			}
 			*b = n;
 		} else
 			*b = 32;
