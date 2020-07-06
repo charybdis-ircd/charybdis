@@ -525,6 +525,12 @@ static struct InfoStruct info_table[] = {
 		"The minimum time between aways",
 	},
 	{
+		"tls_ciphers_oper_only",
+		OUTPUT_BOOLEAN_YN,
+		&ConfigFileEntry.tls_ciphers_oper_only,
+		"TLS cipher strings are hidden in whois for non-opers",
+	},
+	{
 		"default_split_server_count",
 		OUTPUT_DECIMAL,
 		&ConfigChannel.default_split_server_count,

@@ -334,7 +334,8 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	{
 		char cbuf[256] = "is using a secure connection";
 
-		if (MyClient(target_p) && target_p->localClient->cipher_string != NULL)
+		if (MyClient(target_p) && target_p->localClient->cipher_string != NULL &&
+				(!ConfigFileEntry.tls_ciphers_oper_only || source_p == target_p || IsOper(source_p)))
 			rb_snprintf_append(cbuf, sizeof(cbuf), " [%s]", target_p->localClient->cipher_string);
 
 		sendto_one_numeric(source_p, RPL_WHOISSECURE, form_str(RPL_WHOISSECURE),
