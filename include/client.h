@@ -36,9 +36,6 @@
 #include "ircd.h"
 #include "privilege.h"
 
-/* other structs */
-struct Blacklist;
-
 /* we store ipv6 ips for remote clients, so this needs to be v6 always */
 #define HOSTIPLEN	53	/* sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255.ipv6") */
 #define PASSWDLEN	128
