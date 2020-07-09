@@ -2838,6 +2838,7 @@ static struct ConfEntry conf_channel_table[] =
 	{ "displayed_usercount",	CF_INT, NULL, 0, &ConfigChannel.displayed_usercount	},
 	{ "strip_topic_colors",	CF_YESNO, NULL, 0, &ConfigChannel.strip_topic_colors	},
 	{ "opmod_send_statusmsg", CF_YESNO, NULL, 0, &ConfigChannel.opmod_send_statusmsg	},
+	{ "max_prop",		CF_INT,   NULL, 0, &ConfigChannel.max_prop		},
 	{ "\0", 		0, 	  NULL, 0, NULL }
 };
 
