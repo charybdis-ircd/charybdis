@@ -14,6 +14,7 @@ auto_load_mod_LTLIBRARIES = \
   cap_account_tag.la \
   cap_prop_notify.la \
   cap_server_time.la \
+  cap_sts.la \
   chm_nocolour.la \
   chm_noctcp.la \
   extb_account.la \
