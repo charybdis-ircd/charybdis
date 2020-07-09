@@ -444,19 +444,19 @@ dnsbls_generic_cancel(struct auth_client *auth, const char *message)
 static void
 dnsbls_timeout(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** No response from DNS dnsbls");
+	dnsbls_generic_cancel(auth, "*** No response from DNSBLs");
 }
 
 static void
 dnsbls_cancel(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** Aborting DNS dnsbl checks");
+	dnsbls_generic_cancel(auth, "*** Aborting DNSBL checks");
 }
 
 static void
 dnsbls_cancel_none(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** Could not check DNS dnsbls");
+	dnsbls_generic_cancel(auth, "*** Could not check DNSBLs");
 }
 
 static void
