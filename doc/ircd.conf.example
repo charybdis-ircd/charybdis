@@ -173,6 +173,25 @@ listen {
 	sslport = 9999;
 };
 
+/* sts {}: configure IRCv3 strict transport security. */
+sts {
+	/* enabled: whether STS is actually enabled.  Make sure your SSL is working,
+	 * with a valid certificate chain before enabling.
+	 */
+	enabled = false;
+
+	/* port: the port that non-SSL users should be redirected to if enabled. */
+	port = 6697;
+
+	/* duration: the duration clients should cache this information for */
+	duration = 1 hour;
+
+	/* preload: whether it is acceptable to include this information in
+	 * client preload lists.
+	 */
+	preload = no;
+};
+
 /* auth {}: allow users to connect to the ircd (OLD I:)
  * auth {} blocks MUST be specified in order of precedence.  The first one
  * that matches a user will be used.  So place spoofs first, then specials,
