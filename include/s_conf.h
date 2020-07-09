@@ -232,6 +232,7 @@ struct config_file_entry
 	int use_propagated_bans;
 	int max_ratelimit_tokens;
 	int away_interval;
+	int tls_ciphers_oper_only;
 
 	int client_flood_max_lines;
 	int client_flood_burst_rate;
@@ -273,6 +274,7 @@ struct config_channel_entry
 	unsigned int autochanmodes;
 	int displayed_usercount;
 	int strip_topic_colors;
+	int opmod_send_statusmsg;
 };
 
 struct config_server_hide

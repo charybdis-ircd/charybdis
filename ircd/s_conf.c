@@ -772,6 +772,7 @@ set_default_conf(void)
 	ConfigFileEntry.use_propagated_bans = true;
 	ConfigFileEntry.max_ratelimit_tokens = 30;
 	ConfigFileEntry.away_interval = 30;
+	ConfigFileEntry.tls_ciphers_oper_only = false;
 
 #ifdef HAVE_LIBZ
 	ConfigFileEntry.compression_level = 4;
@@ -804,6 +805,7 @@ set_default_conf(void)
 	ConfigChannel.channel_target_change = true;
 	ConfigChannel.disable_local_channels = false;
 	ConfigChannel.displayed_usercount = 3;
+	ConfigChannel.opmod_send_statusmsg = false;
 
 	ConfigChannel.autochanmodes = MODE_TOPICLIMIT | MODE_NOPRIVMSGS;
 

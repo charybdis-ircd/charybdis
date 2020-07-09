@@ -264,8 +264,7 @@ dnsbl_dns_callback(const char *result, bool status, query_type type, void *data)
 	if(!rb_dlink_list_length(&bluser->queries))
 	{
 		/* Done here */
-		notice_client(auth->cid, "*** No DNSBL entr%s found for this IP",
-				rb_dlink_list_length(&dnsbl_list) > 1 ? "ies" : "y");
+		notice_client(auth->cid, "*** No DNSBL entry found for this IP");
 		rb_free(bluser);
 		set_provider_data(auth, SELF_PID, NULL);
 		set_provider_timeout_absolute(auth, SELF_PID, 0);
@@ -317,8 +316,7 @@ lookup_all_dnsbls(struct auth_client *auth)
 		return false;
 
 	bluser->started = true;
-	notice_client(auth->cid, "*** Checking your IP against DNSBL%s",
-			rb_dlink_list_length(&dnsbl_list) > 1 ? "s" : "");
+	notice_client(auth->cid, "*** Checking your IP against DNSBLs");
 
 	RB_DLINK_FOREACH(ptr, dnsbl_list.head)
 	{
@@ -444,19 +442,19 @@ dnsbls_generic_cancel(struct auth_client *auth, const char *message)
 static void
 dnsbls_timeout(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** No response from DNS dnsbls");
+	dnsbls_generic_cancel(auth, "*** No response from DNSBLs");
 }
 
 static void
 dnsbls_cancel(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** Aborting DNS dnsbl checks");
+	dnsbls_generic_cancel(auth, "*** Aborting DNSBL checks");
 }
 
 static void
 dnsbls_cancel_none(struct auth_client *auth)
 {
-	dnsbls_generic_cancel(auth, "*** Could not check DNS dnsbls");
+	dnsbls_generic_cancel(auth, "*** Could not check DNSBLs");
 }
 
 static void

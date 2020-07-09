@@ -3297,6 +3297,49 @@ static void unescape_8bit(void)
 	}
 }
 
+static struct MsgBuf *reconstruct_tail_prep(char *line, size_t n)
+{
+	static struct MsgBuf msgbuf;
+	msgbuf_init(&msgbuf);
+	msgbuf_parse(&msgbuf, line);
+	msgbuf_reconstruct_tail(&msgbuf, n);
+	return &msgbuf;
+}
+
+static void reconstruct_tail(void)
+{
+	struct MsgBuf *mb;
+	mb = reconstruct_tail_prep((char[]){"CMD P1"}, 2);
+	is_string("CMD", mb->para[0], MSG);
+	is_string("P1", mb->para[1], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1 P2"}, 2);
+	is_string("CMD", mb->para[0], MSG);
+	is_string("P1", mb->para[1], MSG);
+	is_string("P2", mb->para[2], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"   CMD P1 P2 :P3"}, 0);
+	is_string("CMD P1 P2 :P3", mb->para[0], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD  P1 P2 :P3"}, 1);
+	is_string(" P1 P2 :P3", mb->para[1], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1   P2"}, 1);
+	is_string("P1   P2", mb->para[1], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1  P2 "}, 2);
+	is_string(" P2 ", mb->para[2], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1    "}, 2);
+	is_string("   ", mb->para[2], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1 :"}, 2);
+	is_string(":", mb->para[2], MSG);
+
+	mb = reconstruct_tail_prep((char[]){"CMD P1  :"}, 2);
+	is_string(" :", mb->para[2], MSG);
+}
+
 int main(int argc, char *argv[])
 {
 	memset(&me, 0, sizeof(me));
@@ -3410,6 +3453,8 @@ int main(int argc, char *argv[])
 	unescape_bad_test6();
 
 	unescape_8bit();
+
+	reconstruct_tail();
 
 	return 0;
 }

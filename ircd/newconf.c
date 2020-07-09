@@ -2808,6 +2808,7 @@ static struct ConfEntry conf_general_table[] =
 	{ "hide_opers",		CF_YESNO, NULL, 0, &ConfigFileEntry.hide_opers		},
 	{ "certfp_method",	CF_STRING, conf_set_general_certfp_method, 0, NULL },
 	{ "drain_reason",	CF_QSTRING, NULL, BUFSIZE, &ConfigFileEntry.drain_reason	},
+	{ "tls_ciphers_oper_only",	CF_YESNO, NULL, 0, &ConfigFileEntry.tls_ciphers_oper_only	},
 	{ "\0", 		0, 	  NULL, 0, NULL }
 };
 
@@ -2836,6 +2837,7 @@ static struct ConfEntry conf_channel_table[] =
 	{ "autochanmodes",	CF_QSTRING, conf_set_channel_autochanmodes, 0, NULL	},
 	{ "displayed_usercount",	CF_INT, NULL, 0, &ConfigChannel.displayed_usercount	},
 	{ "strip_topic_colors",	CF_YESNO, NULL, 0, &ConfigChannel.strip_topic_colors	},
+	{ "opmod_send_statusmsg", CF_YESNO, NULL, 0, &ConfigChannel.opmod_send_statusmsg	},
 	{ "\0", 		0, 	  NULL, 0, NULL }
 };
 

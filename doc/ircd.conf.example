@@ -374,6 +374,7 @@ channel {
 	autochanmodes = "+nt";
 	displayed_usercount = 3;
 	strip_topic_colors = no;
+	opmod_send_statusmsg = no;
 };
 
 serverhide {
@@ -625,6 +626,7 @@ general {
 	away_interval = 30;
 	certfp_method = spki_sha256;
 	hide_opers_in_whois = no;
+	tls_ciphers_oper_only = no;
 };
 
 modules {

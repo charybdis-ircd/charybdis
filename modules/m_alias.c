@@ -114,7 +114,7 @@ m_alias(struct MsgBuf *msgbuf, struct Client *client_p, struct Client *source_p,
 {
 	struct Client *target_p;
 	struct alias_entry *aptr = rb_dictionary_retrieve(alias_dict, msgbuf->cmd);
-	char *p, *str;
+	char *p;
 
 	if(aptr == NULL)
 	{
@@ -151,8 +151,8 @@ m_alias(struct MsgBuf *msgbuf, struct Client *client_p, struct Client *source_p,
 		return;
 	}
 
-	str = reconstruct_parv(parc - 1, &parv[1]);
-	if(EmptyString(str))
+	msgbuf_reconstruct_tail(msgbuf, 1);
+	if(EmptyString(parv[1]))
 	{
 		sendto_one(client_p, form_str(ERR_NOTEXTTOSEND), me.name, target_p->name);
 		return;
@@ -161,5 +161,5 @@ m_alias(struct MsgBuf *msgbuf, struct Client *client_p, struct Client *source_p,
 	sendto_one(target_p, ":%s PRIVMSG %s :%s",
 			get_id(client_p, target_p),
 			p != NULL ? aptr->target : get_id(target_p, target_p),
-			str);
+			parv[1]);
 }
