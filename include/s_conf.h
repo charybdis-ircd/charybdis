@@ -318,12 +318,21 @@ struct alias_entry
 	int flags;			/* reserved for later use */
 };
 
+struct sts_info
+{
+	int enabled;
+	time_t duration;
+	int port;
+	int preload;
+};
+
 /* All variables are GLOBAL */
 extern struct config_file_entry ConfigFileEntry;	/* defined in ircd.c */
 extern struct config_channel_entry ConfigChannel;	/* defined in channel.c */
 extern struct config_server_hide ConfigServerHide;	/* defined in s_conf.c */
 extern struct server_info ServerInfo;	/* defined in ircd.c */
 extern struct admin_info AdminInfo;	/* defined in ircd.c */
+extern struct sts_info STSInfo;		/* defined in ircd.c */
 /* End GLOBAL section */
 
 extern rb_dlink_list service_list;
