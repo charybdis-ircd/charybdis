@@ -213,25 +213,25 @@ authd_check(struct Client *client_p, struct Client *source_p)
 
 	switch(source_p->preClient->auth.cause)
 	{
-	case 'B':	/* Blacklists */
+	case 'B':	/* DNSBL */
 		{
-			struct BlacklistStats *stats;
-			char *blacklist = source_p->preClient->auth.data;
+			struct DNSBLEntryStats *stats;
+			char *dnsbl_name = source_p->preClient->auth.data;
 
-			if(bl_stats != NULL)
-				if((stats = rb_dictionary_retrieve(bl_stats, blacklist)) != NULL)
+			if(dnsbl_stats != NULL)
+				if((stats = rb_dictionary_retrieve(dnsbl_stats, dnsbl_name)) != NULL)
 					stats->hits++;
 
 			if(IsExemptKline(source_p) || IsConfExemptDNSBL(aconf))
 			{
 				sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s, but you are exempt",
-						source_p->sockhost, blacklist);
+						source_p->sockhost, dnsbl_name);
 				break;
 			}
 
 			sendto_realops_snomask(SNO_REJ, L_NETWIDE,
 				"Listed on DNSBL %s: %s (%s@%s) [%s] [%s]",
-				blacklist, source_p->name, source_p->username, source_p->host,
+				dnsbl_name, source_p->name, source_p->username, source_p->host,
 				IsIPSpoof(source_p) ? "255.255.255.255" : source_p->sockhost,
 				source_p->info);
 
@@ -239,9 +239,9 @@ authd_check(struct Client *client_p, struct Client *source_p)
 				me.name, source_p->name, reason);
 
 			sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s",
-				source_p->sockhost, blacklist);
-			add_reject(source_p, NULL, NULL, NULL, "Banned (DNS blacklist)");
-			exit_client(client_p, source_p, &me, "Banned (DNS blacklist)");
+				source_p->sockhost, dnsbl_name);
+			add_reject(source_p, NULL, NULL, NULL, "Banned (listed in a DNSBL)");
+			exit_client(client_p, source_p, &me, "Banned (listed in a DNSBL)");
 			reject = true;
 		}
 		break;
@@ -927,7 +927,7 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 	if(IsConfExemptDNSBL(aconf))
 		/* kline exempt implies this, don't send both */
 		if(!IsConfExemptKline(aconf))
-			sendto_one_notice(source_p, ":*** You are exempt from DNS blacklists");
+			sendto_one_notice(source_p, ":*** You are exempt from DNSBL listings");
 
 	/* If this user is exempt from user limits set it F lined" */
 	if(IsConfExemptLimits(aconf))

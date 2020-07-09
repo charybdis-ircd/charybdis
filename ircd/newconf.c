@@ -55,10 +55,10 @@ static struct oper_conf *yy_oper = NULL;
 
 static struct alias_entry *yy_alias = NULL;
 
-static char *yy_blacklist_host = NULL;
-static char *yy_blacklist_reason = NULL;
-static uint8_t yy_blacklist_iptype = 0;
-static rb_dlink_list yy_blacklist_filters = { NULL, NULL, 0 };
+static char *yy_dnsbl_entry_host = NULL;
+static char *yy_dnsbl_entry_reason = NULL;
+static uint8_t yy_dnsbl_entry_iptype = 0;
+static rb_dlink_list yy_dnsbl_entry_filters = { NULL, NULL, 0 };
 
 static char *yy_opm_address_ipv4 = NULL;
 static char *yy_opm_address_ipv6 = NULL;
@@ -1903,57 +1903,64 @@ conf_set_channel_autochanmodes(void *data)
 }
 
 /* XXX for below */
-static void conf_set_blacklist_reason(void *data);
+static void conf_set_dnsbl_entry_reason(void *data);
 
 #define IPTYPE_IPV4 1
 #define IPTYPE_IPV6 2
 
-static void
-conf_set_blacklist_host(void *data)
+static int
+conf_warn_blacklist_deprecation(struct TopConf *tc)
 {
-	if (yy_blacklist_host)
-	{
-		conf_report_error("blacklist::host %s overlaps existing host %s",
-			(char *)data, yy_blacklist_host);
-
-		/* Cleanup */
-		conf_set_blacklist_reason(NULL);
-		return;
-	}
-
-	yy_blacklist_iptype |= IPTYPE_IPV4;
-	yy_blacklist_host = rb_strdup(data);
+	conf_report_error("blacklist{} blocks have been deprecated -- use dnsbl{} blocks instead.");
+	return 0;
 }
 
 static void
-conf_set_blacklist_type(void *data)
+conf_set_dnsbl_entry_host(void *data)
+{
+	if (yy_dnsbl_entry_host)
+	{
+		conf_report_error("dnsbl::host %s overlaps existing host %s",
+			(char *)data, yy_dnsbl_entry_host);
+
+		/* Cleanup */
+		conf_set_dnsbl_entry_reason(NULL);
+		return;
+	}
+
+	yy_dnsbl_entry_iptype |= IPTYPE_IPV4;
+	yy_dnsbl_entry_host = rb_strdup(data);
+}
+
+static void
+conf_set_dnsbl_entry_type(void *data)
 {
 	conf_parm_t *args = data;
 
 	/* Don't assume we have either if we got here */
-	yy_blacklist_iptype = 0;
+	yy_dnsbl_entry_iptype = 0;
 
 	for (; args; args = args->next)
 	{
 		if (!rb_strcasecmp(args->v.string, "ipv4"))
-			yy_blacklist_iptype |= IPTYPE_IPV4;
+			yy_dnsbl_entry_iptype |= IPTYPE_IPV4;
 		else if (!rb_strcasecmp(args->v.string, "ipv6"))
-			yy_blacklist_iptype |= IPTYPE_IPV6;
+			yy_dnsbl_entry_iptype |= IPTYPE_IPV6;
 		else
-			conf_report_error("blacklist::type has unknown address family %s",
+			conf_report_error("dnsbl::type has unknown address family %s",
 					  args->v.string);
 	}
 
 	/* If we have neither, just default to IPv4 */
-	if (!yy_blacklist_iptype)
+	if (!yy_dnsbl_entry_iptype)
 	{
-		conf_report_warning("blacklist::type has neither IPv4 nor IPv6 (defaulting to IPv4)");
-		yy_blacklist_iptype = IPTYPE_IPV4;
+		conf_report_warning("dnsbl::type has neither IPv4 nor IPv6 (defaulting to IPv4)");
+		yy_dnsbl_entry_iptype = IPTYPE_IPV4;
 	}
 }
 
 static void
-conf_set_blacklist_matches(void *data)
+conf_set_dnsbl_entry_matches(void *data)
 {
 	conf_parm_t *args = data;
 	enum filter_t { FILTER_NONE, FILTER_ALL, FILTER_LAST };
@@ -1966,19 +1973,19 @@ conf_set_blacklist_matches(void *data)
 
 		if (CF_TYPE(args->type) != CF_QSTRING)
 		{
-			conf_report_error("blacklist::matches -- must be quoted string");
+			conf_report_error("dnsbl::matches -- must be quoted string");
 			continue;
 		}
 
 		if (str == NULL)
 		{
-			conf_report_error("blacklist::matches -- invalid entry");
+			conf_report_error("dnsbl::matches -- invalid entry");
 			continue;
 		}
 
 		if (strlen(str) > HOSTIPLEN)
 		{
-			conf_report_error("blacklist::matches has an entry too long: %s",
+			conf_report_error("dnsbl::matches has an entry too long: %s",
 					str);
 			continue;
 		}
@@ -1990,7 +1997,7 @@ conf_set_blacklist_matches(void *data)
 				type = FILTER_ALL;
 			else if (!isdigit((unsigned char)*p))
 			{
-				conf_report_error("blacklist::matches has invalid IP match entry %s",
+				conf_report_error("dnsbl::matches has invalid IP match entry %s",
 						str);
 				type = FILTER_NONE;
 				break;
@@ -2003,7 +2010,7 @@ conf_set_blacklist_matches(void *data)
 			struct rb_sockaddr_storage tmp;
 			if (rb_inet_pton(AF_INET, str, &tmp) <= 0)
 			{
-				conf_report_error("blacklist::matches has invalid IP match entry %s",
+				conf_report_error("dnsbl::matches has invalid IP match entry %s",
 						str);
 				continue;
 			}
@@ -2013,7 +2020,7 @@ conf_set_blacklist_matches(void *data)
 			/* Verify it's the correct length */
 			if (strlen(str) > 3)
 			{
-				conf_report_error("blacklist::matches has invalid octet match entry %s",
+				conf_report_error("dnsbl::matches has invalid octet match entry %s",
 						str);
 				continue;
 			}
@@ -2023,61 +2030,61 @@ conf_set_blacklist_matches(void *data)
 			continue; /* Invalid entry */
 		}
 
-		rb_dlinkAddAlloc(rb_strdup(str), &yy_blacklist_filters);
+		rb_dlinkAddAlloc(rb_strdup(str), &yy_dnsbl_entry_filters);
 	}
 }
 
 static void
-conf_set_blacklist_reason(void *data)
+conf_set_dnsbl_entry_reason(void *data)
 {
 	rb_dlink_node *ptr, *nptr;
 
-	if (yy_blacklist_host && data)
+	if (yy_dnsbl_entry_host && data)
 	{
-		yy_blacklist_reason = rb_strdup(data);
-		if (yy_blacklist_iptype & IPTYPE_IPV6)
+		yy_dnsbl_entry_reason = rb_strdup(data);
+		if (yy_dnsbl_entry_iptype & IPTYPE_IPV6)
 		{
 			/* Make sure things fit (magic number 64 = alnum count + dots)
 			 * Example: 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
 			 */
-			if ((64 + strlen(yy_blacklist_host)) > IRCD_RES_HOSTLEN)
+			if ((64 + strlen(yy_dnsbl_entry_host)) > IRCD_RES_HOSTLEN)
 			{
-				conf_report_error("blacklist::host %s results in IPv6 queries that are too long",
-						  yy_blacklist_host);
+				conf_report_error("dnsbl::host %s results in IPv6 queries that are too long",
+						  yy_dnsbl_entry_host);
 				goto cleanup_bl;
 			}
 		}
 		/* Avoid doing redundant check, IPv6 is bigger than IPv4 --Elizabeth */
-		if ((yy_blacklist_iptype & IPTYPE_IPV4) && !(yy_blacklist_iptype & IPTYPE_IPV6))
+		if ((yy_dnsbl_entry_iptype & IPTYPE_IPV4) && !(yy_dnsbl_entry_iptype & IPTYPE_IPV6))
 		{
 			/* Make sure things fit for worst case (magic number 16 = number of nums + dots)
 			 * Example: 127.127.127.127.in-addr.arpa
 			 */
-			if ((16 + strlen(yy_blacklist_host)) > IRCD_RES_HOSTLEN)
+			if ((16 + strlen(yy_dnsbl_entry_host)) > IRCD_RES_HOSTLEN)
 			{
-				conf_report_error("blacklist::host %s results in IPv4 queries that are too long",
-						  yy_blacklist_host);
+				conf_report_error("dnsbl::host %s results in IPv4 queries that are too long",
+						  yy_dnsbl_entry_host);
 				goto cleanup_bl;
 			}
 		}
 
-		add_blacklist(yy_blacklist_host, yy_blacklist_reason, yy_blacklist_iptype, &yy_blacklist_filters);
+		add_dnsbl_entry(yy_dnsbl_entry_host, yy_dnsbl_entry_reason, yy_dnsbl_entry_iptype, &yy_dnsbl_entry_filters);
 	}
 
 cleanup_bl:
-	RB_DLINK_FOREACH_SAFE(ptr, nptr, yy_blacklist_filters.head)
+	RB_DLINK_FOREACH_SAFE(ptr, nptr, yy_dnsbl_entry_filters.head)
 	{
 		rb_free(ptr->data);
-		rb_dlinkDestroy(ptr, &yy_blacklist_filters);
+		rb_dlinkDestroy(ptr, &yy_dnsbl_entry_filters);
 	}
 
-	yy_blacklist_filters = (rb_dlink_list){ NULL, NULL, 0 };
+	yy_dnsbl_entry_filters = (rb_dlink_list){ NULL, NULL, 0 };
 
-	rb_free(yy_blacklist_host);
-	rb_free(yy_blacklist_reason);
-	yy_blacklist_host = NULL;
-	yy_blacklist_reason = NULL;
-	yy_blacklist_iptype = 0;
+	rb_free(yy_dnsbl_entry_host);
+	rb_free(yy_dnsbl_entry_reason);
+	yy_dnsbl_entry_host = NULL;
+	yy_dnsbl_entry_reason = NULL;
+	yy_dnsbl_entry_iptype = 0;
 }
 
 
@@ -2895,11 +2902,17 @@ newconf_init()
 	add_conf_item("alias", "name", CF_QSTRING, conf_set_alias_name);
 	add_conf_item("alias", "target", CF_QSTRING, conf_set_alias_target);
 
-	add_top_conf("blacklist", NULL, NULL, NULL);
-	add_conf_item("blacklist", "host", CF_QSTRING, conf_set_blacklist_host);
-	add_conf_item("blacklist", "type", CF_STRING | CF_FLIST, conf_set_blacklist_type);
-	add_conf_item("blacklist", "matches", CF_QSTRING | CF_FLIST, conf_set_blacklist_matches);
-	add_conf_item("blacklist", "reject_reason", CF_QSTRING, conf_set_blacklist_reason);
+	add_top_conf("dnsbl", NULL, NULL, NULL);
+	add_conf_item("dnsbl", "host", CF_QSTRING, conf_set_dnsbl_entry_host);
+	add_conf_item("dnsbl", "type", CF_STRING | CF_FLIST, conf_set_dnsbl_entry_type);
+	add_conf_item("dnsbl", "matches", CF_QSTRING | CF_FLIST, conf_set_dnsbl_entry_matches);
+	add_conf_item("dnsbl", "reject_reason", CF_QSTRING, conf_set_dnsbl_entry_reason);
+
+	add_top_conf("blacklist", conf_warn_blacklist_deprecation, NULL, NULL);
+	add_conf_item("blacklist", "host", CF_QSTRING, conf_set_dnsbl_entry_host);
+	add_conf_item("blacklist", "type", CF_STRING | CF_FLIST, conf_set_dnsbl_entry_type);
+	add_conf_item("blacklist", "matches", CF_QSTRING | CF_FLIST, conf_set_dnsbl_entry_matches);
+	add_conf_item("blacklist", "reject_reason", CF_QSTRING, conf_set_dnsbl_entry_reason);
 
 	add_top_conf("opm", conf_begin_opm, conf_end_opm, NULL);
 	add_conf_item("opm", "timeout", CF_INT, conf_set_opm_timeout);

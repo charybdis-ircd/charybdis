@@ -1568,7 +1568,7 @@ clear_out_old_conf(void)
 		alias_dict = NULL;
 	}
 
-	del_blacklist_all();
+	del_dnsbl_entry_all();
 
 	privilegeset_mark_all_illegal();
 
