@@ -95,7 +95,7 @@ ircx_prop_deinit(void)
 DECLARE_MODULE_AV2(ircx_prop, ircx_prop_init, ircx_prop_deinit, ircx_prop_clist, ircx_prop_hlist, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
 
 static void
-handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys, int alevel)
+handle_prop_list(const char *target, const void *target_ptr, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys, int alevel)
 {
 	rb_dlink_node *iter;
 
@@ -115,6 +115,7 @@ handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Clie
 		prop_activity.key = prop->name;
 		prop_activity.alevel = alevel;
 		prop_activity.approved = 1;
+		prop_activity.target_ptr = target_ptr;
 
 		call_hook(h_prop_show, &prop_activity);
 
@@ -129,7 +130,7 @@ handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Clie
 }
 
 static void
-handle_prop_upsert_or_delete(const char *target, rb_dlink_list *prop_list, struct Client *source_p, const char *prop, const char *value)
+handle_prop_upsert_or_delete(const char *target, const void *target_ptr, rb_dlink_list *prop_list, struct Client *source_p, const char *prop, const char *value)
 {
 	struct Property *property;
 
@@ -177,6 +178,7 @@ can_write_to_channel_property(struct Client *source_p, struct Channel *chptr, co
 	prop_activity.key = key;
 	prop_activity.alevel = alevel;
 	prop_activity.approved = alevel >= CHFL_CHANOP;
+	prop_activity.target_ptr = chptr;
 
 	call_hook(h_prop_chan_write, &prop_activity);
 
@@ -193,6 +195,7 @@ can_write_to_channel_property(struct Client *source_p, struct Channel *chptr, co
 static void
 m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
+	void *target_ptr;
 	rb_dlink_list *prop_list;
 	bool write_allowed = false;
 	int alevel = CHFL_PEON;
@@ -208,6 +211,7 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			return;
 		}
 
+		target_ptr = chan;
 		prop_list = &chan->prop_list;
 
 		if (msptr != NULL)
@@ -227,11 +231,11 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 	switch (parc)
 	{
 	case 2:
-		handle_prop_list(parv[1], prop_list, source_p, NULL, alevel);
+		handle_prop_list(parv[1], target_ptr, prop_list, source_p, NULL, alevel);
 		break;
 
 	case 3:
-		handle_prop_list(parv[1], prop_list, source_p, parv[2], alevel);
+		handle_prop_list(parv[1], target_ptr, prop_list, source_p, parv[2], alevel);
 		break;
 
 	case 4:
@@ -241,7 +245,7 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			return;
 		}
 
-		handle_prop_upsert_or_delete(parv[1], prop_list, source_p, parv[2], parv[3]);
+		handle_prop_upsert_or_delete(parv[1], target_ptr, prop_list, source_p, parv[2], parv[3]);
 		break;
 
 	default:

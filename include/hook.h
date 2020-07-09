@@ -106,6 +106,7 @@ typedef struct
 	const char *key;
 	const char *value;
 	int approved;
+	const void *target_ptr;
 } hook_data_prop_activity;
 
 typedef struct
