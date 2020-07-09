@@ -2850,6 +2850,15 @@ static struct ConfEntry conf_serverhide_table[] =
 	{ "links_delay",	CF_TIME,  conf_set_serverhide_links_delay, 0, NULL	},
 	{ "\0", 		0, 	  NULL, 0, NULL }
 };
+
+static struct ConfEntry conf_sts_table[] =
+{
+	{ "enabled",		CF_YESNO, NULL, 0, &STSInfo.enabled			},
+	{ "preload",		CF_YESNO, NULL, 0, &STSInfo.preload			},
+	{ "duration",		CF_TIME,  NULL, 0, &STSInfo.duration			},
+	{ "port",		CF_INT,   NULL, 0, &STSInfo.port			},
+	{ "\0",			0,        NULL, 0, NULL }
+};
 /* *INDENT-ON* */
 
 void
@@ -2925,4 +2934,6 @@ newconf_init()
 	add_conf_item("opm", "socks5_ports", CF_INT | CF_FLIST, conf_set_opm_scan_ports_socks5);
 	add_conf_item("opm", "httpconnect_ports", CF_INT | CF_FLIST, conf_set_opm_scan_ports_httpconnect);
 	add_conf_item("opm", "httpsconnect_ports", CF_INT | CF_FLIST, conf_set_opm_scan_ports_httpsconnect);
+
+	add_top_conf("sts", NULL, NULL, conf_sts_table);
 }
