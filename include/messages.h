@@ -262,6 +262,7 @@
 
 #define NUMERIC_STR_915      "%s %s :Missing access entry"
 #define NUMERIC_STR_916      "%s :Too many access entries"
+#define NUMERIC_STR_917      "%s :Too many properties"
 #define NUMERIC_STR_918      "%s :You cannot edit properties on this object"
 
 #endif

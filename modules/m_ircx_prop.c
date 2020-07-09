@@ -80,7 +80,19 @@ mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 	{ NULL, NULL }
 };
 
-DECLARE_MODULE_AV2(ircx_prop, NULL, NULL, ircx_prop_clist, ircx_prop_hlist, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
+static int
+ircx_prop_init(void)
+{
+	add_isupport("MAXPROP", isupport_intptr, &ConfigChannel.max_prop);
+}
+
+static void
+ircx_prop_deinit(void)
+{
+	delete_isupport("MAXPROP");
+}
+
+DECLARE_MODULE_AV2(ircx_prop, ircx_prop_init, ircx_prop_deinit, ircx_prop_clist, ircx_prop_hlist, ircx_prop_hfnlist, NULL, NULL, ircx_prop_desc);
 
 static void
 handle_prop_list(const char *target, const rb_dlink_list *prop_list, struct Client *source_p, const char *keys, int alevel)
@@ -128,6 +140,13 @@ handle_prop_upsert_or_delete(const char *target, rb_dlink_list *prop_list, struc
 	{
 		sendto_one(source_p, ":%s!%s@%s PROP %s %s :", source_p->name, source_p->username, source_p->host,
 			target, prop);
+		return;
+	}
+
+	/* enforce MAXPROP on upsert */
+	if (rb_dlink_list_length(prop_list) >= ConfigChannel.max_prop)
+	{
+		sendto_one_numeric(source_p, ERR_PROP_TOOMANY, form_str(ERR_PROP_TOOMANY), target);
 		return;
 	}
 
