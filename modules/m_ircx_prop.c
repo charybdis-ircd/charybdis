@@ -64,10 +64,12 @@ mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
 static int h_prop_show;
 static int h_prop_chan_write;
+static int h_prop_change;
 
 mapi_hlist_av1 ircx_prop_hlist[] = {
 	{ "prop_show", &h_prop_show },
 	{ "prop_chan_write", &h_prop_chan_write },
+	{ "prop_change", &h_prop_change },
 	{ NULL, NULL }
 };
 
@@ -133,6 +135,7 @@ static void
 handle_prop_upsert_or_delete(const char *target, const void *target_ptr, rb_dlink_list *prop_list, struct Client *source_p, const char *prop, const char *value)
 {
 	struct Property *property;
+	hook_data_prop_activity prop_activity;
 
 	propertyset_delete(prop_list, prop);
 
@@ -141,7 +144,7 @@ handle_prop_upsert_or_delete(const char *target, const void *target_ptr, rb_dlin
 	{
 		sendto_one(source_p, ":%s!%s@%s PROP %s %s :", source_p->name, source_p->username, source_p->host,
 			target, prop);
-		return;
+		goto broadcast;
 	}
 
 	/* enforce MAXPROP on upsert */
@@ -161,10 +164,26 @@ handle_prop_upsert_or_delete(const char *target, const void *target_ptr, rb_dlin
 
 	// don't redistribute updates for local channels
 	if (IsChanPrefix(*target) && *target == '&')
-		return;
+		goto broadcast;
 
 	sendto_server(source_p, NULL, CAP_TS6, NOCAPS,
 			":%s PROP %s %s :%s", use_id(source_p), target, property->name, property->value);
+
+	prop = property->name;
+	value = property->value;
+
+	// broadcast the property change to local members
+broadcast:
+	prop_activity.client = source_p;
+	prop_activity.target = target;
+	prop_activity.prop_list = prop_list;
+	prop_activity.key = prop;
+	prop_activity.value = value;
+	prop_activity.alevel = CHFL_ADMIN;
+	prop_activity.approved = 1;
+	prop_activity.target_ptr = target_ptr;
+
+	call_hook(h_prop_change, &prop_activity);
 }
 
 static bool
@@ -297,6 +316,8 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	time_t creation_ts = atol(parv[2]);
 	time_t update_ts = atol(parv[3]);
 	struct Channel *chptr = NULL;
+	void *target_ptr = NULL;
+	hook_data_prop_activity prop_activity;
 
 	if (IsChanPrefix(*parv[1]))
 	{
@@ -309,6 +330,7 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 			return;
 
 		prop_list = &chptr->prop_list;
+		target_ptr = chptr;
 	}
 
 	/* couldn't figure out what to mutate, bail */
@@ -323,5 +345,15 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		":%s TPROP %s %ld %ld %s :%s",
 		use_id(&me), parv[1], creation_ts, prop->set_at, prop->name, prop->value);
 
-	// XXX: prop-notify???
+	// broadcast the property change to local members
+	prop_activity.client = &me;
+	prop_activity.target = parv[1];
+	prop_activity.prop_list = prop_list;
+	prop_activity.key = prop->name;
+	prop_activity.value = prop->value;
+	prop_activity.alevel = CHFL_ADMIN;
+	prop_activity.approved = 1;
+	prop_activity.target_ptr = target_ptr;
+
+	call_hook(h_prop_change, &prop_activity);
 }
