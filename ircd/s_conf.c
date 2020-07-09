@@ -841,6 +841,11 @@ set_default_conf(void)
 
 	if (!alias_dict)
 		alias_dict = rb_dictionary_create("alias", rb_strcasecmp);
+
+	STSInfo.enabled = 0;
+	STSInfo.port = 6697;
+	STSInfo.duration = 3600;
+	STSInfo.preload = 0;
 }
 
 /*
