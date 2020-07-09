@@ -41,7 +41,6 @@
 #include "send.h"
 #include "supported.h"
 #include "hash.h"
-#include "propertyset.h"
 
 static const char cap_sts_desc[] =
 	"Provides the sts client capability";
