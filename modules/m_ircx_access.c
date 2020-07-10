@@ -418,6 +418,10 @@ handle_access_sync(struct Channel *chptr, struct Client *source_p)
 
 		apply_access_entries(chptr, msptr->client_p);
 	}
+
+	sendto_server(source_p, chptr, CAP_TS6, NOCAPS,
+		":%s ACCESS %s SYNC",
+		use_id(source_p), chptr->chname);
 }
 
 static void
