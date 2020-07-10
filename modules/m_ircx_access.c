@@ -160,7 +160,7 @@ ae_level_from_name(const char *level_name)
  *
  * parv[0] = source
  * parv[1] = object name
- * parv[2] = ADD|CLEAR|DEL[ETE]|LIST (default LIST)
+ * parv[2] = ADD|CLEAR|DEL[ETE]|LIST|SYNC (default LIST)
  * parv[3] = level (ADMIN|OP|VOICE) (optional for CLEAR and LIST)
  * parv[4] = mask (not used for CLEAR and LIST)
  *
@@ -377,6 +377,50 @@ handle_access_upsert(struct Channel *chptr, struct Client *source_p, const char 
 }
 
 static void
+apply_access_entries(struct Channel *chptr, struct Client *client_p)
+{
+	struct AccessEntry *ae = channel_access_match(chptr, client_p);
+	if (ae == NULL)
+		return;
+
+	char mode_char = ae_level_char(ae->flags);
+	if (!mode_char)
+		return;
+
+	struct membership *msptr = find_channel_membership(chptr, client_p);
+	s_assert(msptr != NULL);
+
+	sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +%c %s",
+			me.name, chptr->chname, mode_char, client_p->name);
+	sendto_server(NULL, chptr, CAP_TS6, NOCAPS,
+			":%s TMODE %ld %s +%c %s",
+			me.id, (long) chptr->channelts, chptr->chname,
+			mode_char, client_p->id);
+	msptr->flags |= ae->flags;
+}
+
+static void
+handle_access_sync(struct Channel *chptr, struct Client *source_p)
+{
+	const struct membership *source_msptr = find_channel_membership(chptr, source_p);
+	const rb_dlink_node *iter;
+
+	if (source_msptr == NULL || !is_admin(source_msptr))
+	{
+		sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
+			me.name, source_p->name, chptr->chname);
+		return;
+	}
+
+	RB_DLINK_FOREACH(iter, chptr->members.head)
+	{
+		const struct membership *msptr = iter->data;
+
+		apply_access_entries(chptr, msptr->client_p);
+	}
+}
+
+static void
 m_access(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct Channel *chptr = find_channel(parv[1]);
@@ -394,6 +438,8 @@ m_access(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		handle_access_delete(chptr, source_p, parv[4]);
 	else if (!rb_strcasecmp(parv[2], "CLEAR"))
 		handle_access_clear(chptr, source_p, parv[3]);
+	else if (!rb_strcasecmp(parv[2], "SYNC"))
+		handle_access_sync(chptr, source_p);
 }
 
 /*
@@ -440,24 +486,7 @@ h_access_channel_join(void *vdata)
 	struct Channel *chptr = data->chptr;
 	struct Client *client_p = data->client;
 
-	struct AccessEntry *ae = channel_access_match(chptr, client_p);
-	if (ae == NULL)
-		return;
-
-	char mode_char = ae_level_char(ae->flags);
-	if (!mode_char)
-		return;
-
-	struct membership *msptr = find_channel_membership(chptr, client_p);
-	s_assert(msptr != NULL);
-
-	sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +%c %s",
-			me.name, chptr->chname, mode_char, client_p->name);
-	sendto_server(NULL, chptr, CAP_TS6, NOCAPS,
-			":%s TMODE %ld %s +%c %s",
-			me.id, (long) chptr->channelts, chptr->chname,
-			mode_char, client_p->id);
-	msptr->flags |= ae->flags;
+	apply_access_entries(chptr, client_p);
 }
 
 /* burst hook */
