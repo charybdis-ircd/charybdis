@@ -45,7 +45,6 @@
 static const char cap_sts_desc[] =
 	"Provides the sts client capability";
 
-static void cap_sts_change(hook_data_prop_activity *);
 unsigned int CLICAP_STS = 0;
 
 static bool
