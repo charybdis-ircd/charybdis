@@ -180,7 +180,7 @@ add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_
 		{
 			sendto_one_numeric(source_p, ERR_OWNMODE,
 					form_str(ERR_OWNMODE),
-					target_p->name, "+g");
+					target_p->name, IsSetStrictCallerID(target_p) ? "+g" : "+G");
 			return false;
 		}
 	}
