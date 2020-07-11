@@ -42,6 +42,9 @@ mapi_hfn_list_av1 umode_noctcp_hfnlist[] = {
 
 static void
 umode_noctcp_process(hook_data_privmsg_user *data) {
+	if (!MyClient(data->target_p))
+		return;
+
 	if (data->approved || data->msgtype == MESSAGE_TYPE_NOTICE) {
 		return;
 	}
