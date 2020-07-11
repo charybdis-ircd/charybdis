@@ -209,7 +209,7 @@ h_hdl_invite(void *vdata)
 		return;
 
 	snprintf(errorbuf, sizeof errorbuf, form_str(ERR_TARGUMODEG),
-		 target_p->name);
+		 target_p->name, IsSetStrictCallerID(target_p) ? "+g" : "+G");
 
 	data->approved = ERR_TARGUMODEG;
 	data->error = errorbuf;
