@@ -44,5 +44,6 @@ extern const char *isupport_intptr(const void *);
 extern const char *isupport_boolean(const void *);
 extern const char *isupport_string(const void *);
 extern const char *isupport_stringptr(const void *);
+extern const char *isupport_umode(const void *);
 
 #endif /* INCLUDED_supported_h */

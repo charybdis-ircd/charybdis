@@ -223,7 +223,7 @@ isupport_stringptr(const void *ptr)
 	return *(char * const *)ptr;
 }
 
-static const char *
+const char *
 isupport_umode(const void *ptr)
 {
 	const char *str;
@@ -318,7 +318,6 @@ init_isupport(void)
 	add_isupport("MODES", isupport_intptr, &maxmodes);
 	add_isupport("NETWORK", isupport_stringptr, &ServerInfo.network_name);
 	add_isupport("STATUSMSG", isupport_string, "@+");
-	add_isupport("CALLERID", isupport_umode, "g");
 	add_isupport("CASEMAPPING", isupport_string, "rfc1459");
 	add_isupport("NICKLEN", isupport_nicklen, NULL);
 	add_isupport("MAXNICKLEN", isupport_intptr, &maxnicklen);
