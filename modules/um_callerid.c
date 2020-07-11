@@ -80,8 +80,9 @@ um_callerid_moddeinit(void)
 	delete_isupport("CALLERID");
 }
 
-#define IsSetCallerID(c)	((c->umodes & user_modes['g']) == user_modes['g'])
+#define IsSetStrictCallerID(c)	((c->umodes & user_modes['g']) == user_modes['g'])
 #define IsSetRelaxedCallerID(c)	((c->umodes & user_modes['G']) == user_modes['G'])
+#define IsSetAnyCallerID(c)	(IsSetStrictCallerID(c) || IsSetRelaxedCallerID(c))
 
 static const char um_callerid_desc[] =
 	"Provides usermodes +g and +G which restrict messages from unauthorized users.";
@@ -107,10 +108,10 @@ allow_message(struct Client *source_p, struct Client *target_p)
 	if (!MyClient(target_p))
 		return true;
 
-	if (!IsSetCallerID(target_p))
+	if (!IsSetAnyCallerID(target_p))
 		return true;
 
-	if (IsSetRelaxedCallerID(target_p) && has_common_channel(source_p, target_p))
+	if (IsSetRelaxedCallerID(target_p) && has_common_channel(source_p, target_p) && !IsSetStrictCallerID(target_p))
 		return true;
 
 	if (IsServer(source_p))
@@ -136,7 +137,7 @@ send_callerid_notice(enum message_type msgtype, struct Client *source_p, struct 
 		return;
 
 	sendto_one_numeric(source_p, ERR_TARGUMODEG, form_str(ERR_TARGUMODEG),
-		target_p->name);
+		target_p->name, IsSetStrictCallerID(target_p) ? "+g" : "+G");
 
 	if ((target_p->localClient->last_caller_id_time + ConfigFileEntry.caller_id_wait) < rb_current_time())
 	{
@@ -145,7 +146,7 @@ send_callerid_notice(enum message_type msgtype, struct Client *source_p, struct 
 
 		sendto_one(target_p, form_str(RPL_UMODEGMSG),
 			   me.name, target_p->name, source_p->name,
-			   source_p->username, source_p->host);
+			   source_p->username, source_p->host, IsSetStrictCallerID(target_p) ? "+g" : "+G");
 
 		target_p->localClient->last_caller_id_time = rb_current_time();
 	}
@@ -165,7 +166,7 @@ add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_
 	 * as a way of griefing.  --nenolod
 	 */
 	if(msgtype != MESSAGE_TYPE_NOTICE &&
-		IsSetCallerID(source_p) &&
+		IsSetAnyCallerID(source_p) &&
 		!accept_message(target_p, source_p) &&
 		!IsOper(target_p))
 	{
