@@ -109,13 +109,17 @@ static struct ClientCapability capdata_sasl = {
 	.flags = CLICAP_FLAGS_STICKY,
 };
 
+mapi_cap_list_av2 sasl_cap_list[] = {
+	{ MAPI_CAP_CLIENT, "sasl", &capdata_sasl, &CLICAP_SASL },
+	{ 0, NULL, NULL, NULL },
+};
+
 static int
 _modinit(void)
 {
 	memset(mechlist_buf, 0, sizeof mechlist_buf);
 	sasl_agent_present = false;
 
-	CLICAP_SASL = capability_put(cli_capindex, "sasl", &capdata_sasl);
 	advertise_sasl_config(NULL);
 	return 0;
 }
@@ -124,10 +128,9 @@ static void
 _moddeinit(void)
 {
 	advertise_sasl_cap(false);
-	capability_orphan(cli_capindex, "sasl");
 }
 
-DECLARE_MODULE_AV2(sasl, _modinit, _moddeinit, sasl_clist, NULL, sasl_hfnlist, NULL, NULL, sasl_desc);
+DECLARE_MODULE_AV2(sasl, _modinit, _moddeinit, sasl_clist, NULL, sasl_hfnlist, sasl_cap_list, NULL, sasl_desc);
 
 static void
 m_authenticate(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
