@@ -106,8 +106,13 @@ static void show_privs(struct Client *source_p, struct Client *target_p)
 	buf[0] = '\0';
 
 	if (target_p->user->privset)
-		for (const char *s = strtok(target_p->user->privset->privs, " "); s != NULL; s = strtok(NULL, " "))
+		for (char *s = target_p->user->privset->privs; s != NULL; (s = strchr(s, ' ')) && s++)
+		{
+			char *c = strchr(s, ' ');
+			if (c) *c = '\0';
 			append_priv(source_p, target_p, buf, s, "");
+			if (c) *c = ' ';
+		}
 
 	if (IsOper(target_p))
 	{
