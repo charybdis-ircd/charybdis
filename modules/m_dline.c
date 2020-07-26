@@ -99,14 +99,14 @@ mo_dline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	/* would break the protocol */
 	if (*dlhost == ':')
 	{
-		sendto_one_notice(source_p, ":Invalid D-Line");
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - IP cannot start with :", dlhost);
 		return;
 	}
 
 	int ty = parse_netmask_strict(dlhost, NULL, NULL);
 	if (ty != HM_IPV4 && ty != HM_IPV6)
 	{
-		sendto_one_notice(source_p, ":Invalid D-Line");
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - doesn't look like IP[/cidr]", dlhost);
 		return;
 	}
 
@@ -366,7 +366,7 @@ apply_undline(struct Client *source_p, const char *cidr)
 
 	if(masktype != HM_IPV4 && masktype != HM_IPV6)
 	{
-		sendto_one_notice(source_p, ":Invalid D-Line");
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - doesn't look like IP[/cidr]", cidr);
 		return;
 	}
 
