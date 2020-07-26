@@ -103,6 +103,13 @@ mo_dline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		return;
 	}
 
+	int ty = parse_netmask_strict(dlhost, NULL, NULL);
+	if (ty != HM_IPV4 && ty != HM_IPV6)
+	{
+		sendto_one_notice(source_p, ":Invalid D-Line");
+		return;
+	}
+
 	if(parc >= loc + 2 && !irccmp(parv[loc], "ON"))
 	{
 		if(!IsOperRemoteBan(source_p))
