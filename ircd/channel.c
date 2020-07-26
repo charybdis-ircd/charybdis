@@ -888,42 +888,6 @@ flood_attack_channel(int p_or_n, struct Client *source_p, struct Channel *chptr,
 	return false;
 }
 
-/* find_bannickchange_channel()
- * Input: client to check
- * Output: channel preventing nick change
- */
-struct Channel *
-find_bannickchange_channel(struct Client *client_p)
-{
-	struct Channel *chptr;
-	struct membership *msptr;
-	rb_dlink_node *ptr;
-	struct matchset ms;
-
-	if (!MyClient(client_p))
-		return NULL;
-
-	matchset_for_client(client_p, &ms);
-
-	RB_DLINK_FOREACH(ptr, client_p->user->channel.head)
-	{
-		msptr = ptr->data;
-		chptr = msptr->chptr;
-		if (is_chanop_voiced(msptr))
-			continue;
-		/* cached can_send */
-		if (msptr->bants == chptr->bants)
-		{
-			if (can_send_banned(msptr))
-				return chptr;
-		}
-		else if (is_banned(chptr, client_p, msptr, &ms, NULL) == CHFL_BAN
-			|| is_quieted(chptr, client_p, msptr, &ms) == CHFL_BAN)
-			return chptr;
-	}
-	return NULL;
-}
-
 /* void check_spambot_warning(struct Client *source_p)
  * Input: Client to check, channel name or NULL if this is a part.
  * Output: none

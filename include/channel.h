@@ -242,8 +242,6 @@ extern void del_invite(struct Channel *chptr, struct Client *who);
 
 const char *channel_modes(struct Channel *chptr, struct Client *who);
 
-extern struct Channel *find_bannickchange_channel(struct Client *client_p);
-
 extern void check_spambot_warning(struct Client *source_p, const char *name);
 
 extern void check_splitmode(void *);
