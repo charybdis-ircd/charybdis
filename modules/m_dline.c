@@ -362,7 +362,7 @@ apply_undline(struct Client *source_p, const char *cidr)
 	char buf[BUFSIZE];
 	struct ConfItem *aconf;
 
-	int masktype = parse_netmask_strict(cidr, NULL, NULL);
+	int masktype = parse_netmask(cidr, NULL, NULL);
 
 	if(masktype != HM_IPV4 && masktype != HM_IPV6)
 	{
