@@ -150,10 +150,8 @@ static int do_grant(struct Client *source_p, struct Client *target_p, const char
 
 	if (dooper)
 	{
-		struct oper_conf oper;
+		struct oper_conf oper = {0};
 		oper.name = "<grant>";
-		oper.umodes = 0;
-		oper.snomask = 0;
 		oper.privset = privset;
 
 		oper_up(target_p, &oper);
