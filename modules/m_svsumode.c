@@ -96,9 +96,9 @@ me_svsumode(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 
 		default:
 			if (add)
-				target_p->umodes |= user_modes[*p];
+				target_p->umodes |= user_modes[(unsigned int) *p];
 			else
-				target_p->umodes &= ~user_modes[*p];
+				target_p->umodes &= ~user_modes[(unsigned int) *p];
 
 			break;
 		}
