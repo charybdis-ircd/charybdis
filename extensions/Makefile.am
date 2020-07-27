@@ -35,6 +35,7 @@ extension_LTLIBRARIES =		\
   force_user_invis.la		\
   helpops.la			\
   hurt.la			\
+  identify_msg.la		\
   invite_notify.la		\
   ip_cloaking.la		\
   ip_cloaking_old.la		\
