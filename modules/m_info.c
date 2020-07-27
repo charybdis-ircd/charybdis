@@ -209,7 +209,7 @@ static struct InfoStruct info_table[] = {
 		"dots_in_ident",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.dots_in_ident,
-		"Number of permissable dots in an ident"
+		"Number of permissible dots in an ident"
 	},
 	{
 		"failed_oper_notice",
@@ -318,7 +318,7 @@ static struct InfoStruct info_table[] = {
 		"max_nick_changes",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.max_nick_changes,
-		"NICK change threshhold setting"
+		"NICK change threshold setting"
 	},
 	{
 		"max_nick_time",
