@@ -73,7 +73,7 @@ DECLARE_MODULE_AV2(stats, NULL, NULL, stats_clist, stats_hlist, NULL, NULL, NULL
 const char *Lformat = "%s %u %u %u %u %u :%u %u %s";
 
 static void stats_l_list(struct Client *s, const char *, bool, bool, rb_dlink_list *, char,
-				bool (*check_fn)(struct Client *target_p));
+				bool (*check_fn)(struct Client *source_p, struct Client *target_p));
 static void stats_l_client(struct Client *source_p, struct Client *target_p,
 				char statchar);
 
@@ -1582,9 +1582,9 @@ stats_servlinks (struct Client *source_p)
 }
 
 static inline bool
-stats_l_should_show_oper(struct Client *target_p)
+stats_l_should_show_oper(struct Client *source_p, struct Client *target_p)
 {
-	return (!IsOperInvis(target_p));
+	return SeesOper(target_p, source_p);
 }
 
 static void
@@ -1676,7 +1676,7 @@ stats_ltrace(struct Client *source_p, int parc, const char *parv[])
 
 static void
 stats_l_list(struct Client *source_p, const char *name, bool doall, bool wilds,
-	     rb_dlink_list * list, char statchar, bool (*check_fn)(struct Client *target_p))
+	     rb_dlink_list * list, char statchar, bool (*check_fn)(struct Client *source_p, struct Client *target_p))
 {
 	rb_dlink_node *ptr;
 	struct Client *target_p;
@@ -1692,7 +1692,7 @@ stats_l_list(struct Client *source_p, const char *name, bool doall, bool wilds,
 		if(!doall && wilds && !match(name, target_p->name))
 			continue;
 
-		if (check_fn == NULL || check_fn(target_p))
+		if (check_fn == NULL || check_fn(source_p, target_p))
 			stats_l_client(source_p, target_p, statchar);
 	}
 }
