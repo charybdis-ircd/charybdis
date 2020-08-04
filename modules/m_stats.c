@@ -246,9 +246,6 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	if(cmd->handler != NULL)
 	{
 		/* The stats table says what privs are needed, so check --fl_ */
-		/* Called for remote clients and for local opers, so check need_admin
-		 * and need_oper
-		 */
 		const char *missing_priv = NULL;
 		if(cmd->need_admin && !IsOperAdmin(source_p))
 			missing_priv = "admin";
