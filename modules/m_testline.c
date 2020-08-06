@@ -75,6 +75,13 @@ mo_testline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *sou
 	char *puser, *phost, *reason, *operreason;
 	char reasonbuf[BUFSIZE];
 
+	if (!HasPrivilege(source_p, "oper:testline"))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "testline");
+		return;
+	}
+
 	mask = LOCAL_COPY(parv[1]);
 
 	if (IsChannelName(mask))
@@ -230,6 +237,13 @@ static void
 mo_testgecos(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
 	struct ConfItem *aconf;
+
+	if (!HasPrivilege(source_p, "oper:testline"))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "testline");
+		return;
+	}
 
 	if(!(aconf = find_xline(parv[1], 0)))
 	{

@@ -112,7 +112,7 @@ m_topic(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		}
 
 		if(MyClient(source_p) && !is_chanop_voiced(msptr) &&
-				!IsOper(source_p) &&
+				!IsOperGeneral(source_p) &&
 				!add_channel_target(source_p, chptr))
 		{
 			sendto_one(source_p, form_str(ERR_TARGCHANGE),

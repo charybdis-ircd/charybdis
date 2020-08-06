@@ -1381,7 +1381,7 @@ get_printable_kline(struct Client *source_p, struct ConfItem *aconf,
 	*user = EmptyString(aconf->user) ? null : aconf->user;
 	*reason = get_user_ban_reason(aconf);
 
-	if(!IsOper(source_p))
+	if(!IsOperGeneral(source_p))
 		*oper_reason = NULL;
 	else
 	{

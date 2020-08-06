@@ -192,7 +192,7 @@ m_who(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
 
 		if(chptr != NULL)
 		{
-			if (!IsOper(source_p) && !ratelimit_client_who(source_p, rb_dlink_list_length(&chptr->members)/50))
+			if (!IsOperGeneral(source_p) && !ratelimit_client_who(source_p, rb_dlink_list_length(&chptr->members)/50))
 			{
 				sendto_one(source_p, form_str(RPL_LOAD2HI),
 						me.name, source_p->name, "WHO");
@@ -254,7 +254,7 @@ m_who(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
 		flood_endgrace(source_p);
 
 	/* it has to be a global who at this point, limit it */
-	if(!IsOper(source_p))
+	if(!IsOperGeneral(source_p))
 	{
 		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time() || !ratelimit_client(source_p, 1))
 		{
@@ -324,7 +324,7 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
 			if((mask == NULL) ||
 					match(mask, target_p->name) || match(mask, target_p->username) ||
 					match(mask, target_p->host) || match(mask, target_p->servptr->name) ||
-					(IsOper(source_p) && match(mask, target_p->orighost)) ||
+					(IsOperGeneral(source_p) && match(mask, target_p->orighost)) ||
 					match(mask, target_p->info))
 			{
 				do_who(source_p, target_p, NULL, fmt);
@@ -395,7 +395,7 @@ who_global(struct Client *source_p, const char *mask, int server_oper, int opers
 			if(!mask ||
 					match(mask, target_p->name) || match(mask, target_p->username) ||
 					match(mask, target_p->host) || match(mask, target_p->servptr->name) ||
-					(IsOper(source_p) && match(mask, target_p->orighost)) ||
+					(IsOperGeneral(source_p) && match(mask, target_p->orighost)) ||
 					match(mask, target_p->info))
 			{
 				do_who(source_p, target_p, NULL, fmt);
@@ -495,7 +495,7 @@ do_who(struct Client *source_p, struct Client *target_p, struct membership *mspt
 			   source_p->name, msptr ? msptr->chptr->chname : "*",
 			   target_p->username, target_p->host,
 			   target_p->servptr->name, target_p->name, status,
-			   ConfigServerHide.flatten_links && !IsOper(source_p) && !IsExemptShide(source_p) ? 0 : target_p->hopcount,
+			   ConfigServerHide.flatten_links && !IsOperGeneral(source_p) && !IsExemptShide(source_p) ? 0 : target_p->hopcount,
 			   target_p->info);
 	else
 	{
@@ -525,7 +525,7 @@ do_who(struct Client *source_p, struct Client *target_p, struct membership *mspt
 		if (fmt->fields & FIELD_FLAGS)
 			append_format(str, sizeof str, &pos, " %s", status);
 		if (fmt->fields & FIELD_HOP)
-			append_format(str, sizeof str, &pos, " %d", ConfigServerHide.flatten_links && !IsOper(source_p) && !IsExemptShide(source_p) ? 0 : target_p->hopcount);
+			append_format(str, sizeof str, &pos, " %d", ConfigServerHide.flatten_links && !IsOperGeneral(source_p) && !IsExemptShide(source_p) ? 0 : target_p->hopcount);
 		if (fmt->fields & FIELD_IDLE)
 			append_format(str, sizeof str, &pos, " %d", (int)(MyClient(target_p) ? rb_current_time() - target_p->localClient->last : 0));
 		if (fmt->fields & FIELD_ACCOUNT)

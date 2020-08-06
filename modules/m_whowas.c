@@ -37,6 +37,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
+#include "s_newconf.h"
 
 static const char whowas_desc[] =
 	"Provides the WHOWAS command to display information on a disconnected user";
@@ -70,7 +71,7 @@ m_whowas(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	static time_t last_used = 0L;
 
-	if(MyClient(source_p) && !IsOper(source_p))
+	if(MyClient(source_p) && !IsOperGeneral(source_p))
 	{
 		if(last_used + (parc > 3 ? ConfigFileEntry.pace_wait :
 						ConfigFileEntry.pace_wait_simple

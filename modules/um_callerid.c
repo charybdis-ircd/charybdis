@@ -118,7 +118,7 @@ allow_message(struct Client *source_p, struct Client *target_p)
 		return true;
 
 	/* XXX: controversial?  allow opers to send through +g */
-	if (IsOper(source_p))
+	if (IsOperGeneral(source_p))
 		return true;
 
 	if (accept_message(source_p, target_p))
@@ -168,7 +168,7 @@ add_callerid_accept_for_source(enum message_type msgtype, struct Client *source_
 	if(msgtype != MESSAGE_TYPE_NOTICE &&
 		IsSetAnyCallerID(source_p) &&
 		!accept_message(target_p, source_p) &&
-		!IsOper(target_p))
+		!IsOperGeneral(target_p))
 	{
 		if(rb_dlink_list_length(&source_p->localClient->allow_list) <
 				(unsigned long)ConfigFileEntry.max_accept)
