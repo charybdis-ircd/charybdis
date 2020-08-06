@@ -99,7 +99,14 @@ mo_dline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	/* would break the protocol */
 	if (*dlhost == ':')
 	{
-		sendto_one_notice(source_p, ":Invalid D-Line");
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - IP cannot start with :", dlhost);
+		return;
+	}
+
+	int ty = parse_netmask_strict(dlhost, NULL, NULL);
+	if (ty != HM_IPV4 && ty != HM_IPV6)
+	{
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - doesn't look like IP[/cidr]", dlhost);
 		return;
 	}
 
@@ -216,8 +223,8 @@ apply_dline(struct Client *source_p, const char *dlhost, int tdline_time, char *
 	int t = AF_INET, ty, b;
 	const char *creason;
 
-	ty = parse_netmask(dlhost, &daddr, &b);
-	if(ty == HM_HOST)
+	ty = parse_netmask_strict(dlhost, &daddr, &b);
+	if(ty != HM_IPV4 && ty != HM_IPV6)
 	{
 		sendto_one(source_p, ":%s NOTICE %s :Invalid D-Line", me.name, source_p->name);
 		return;
@@ -252,8 +259,9 @@ apply_dline(struct Client *source_p, const char *dlhost, int tdline_time, char *
 		if((aconf = find_dline((struct sockaddr *) &daddr, t)) != NULL)
 		{
 			int bx;
-			parse_netmask(aconf->host, NULL, &bx);
-			if(b >= bx)
+			int masktype = parse_netmask_strict(aconf->host, NULL, &bx);
+
+			if (masktype != HM_ERROR && b >= bx)
 			{
 				creason = aconf->passwd ? aconf->passwd : "<No Reason>";
 				if(IsConfExemptKline(aconf))
@@ -354,9 +362,11 @@ apply_undline(struct Client *source_p, const char *cidr)
 	char buf[BUFSIZE];
 	struct ConfItem *aconf;
 
-	if(parse_netmask(cidr, NULL, NULL) == HM_HOST)
+	int masktype = parse_netmask(cidr, NULL, NULL);
+
+	if(masktype != HM_IPV4 && masktype != HM_IPV6)
 	{
-		sendto_one_notice(source_p, ":Invalid D-Line");
+		sendto_one_notice(source_p, ":Invalid D-Line [%s] - doesn't look like IP[/cidr]", cidr);
 		return;
 	}
 

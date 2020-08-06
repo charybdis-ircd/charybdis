@@ -1,6 +1,7 @@
 check_PROGRAMS = runtests \
 	msgbuf_parse1 \
 	msgbuf_unparse1 \
+	hostmask1 \
 	rb_dictionary1 \
 	rb_snprintf_append1 \
 	rb_snprintf_try_append1 \
@@ -24,6 +25,7 @@ tap_libtap_a_SOURCES = tap/basic.c tap/basic.h \
 
 msgbuf_parse1_SOURCES = msgbuf_parse1.c
 msgbuf_unparse1_SOURCES = msgbuf_unparse1.c
+hostmask1_SOURCES = hostmask1.c
 rb_dictionary1_SOURCES = rb_dictionary1.c
 rb_snprintf_append1_SOURCES = rb_snprintf_append1.c
 rb_snprintf_try_append1_SOURCES = rb_snprintf_try_append1.c
