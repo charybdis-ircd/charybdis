@@ -80,6 +80,8 @@ struct User
 	struct PrivilegeSet *privset;
 
 	char suser[NICKLEN+1];
+
+	rb_dlink_list prop_list;	/* user property list */
 };
 
 struct Server

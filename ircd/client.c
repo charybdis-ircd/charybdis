@@ -53,6 +53,7 @@
 #include "sslproc.h"
 #include "wsproc.h"
 #include "s_assert.h"
+#include "propertyset.h"
 
 #define DEBUG_EXITED_CLIENTS
 
@@ -1934,6 +1935,9 @@ free_user(struct User *user, struct Client *client_p)
 		rb_free(user->opername);
 		if (user->privset)
 			privilegeset_unref(user->privset);
+
+		propertyset_clear(&user->prop_list);
+
 		/*
 		 * sanity check
 		 */
