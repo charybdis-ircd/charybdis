@@ -74,10 +74,12 @@ mapi_hlist_av1 ircx_prop_hlist[] = {
 };
 
 static void h_prop_burst_channel(void *);
+static void h_prop_burst_client(void *);
 static void h_prop_channel_lowerts(void *);
 
 mapi_hfn_list_av1 ircx_prop_hfnlist[] = {
 	{ "burst_channel", (hookfn) h_prop_burst_channel },
+	{ "burst_client", (hookfn) h_prop_burst_client },
 	{ "channel_lowerts", (hookfn) h_prop_channel_lowerts },
 	{ NULL, NULL }
 };
@@ -292,6 +294,27 @@ h_prop_burst_channel(void *vdata)
 }
 
 static void
+h_prop_burst_client(void *vdata)
+{
+	hook_data_client *hclientinfo = vdata;
+	struct Client *client_p = hclientinfo->client;
+	struct Client *burst_p = hclientinfo->target;
+	rb_dlink_node *it;
+
+	if (burst_p->user == NULL)
+		return;
+
+	RB_DLINK_FOREACH(it, burst_p->user->prop_list.head)
+	{
+		struct Property *prop = it->data;
+
+		/* :source TPROP target creationTS updateTS propName [:propValue] */
+		sendto_one(client_p, ":%s TPROP %s %ld %ld %s :%s",
+			use_id(&me), use_id(burst_p), burst_p->tsinfo, prop->set_at, prop->name, prop->value);
+	}
+}
+
+static void
 h_prop_channel_lowerts(void *vdata)
 {
 	hook_data_channel *hchaninfo = vdata;
@@ -331,6 +354,19 @@ ms_tprop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 		prop_list = &chptr->prop_list;
 		target_ptr = chptr;
+	}
+	else
+	{
+		struct Client *target_p = find_client(parv[1]);
+		if (target_p == NULL || target_p->user == NULL)
+			return;
+
+		/* if creation_ts does not match nick TS, reject the TPROP */
+		if (creation_ts != target_p->tsinfo)
+			return;
+
+		prop_list = &target_p->user->prop_list;
+		target_ptr = target_p;
 	}
 
 	/* couldn't figure out what to mutate, bail */
