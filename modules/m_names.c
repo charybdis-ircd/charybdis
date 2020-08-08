@@ -35,6 +35,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
+#include "s_newconf.h"
 
 static const char names_desc[] = "Provides the NAMES command to view users on a channel";
 
@@ -88,7 +89,7 @@ m_names(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	}
 	else
 	{
-		if(!IsOper(source_p))
+		if(!IsOperGeneral(source_p))
 		{
 			if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
 			{

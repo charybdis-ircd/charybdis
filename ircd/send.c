@@ -675,6 +675,62 @@ sendto_channel_opmod(struct Client *one, struct Client *source_p,
 	msgbuf_cache_free(&msgbuf_cache);
 }
 
+/* _sendto_channel_local
+ *
+ * inputs	- source, flags to send to, privs to send to, channel to send to, va_args
+ * outputs	- message to local channel members
+ * side effects -
+ */
+void
+_sendto_channel_local(struct Client *source_p, int type, const char *priv, struct Channel *chptr, const char *pattern, va_list *args)
+{
+	struct membership *msptr;
+	struct Client *target_p;
+	rb_dlink_node *ptr;
+	rb_dlink_node *next_ptr;
+	struct MsgBuf msgbuf;
+	struct MsgBuf_cache msgbuf_cache;
+	rb_strf_t strings = { .format = pattern, .format_args = args, .next = NULL };
+
+	build_msgbuf_tags(&msgbuf, source_p);
+
+	msgbuf_cache_init(&msgbuf_cache, &msgbuf, &strings);
+
+	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, chptr->locmembers.head)
+	{
+		msptr = ptr->data;
+		target_p = msptr->client_p;
+
+		if (IsIOError(target_p))
+			continue;
+
+		if (type && ((msptr->flags & type) == 0))
+			continue;
+
+		if (priv != NULL && !HasPrivilege(target_p, priv))
+			continue;
+
+		_send_linebuf(target_p, msgbuf_cache_get(&msgbuf_cache, CLIENT_CAPS_ONLY(target_p)));
+	}
+
+	msgbuf_cache_free(&msgbuf_cache);
+}
+
+/* sendto_channel_local_priv()
+ *
+ * inputs	- source, flags to send to, privs to send to, channel to send to, va_args
+ * outputs	- message to local channel members
+ * side effects -
+ */
+void
+sendto_channel_local_priv(struct Client *source_p, int type, const char *priv, struct Channel *chptr, const char *pattern, ...)
+{
+	va_list args;
+	va_start(args, pattern);
+	_sendto_channel_local(source_p, type, priv, chptr, pattern, &args);
+	va_end(args);
+}
+
 /* sendto_channel_local()
  *
  * inputs	- source, flags to send to, channel to send to, va_args
@@ -685,40 +741,9 @@ void
 sendto_channel_local(struct Client *source_p, int type, struct Channel *chptr, const char *pattern, ...)
 {
 	va_list args;
-	struct membership *msptr;
-	struct Client *target_p;
-	rb_dlink_node *ptr;
-	rb_dlink_node *next_ptr;
-	struct MsgBuf msgbuf;
-	struct MsgBuf_cache msgbuf_cache;
-	rb_strf_t strings = { .format = pattern, .format_args = &args, .next = NULL };
-
-	build_msgbuf_tags(&msgbuf, source_p);
-
 	va_start(args, pattern);
-	msgbuf_cache_init(&msgbuf_cache, &msgbuf, &strings);
+	_sendto_channel_local(source_p, type, NULL, chptr, pattern, &args);
 	va_end(args);
-
-	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, chptr->locmembers.head)
-	{
-		msptr = ptr->data;
-		target_p = msptr->client_p;
-
-		if(IsIOError(target_p))
-			continue;
-
-		if(type == ONLY_OPERS)
-		{
-			if (!IsOper(target_p))
-				continue;
-		}
-		else if(type && ((msptr->flags & type) == 0))
-			continue;
-
-		_send_linebuf(target_p, msgbuf_cache_get(&msgbuf_cache, CLIENT_CAPS_ONLY(target_p)));
-	}
-
-	msgbuf_cache_free(&msgbuf_cache);
 }
 
 /*

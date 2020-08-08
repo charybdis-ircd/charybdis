@@ -1515,8 +1515,9 @@ static void
 conf_set_exempt_ip(void *data)
 {
 	struct ConfItem *yy_tmp;
+	int masktype = parse_netmask_strict(data, NULL, NULL);
 
-	if(parse_netmask(data, NULL, NULL) == HM_HOST)
+	if(masktype != HM_IPV4 && masktype != HM_IPV6)
 	{
 		conf_report_error("Ignoring exempt -- invalid exempt::ip.");
 		return;

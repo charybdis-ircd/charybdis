@@ -38,6 +38,7 @@
 #include "packet.h"
 #include "inline/stringops.h"
 #include "hook.h"
+#include "s_newconf.h"
 
 static const char part_desc[] = "Provides the PART command to leave a channel";
 
@@ -117,7 +118,7 @@ part_one_client(struct Client *client_p, struct Client *source_p, char *name, co
 		return;
 	}
 
-	if(MyConnect(source_p) && !IsOper(source_p) && !IsExemptSpambot(source_p))
+	if(MyConnect(source_p) && !IsOperGeneral(source_p) && !IsExemptSpambot(source_p))
 		check_spambot_warning(source_p, NULL);
 
 	/*

@@ -153,6 +153,14 @@ mo_kline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	reason = LOCAL_COPY(parv[loc]);
 
+	if(parse_netmask_strict(host, NULL, NULL) == HM_ERROR)
+	{
+		sendto_one_notice(source_p,
+				":[%s@%s] looks like an ill-formed IP K-line, refusing to set it",
+				user, host);
+		return;
+	}
+
 	if(target_server != NULL)
 	{
 		propagate_generic(source_p, "KLINE", target_server, CAP_KLN,
@@ -700,15 +708,12 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
 	if(aconf == NULL && ConfigFileEntry.non_redundant_klines)
 	{
 		bits = 0;
-		if((t = parse_netmask(lhost, &iphost, &bits)) != HM_HOST)
-		{
-			if(t == HM_IPV6)
-				t = AF_INET6;
-			else
-				t = AF_INET;
-
-			piphost = &iphost;
-		}
+		t = parse_netmask_strict(lhost, &iphost, &bits);
+		piphost = &iphost;
+		if (t == HM_IPV4)
+			t = AF_INET;
+		else if (t == HM_IPV6)
+			t = AF_INET6;
 		else
 			piphost = NULL;
 

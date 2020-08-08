@@ -513,7 +513,7 @@ msg_channel(enum message_type msgtype,
 	if((result = can_send(chptr, source_p, NULL)))
 	{
 		if(result != CAN_SEND_OPV && MyClient(source_p) &&
-		   !IsOper(source_p) &&
+		   !IsOperGeneral(source_p) &&
 		   !add_channel_target(source_p, chptr))
 		{
 			sendto_one(source_p, form_str(ERR_TARGCHANGE),
@@ -531,7 +531,7 @@ msg_channel(enum message_type msgtype,
 			(!(chptr->mode.mode & MODE_NOPRIVMSGS) ||
 			 IsMember(source_p, chptr)))
 	{
-		if(MyClient(source_p) && !IsOper(source_p) &&
+		if(MyClient(source_p) && !IsOperGeneral(source_p) &&
 		   !add_channel_target(source_p, chptr))
 		{
 			sendto_one(source_p, form_str(ERR_TARGCHANGE),
@@ -724,7 +724,7 @@ msg_client(enum message_type msgtype,
 			source_p->localClient->last = rb_current_time();
 
 		/* auto cprivmsg/cnotice */
-		do_floodcount = !IsOper(source_p) &&
+		do_floodcount = !IsOperGeneral(source_p) &&
 			!find_allowing_channel(source_p, target_p);
 
 		/* target change stuff, dont limit ctcp replies as that

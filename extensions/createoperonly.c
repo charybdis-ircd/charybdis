@@ -15,6 +15,7 @@
 #include "s_conf.h"
 #include "snomask.h"
 #include "numeric.h"
+#include "s_newconf.h"
 
 static const char restrict_desc[] = "Restricts channel creation to IRC operators";
 
@@ -32,7 +33,7 @@ h_can_create_channel_authenticated(hook_data_client_approval *data)
 {
 	struct Client *source_p = data->client;
 
-	if (!IsOper(source_p))
+	if (!IsOperGeneral(source_p))
 	{
 		sendto_one_notice(source_p, ":*** Channel creation is restricted to network staff only.");
 		data->approved = ERR_NEEDREGGEDNICK;

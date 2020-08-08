@@ -64,7 +64,7 @@ m_ban(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p,
 {
 	sendto_one_notice(source_p, ":The BAN command is not user-accessible.");
 	sendto_one_notice(source_p, ":To ban a user from a channel, see /QUOTE HELP CMODE");
-	if (IsOper(source_p))
+	if (IsOperGeneral(source_p))
 		sendto_one_notice(source_p, ":To ban a user from a server or from the network, see /QUOTE HELP KLINE");
 }
 

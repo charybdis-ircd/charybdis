@@ -177,6 +177,13 @@ mo_privs(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		}
 	}
 
+	if (target_p != source_p && !HasPrivilege(source_p, "oper:privs"))
+	{
+		sendto_one(source_p, form_str(ERR_NOPRIVS),
+			   me.name, source_p->name, "privs");
+		return;
+	}
+
 	if (!IsServer(server_p))
 		server_p = server_p->servptr;
 

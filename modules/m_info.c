@@ -37,6 +37,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
+#include "s_newconf.h"
 
 static const char info_desc[] =
 	"Provides the INFO command for retrieving server copyright, credits, and other info";
@@ -716,7 +717,7 @@ mo_info(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		info_spy(source_p);
 		send_info_text(source_p);
 
-		if(IsOper(source_p))
+		if(IsOperGeneral(source_p))
 		{
 			send_conf_options(source_p);
 			sendto_one_numeric(source_p, RPL_INFO, ":%s",

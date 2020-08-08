@@ -73,7 +73,7 @@ DECLARE_MODULE_AV2(stats, NULL, NULL, stats_clist, stats_hlist, NULL, NULL, NULL
 const char *Lformat = "%s %u %u %u %u %u :%u %u %s";
 
 static void stats_l_list(struct Client *s, const char *, bool, bool, rb_dlink_list *, char,
-				bool (*check_fn)(struct Client *target_p));
+				bool (*check_fn)(struct Client *source_p, struct Client *target_p));
 static void stats_l_client(struct Client *source_p, struct Client *target_p,
 				char statchar);
 
@@ -90,8 +90,8 @@ struct stats_cmd
 		handler_t handler;
 		handler_parv_t handler_parv;
 	};
+	const char *need_priv;
 	bool need_parv;
-	bool need_oper;
 	bool need_admin;
 };
 
@@ -132,8 +132,10 @@ static void stats_ziplinks(struct Client *);
 static void stats_comm(struct Client *);
 static void stats_capability(struct Client *);
 
-#define HANDLER_NORM(fn, oper, admin) { { .handler = fn }, false, oper, admin }
-#define HANDLER_PARV(fn, oper, admin) { { .handler_parv = fn }, true, oper, admin }
+#define HANDLER_NORM(fn, admin, priv) \
+		{ { .handler = fn }, .need_parv = false, .need_priv = priv, .need_admin = admin }
+#define HANDLER_PARV(fn, admin, priv) \
+		{ { .handler_parv = fn }, .need_parv = true, .need_priv = priv, .need_admin = admin }
 
 /* This table contains the possible stats items, in order:
  * stats letter,  function to call, operonly? adminonly? --fl_
@@ -143,54 +145,54 @@ static void stats_capability(struct Client *);
  * --Elizafox
  */
 static struct stats_cmd stats_cmd_table[256] = {
-/*	letter               handler		oper	admin	*/
-	['a'] = HANDLER_NORM(stats_dns_servers,	true,	true),
-	['A'] = HANDLER_NORM(stats_dns_servers,	true,	true),
-	['b'] = HANDLER_NORM(stats_delay,	true,	true),
-	['B'] = HANDLER_NORM(stats_hash,	true,	true),
-	['c'] = HANDLER_NORM(stats_connect,	false,	false),
-	['C'] = HANDLER_NORM(stats_capability,	true,	false),
-	['d'] = HANDLER_NORM(stats_tdeny,	true,	false),
-	['D'] = HANDLER_NORM(stats_deny,	true,	false),
-	['e'] = HANDLER_NORM(stats_exempt,	true,	false),
-	['E'] = HANDLER_NORM(stats_events,	true,	true),
-	['f'] = HANDLER_NORM(stats_comm,	true,	true),
-	['F'] = HANDLER_NORM(stats_comm,	true,	true),
-	['g'] = HANDLER_NORM(stats_prop_klines,	true,	false),
-	['h'] = HANDLER_NORM(stats_hubleaf,	false,	false),
-	['H'] = HANDLER_NORM(stats_hubleaf,	false,	false),
-	['i'] = HANDLER_NORM(stats_auth,	false,	false),
-	['I'] = HANDLER_NORM(stats_auth,	false,	false),
-	['k'] = HANDLER_NORM(stats_tklines,	false,	false),
-	['K'] = HANDLER_NORM(stats_klines,	false,	false),
-	['l'] = HANDLER_PARV(stats_ltrace,	false,	false),
-	['L'] = HANDLER_PARV(stats_ltrace,	false,	false),
-	['m'] = HANDLER_NORM(stats_messages,	false,	false),
-	['M'] = HANDLER_NORM(stats_messages,	false,	false),
-	['n'] = HANDLER_NORM(stats_dnsbl,	false,	false),
-	['o'] = HANDLER_NORM(stats_oper,	false,	false),
-	['O'] = HANDLER_NORM(stats_privset,	true,	false),
-	['p'] = HANDLER_NORM(stats_operedup,	false,	false),
-	['P'] = HANDLER_NORM(stats_ports,	false,	false),
-	['q'] = HANDLER_NORM(stats_tresv,	true,	false),
-	['Q'] = HANDLER_NORM(stats_resv,	true,	false),
-	['r'] = HANDLER_NORM(stats_usage,	true,	false),
-	['R'] = HANDLER_NORM(stats_usage,	true,	false),
-	['s'] = HANDLER_NORM(stats_ssld,	true,	true),
-	['S'] = HANDLER_NORM(stats_ssld,	true,	true),
-	['t'] = HANDLER_NORM(stats_tstats,	true,	false),
-	['T'] = HANDLER_NORM(stats_tstats,	true,	false),
-	['u'] = HANDLER_NORM(stats_uptime,	false,	false),
-	['U'] = HANDLER_NORM(stats_shared,	true,	false),
-	['v'] = HANDLER_NORM(stats_servers,	false,	false),
-	['V'] = HANDLER_NORM(stats_servers,	false,	false),
-	['x'] = HANDLER_NORM(stats_tgecos,	true,	false),
-	['X'] = HANDLER_NORM(stats_gecos,	true,	false),
-	['y'] = HANDLER_NORM(stats_class,	false,	false),
-	['Y'] = HANDLER_NORM(stats_class,	false,	false),
-	['z'] = HANDLER_NORM(stats_memory,	true,	false),
-	['Z'] = HANDLER_NORM(stats_ziplinks,	true,	false),
-	['?'] = HANDLER_NORM(stats_servlinks,	false,	false),
+/*	letter               handler		admin	priv */
+	['a'] = HANDLER_NORM(stats_dns_servers,	true,	NULL),
+	['A'] = HANDLER_NORM(stats_dns_servers,	true,	NULL),
+	['b'] = HANDLER_NORM(stats_delay,	true,	NULL),
+	['B'] = HANDLER_NORM(stats_hash,	true,	NULL),
+	['c'] = HANDLER_NORM(stats_connect,	false,	NULL),
+	['C'] = HANDLER_NORM(stats_capability,	false,	"oper:general"),
+	['d'] = HANDLER_NORM(stats_tdeny,	false,	"oper:general"),
+	['D'] = HANDLER_NORM(stats_deny,	false,	"oper:general"),
+	['e'] = HANDLER_NORM(stats_exempt,	false,	"oper:general"),
+	['E'] = HANDLER_NORM(stats_events,	true,	NULL),
+	['f'] = HANDLER_NORM(stats_comm,	true,	NULL),
+	['F'] = HANDLER_NORM(stats_comm,	true,	NULL),
+	['g'] = HANDLER_NORM(stats_prop_klines,	false,	"oper:general"),
+	['h'] = HANDLER_NORM(stats_hubleaf,	false,	NULL),
+	['H'] = HANDLER_NORM(stats_hubleaf,	false,	NULL),
+	['i'] = HANDLER_NORM(stats_auth,	false,	NULL),
+	['I'] = HANDLER_NORM(stats_auth,	false,	NULL),
+	['k'] = HANDLER_NORM(stats_tklines,	false,	NULL),
+	['K'] = HANDLER_NORM(stats_klines,	false,	NULL),
+	['l'] = HANDLER_PARV(stats_ltrace,	false,	NULL),
+	['L'] = HANDLER_PARV(stats_ltrace,	false,	NULL),
+	['m'] = HANDLER_NORM(stats_messages,	false,	NULL),
+	['M'] = HANDLER_NORM(stats_messages,	false,	NULL),
+	['n'] = HANDLER_NORM(stats_dnsbl,	false,	NULL),
+	['o'] = HANDLER_NORM(stats_oper,	false,	NULL),
+	['O'] = HANDLER_NORM(stats_privset,	false,	"oper:privs"),
+	['p'] = HANDLER_NORM(stats_operedup,	false,	NULL),
+	['P'] = HANDLER_NORM(stats_ports,	false,	NULL),
+	['q'] = HANDLER_NORM(stats_tresv,	false,	"oper:general"),
+	['Q'] = HANDLER_NORM(stats_resv,	false,	"oper:general"),
+	['r'] = HANDLER_NORM(stats_usage,	false,	"oper:general"),
+	['R'] = HANDLER_NORM(stats_usage,	false,	"oper:general"),
+	['s'] = HANDLER_NORM(stats_ssld,	true,	NULL),
+	['S'] = HANDLER_NORM(stats_ssld,	true,	NULL),
+	['t'] = HANDLER_NORM(stats_tstats,	false,	"oper:general"),
+	['T'] = HANDLER_NORM(stats_tstats,	false,	"oper:general"),
+	['u'] = HANDLER_NORM(stats_uptime,	false,	NULL),
+	['U'] = HANDLER_NORM(stats_shared,	false,	"oper:general"),
+	['v'] = HANDLER_NORM(stats_servers,	false,	NULL),
+	['V'] = HANDLER_NORM(stats_servers,	false,	NULL),
+	['x'] = HANDLER_NORM(stats_tgecos,	false,	"oper:general"),
+	['X'] = HANDLER_NORM(stats_gecos,	false,	"oper:general"),
+	['y'] = HANDLER_NORM(stats_class,	false,	NULL),
+	['Y'] = HANDLER_NORM(stats_class,	false,	NULL),
+	['z'] = HANDLER_NORM(stats_memory,	false,	"oper:general"),
+	['Z'] = HANDLER_NORM(stats_ziplinks,	false,	"oper:general"),
+	['?'] = HANDLER_NORM(stats_servlinks,	false,	NULL),
 };
 
 /*
@@ -212,7 +214,7 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 
 	statchar = parv[1][0];
 
-	if(MyClient(source_p) && !IsOper(source_p) && parc > 2)
+	if(MyClient(source_p) && !IsOperGeneral(source_p) && parc > 2)
 	{
 		/* Check the user is actually allowed to do /stats, and isnt flooding */
 		if((last_used + ConfigFileEntry.pace_wait) > rb_current_time())
@@ -244,19 +246,26 @@ m_stats(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	if(cmd->handler != NULL)
 	{
 		/* The stats table says what privs are needed, so check --fl_ */
-		/* Called for remote clients and for local opers, so check need_admin
-		 * and need_oper
-		 */
+		const char *missing_priv = NULL;
 		if(cmd->need_admin && !IsOperAdmin(source_p))
+			missing_priv = "admin";
+		else if(cmd->need_priv && !HasPrivilege(source_p, cmd->need_priv))
+			missing_priv = cmd->need_priv;
+
+		if(missing_priv != NULL)
 		{
-			sendto_one(source_p, form_str(ERR_NOPRIVS),
-				   me.name, source_p->name, "admin");
-			goto stats_out;
-		}
-		if(cmd->need_oper && !IsOper(source_p))
-		{
-			sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
-					   form_str (ERR_NOPRIVILEGES));
+			if(!IsOper(source_p))
+			{
+				sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
+					form_str(ERR_NOPRIVILEGES));
+			}
+			else
+			{
+				if(!strncmp(missing_priv, "oper:", 5))
+					missing_priv += 5;
+				sendto_one(source_p, form_str(ERR_NOPRIVS),
+					me.name, source_p->name, missing_priv);
+			}
 			goto stats_out;
 		}
 
@@ -322,7 +331,7 @@ stats_connect(struct Client *source_p)
 
 	if((ConfigFileEntry.stats_c_oper_only ||
 	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
-	    !IsOper(source_p))
+	    !IsOperGeneral(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str(ERR_NOPRIVILEGES));
@@ -338,7 +347,7 @@ stats_connect(struct Client *source_p)
 
 		s = buf;
 
-		if(IsOper(source_p))
+		if(IsOperGeneral(source_p))
 		{
 			if(ServerConfAutoconn(server_p))
 				*s++ = 'A';
@@ -527,7 +536,7 @@ stats_hubleaf(struct Client *source_p)
 
 	if((ConfigFileEntry.stats_h_oper_only ||
 	    (ConfigServerHide.flatten_links && !IsExemptShide(source_p))) &&
-	    !IsOper(source_p))
+	    !IsOperGeneral(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -554,12 +563,12 @@ static void
 stats_auth (struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_i_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_i_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching auth blocks */
-	else if((ConfigFileEntry.stats_i_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_i_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *name, *host, *user, *classname;
@@ -598,12 +607,12 @@ static void
 stats_tklines(struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching klines */
-	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *host, *pass, *user, *oper_reason;
@@ -700,12 +709,12 @@ static void
 stats_klines(struct Client *source_p)
 {
 	/* Oper only, if unopered, return ERR_NOPRIVS */
-	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper (source_p))
+	if((ConfigFileEntry.stats_k_oper_only == 2) && !IsOperGeneral (source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 
 	/* If unopered, Only return matching klines */
-	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper (source_p))
+	else if((ConfigFileEntry.stats_k_oper_only == 1) && !IsOperGeneral (source_p))
 	{
 		struct ConfItem *aconf;
 		char *host, *pass, *user, *oper_reason;
@@ -775,7 +784,7 @@ stats_oper(struct Client *source_p)
 	struct oper_conf *oper_p;
 	rb_dlink_node *ptr;
 
-	if(!IsOper(source_p) && ConfigFileEntry.stats_o_oper_only)
+	if(!IsOperGeneral(source_p) && ConfigFileEntry.stats_o_oper_only)
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
@@ -789,7 +798,7 @@ stats_oper(struct Client *source_p)
 		sendto_one_numeric(source_p, RPL_STATSOLINE,
 				form_str(RPL_STATSOLINE),
 				oper_p->username, oper_p->host, oper_p->name,
-				IsOper(source_p) ? oper_p->privset->name : "0", "-1");
+				HasPrivilege(source_p, "oper:privs") ? oper_p->privset->name : "0", "-1");
 	}
 }
 
@@ -853,7 +862,7 @@ stats_operedup (struct Client *source_p)
 static void
 stats_ports (struct Client *source_p)
 {
-	if(!IsOper (source_p) && ConfigFileEntry.stats_P_oper_only)
+	if(!IsOperGeneral (source_p) && ConfigFileEntry.stats_P_oper_only)
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 	else
@@ -1181,7 +1190,7 @@ stats_servers (struct Client *source_p)
 	int days, hours, minutes;
 	int j = 0;
 
-	if(ConfigServerHide.flatten_links && !IsOper(source_p) &&
+	if(ConfigServerHide.flatten_links && !IsOperGeneral(source_p) &&
 	   !IsExemptShide(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -1257,7 +1266,7 @@ stats_gecos(struct Client *source_p)
 static void
 stats_class(struct Client *source_p)
 {
-	if(ConfigFileEntry.stats_y_oper_only && !IsOper(source_p))
+	if(ConfigFileEntry.stats_y_oper_only && !IsOperGeneral(source_p))
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
 				   form_str (ERR_NOPRIVILEGES));
 	else
@@ -1524,7 +1533,7 @@ stats_servlinks (struct Client *source_p)
 	int j = 0;
 	char buf[128];
 
-	if(ConfigServerHide.flatten_links && !IsOper (source_p) &&
+	if(ConfigServerHide.flatten_links && !IsOperGeneral (source_p) &&
 	   !IsExemptShide(source_p))
 	{
 		sendto_one_numeric(source_p, ERR_NOPRIVILEGES,
@@ -1553,7 +1562,7 @@ stats_servlinks (struct Client *source_p)
 			rb_current_time() - target_p->localClient->firsttime,
 			(rb_current_time() > target_p->localClient->lasttime) ?
 			 (rb_current_time() - target_p->localClient->lasttime) : 0,
-			IsOper (source_p) ? show_capabilities (target_p) : "TS");
+			IsOperGeneral (source_p) ? show_capabilities (target_p) : "TS");
 	}
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
@@ -1582,9 +1591,9 @@ stats_servlinks (struct Client *source_p)
 }
 
 static inline bool
-stats_l_should_show_oper(struct Client *target_p)
+stats_l_should_show_oper(struct Client *source_p, struct Client *target_p)
 {
-	return (!IsOperInvis(target_p));
+	return SeesOper(target_p, source_p);
 }
 
 static void
@@ -1659,7 +1668,7 @@ stats_ltrace(struct Client *source_p, int parc, const char *parv[])
 			stats_l_list(source_p, name, doall, wilds, &local_oper_list, statchar, stats_l_should_show_oper);
 		}
 
-		if (!ConfigServerHide.flatten_links || IsOper(source_p) ||
+		if (!ConfigServerHide.flatten_links || IsOperGeneral(source_p) ||
 				IsExemptShide(source_p))
 			stats_l_list(source_p, name, doall, wilds, &serv_list, statchar, NULL);
 
@@ -1676,7 +1685,7 @@ stats_ltrace(struct Client *source_p, int parc, const char *parv[])
 
 static void
 stats_l_list(struct Client *source_p, const char *name, bool doall, bool wilds,
-	     rb_dlink_list * list, char statchar, bool (*check_fn)(struct Client *target_p))
+	     rb_dlink_list * list, char statchar, bool (*check_fn)(struct Client *source_p, struct Client *target_p))
 {
 	rb_dlink_node *ptr;
 	struct Client *target_p;
@@ -1692,7 +1701,7 @@ stats_l_list(struct Client *source_p, const char *name, bool doall, bool wilds,
 		if(!doall && wilds && !match(name, target_p->name))
 			continue;
 
-		if (check_fn == NULL || check_fn(target_p))
+		if (check_fn == NULL || check_fn(source_p, target_p))
 			stats_l_client(source_p, target_p, statchar);
 	}
 }
@@ -1713,7 +1722,7 @@ stats_l_client(struct Client *source_p, struct Client *target_p,
 				rb_current_time() - target_p->localClient->firsttime,
 				(rb_current_time() > target_p->localClient->lasttime) ?
 				 (rb_current_time() - target_p->localClient->lasttime) : 0,
-				IsOper(source_p) ? show_capabilities(target_p) : "-");
+				IsOperGeneral(source_p) ? show_capabilities(target_p) : "-");
 	}
 
 	else

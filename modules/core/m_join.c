@@ -209,7 +209,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 			continue;
 		}
 
-		if(splitmode && !IsOper(source_p) && (*name != '&') &&
+		if(splitmode && !IsOperGeneral(source_p) && (*name != '&') &&
 		   ConfigChannel.no_join_on_split)
 		{
 			sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
@@ -269,7 +269,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 				continue;
 			}
 
-			if(splitmode && !IsOper(source_p) && (*name != '&') &&
+			if(splitmode && !IsOperGeneral(source_p) && (*name != '&') &&
 			   ConfigChannel.no_create_on_split)
 			{
 				sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
@@ -320,7 +320,7 @@ m_join(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		chptr = chptr2;
 
 		if(flags == 0 &&
-				!IsOper(source_p) && !IsExemptSpambot(source_p))
+				!IsOperGeneral(source_p) && !IsExemptSpambot(source_p))
 			check_spambot_warning(source_p, name);
 
 		/* add the user to the channel */
@@ -990,7 +990,7 @@ do_join_0(struct Client *client_p, struct Client *source_p)
 	while((ptr = source_p->user->channel.head))
 	{
 		if(MyConnect(source_p) &&
-		   !IsOper(source_p) && !IsExemptSpambot(source_p))
+		   !IsOperGeneral(source_p) && !IsExemptSpambot(source_p))
 			check_spambot_warning(source_p, NULL);
 
 		msptr = ptr->data;
@@ -1011,7 +1011,7 @@ check_channel_name_loc(struct Client *source_p, const char *name)
 	if(EmptyString(name))
 		return false;
 
-	if(ConfigFileEntry.disable_fake_channels && !IsOper(source_p))
+	if(ConfigFileEntry.disable_fake_channels && !IsOperGeneral(source_p))
 	{
 		for(p = name; *p; ++p)
 		{
