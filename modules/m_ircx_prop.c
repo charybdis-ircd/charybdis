@@ -64,11 +64,13 @@ mapi_clist_av1 ircx_prop_clist[] = { &prop_msgtab, &tprop_msgtab, NULL };
 
 static int h_prop_show;
 static int h_prop_chan_write;
+static int h_prop_user_write;
 static int h_prop_change;
 
 mapi_hlist_av1 ircx_prop_hlist[] = {
 	{ "prop_show", &h_prop_show },
 	{ "prop_chan_write", &h_prop_chan_write },
+	{ "prop_user_write", &h_prop_user_write },
 	{ "prop_change", &h_prop_change },
 	{ NULL, NULL }
 };
@@ -206,6 +208,28 @@ can_write_to_channel_property(struct Client *source_p, struct Channel *chptr, co
 	return prop_activity.approved;
 }
 
+static bool
+can_write_to_user_property(struct Client *source_p, struct Client *target_p, const char *key)
+{
+	/* external writes should be done via TPROP */
+	if (source_p != target_p)
+		return false;
+
+	hook_data_prop_activity prop_activity;
+
+	prop_activity.client = source_p;
+	prop_activity.target = target_p->name;
+	prop_activity.prop_list = &target_p->user->prop_list;
+	prop_activity.key = key;
+	prop_activity.alevel = CHFL_ADMIN;
+	prop_activity.approved = true;
+	prop_activity.target_ptr = target_p;
+
+	call_hook(h_prop_user_write, &prop_activity);
+
+	return prop_activity.approved;
+}
+
 /*
  * LIST: PROP target [filters] (parc <= 3)
  * SET: PROP target key :value (parc == 4)
@@ -247,7 +271,21 @@ m_prop(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 		}
 	}
 	else
-		return;
+	{
+		struct Client *target_p = find_client(parv[1]);
+
+		if (target_p == NULL || target_p->user == NULL)
+		{
+			sendto_one_numeric(source_p, ERR_NOSUCHNICK, form_str(ERR_NOSUCHNICK), parv[1]);
+			return;
+		}
+
+		target_ptr = target_p;
+		prop_list = &target_p->user->prop_list;
+
+		if (parc == 4)
+			write_allowed = can_write_to_user_property(source_p, target_p, parv[2]);
+	}
 
 	switch (parc)
 	{
