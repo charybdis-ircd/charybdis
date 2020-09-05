@@ -38,6 +38,7 @@ struct MsgBuf {
 	const char *origin;		/* the origin of the message (or NULL) */
 	const char *target;		/* the target of the message (either NULL, or custom defined) */
 	const char *cmd;		/* the cmd/verb of the message (either NULL, or para[0]) */
+	char *endp;			/* one past the end of the original array */
 
 	size_t n_para;			/* the number of parameters (always at least 1 if a full message) */
 	const char *para[MAXPARA];	/* parameters vector (starting with cmd as para[0]) */
@@ -75,6 +76,12 @@ struct MsgBuf_cache {
  * returns 0 on success, 1 on error.
  */
 int msgbuf_parse(struct MsgBuf *msgbuf, char *line);
+
+/*
+ * Unparse the tail of a msgbuf perfectly, preserving framing details
+ * msgbuf->para[n] will reach to the end of the line
+ */
+void msgbuf_reconstruct_tail(struct MsgBuf *msgbuf, size_t n);
 
 /*
  * unparse a pure MsgBuf into a buffer.

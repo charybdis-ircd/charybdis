@@ -36,9 +36,6 @@
 #include "ircd.h"
 #include "privilege.h"
 
-/* other structs */
-struct Blacklist;
-
 /* we store ipv6 ips for remote clients, so this needs to be v6 always */
 #define HOSTIPLEN	53	/* sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255.ipv6") */
 #define PASSWDLEN	128
@@ -374,7 +371,7 @@ struct ListClient
 				 (x)->handler = SERVER_HANDLER; }
 
 #define SetClient(x)            {(x)->status = STAT_CLIENT; \
-				 (x)->handler = IsOper((x)) ? \
+				 (x)->handler = IsOperGeneral((x)) ? \
 					OPER_HANDLER : CLIENT_HANDLER; }
 #define SetRemoteClient(x)	{(x)->status = STAT_CLIENT; \
 				 (x)->handler = RCLIENT_HANDLER; }
@@ -447,12 +444,10 @@ struct ListClient
 #define UMODE_WALLOP       0x0002	/* send wallops to them */
 #define UMODE_OPERWALL     0x0004	/* Operwalls */
 #define UMODE_INVISIBLE    0x0008	/* makes user invisible */
-#define UMODE_CALLERID     0x0010	/* block unless caller id's */
 #define UMODE_LOCOPS       0x0020	/* show locops */
 #define UMODE_SERVICE      0x0040
 #define UMODE_DEAF	   0x0080
 #define UMODE_NOFORWARD    0x0100	/* don't forward */
-#define UMODE_REGONLYMSG   0x0200	/* only allow logged in users to msg */
 
 /* user information flags, only settable by remote mode or local oper */
 #define UMODE_OPER         0x1000	/* Operator */
@@ -521,12 +516,8 @@ struct ListClient
 /* oper flags */
 #define MyOper(x)               (MyConnect(x) && IsOper(x))
 
-#define SetOper(x)              {(x)->umodes |= UMODE_OPER; \
-				 if (MyClient((x))) (x)->handler = OPER_HANDLER;}
-
-#define ClearOper(x)            {(x)->umodes &= ~(UMODE_OPER|UMODE_ADMIN); \
-				 if (MyClient((x)) && !IsOper((x)) && !IsServer((x))) \
-				  (x)->handler = CLIENT_HANDLER; }
+#define SetOper(x)              ((x)->umodes |= UMODE_OPER)
+#define ClearOper(x)            ((x)->umodes &= ~(UMODE_OPER|UMODE_ADMIN))
 
 /* umode flags */
 #define IsInvisible(x)          ((x)->umodes & UMODE_INVISIBLE)
@@ -539,11 +530,9 @@ struct ListClient
 #define SendLocops(x)           ((x)->umodes & UMODE_LOCOPS)
 #define SendServNotice(x)       ((x)->umodes & UMODE_SERVNOTICE)
 #define SendOperwall(x)         ((x)->umodes & UMODE_OPERWALL)
-#define IsSetCallerId(x)	((x)->umodes & UMODE_CALLERID)
 #define IsService(x)		((x)->umodes & UMODE_SERVICE)
 #define IsDeaf(x)		((x)->umodes & UMODE_DEAF)
 #define IsNoForward(x)		((x)->umodes & UMODE_NOFORWARD)
-#define IsSetRegOnlyMsg(x)	((x)->umodes & UMODE_REGONLYMSG)
 
 #define SetGotId(x)             ((x)->flags |= FLAGS_GOTID)
 #define IsGotId(x)              (((x)->flags & FLAGS_GOTID) != 0)

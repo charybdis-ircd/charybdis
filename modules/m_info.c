@@ -37,6 +37,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
+#include "s_newconf.h"
 
 static const char info_desc[] =
 	"Provides the INFO command for retrieving server copyright, credits, and other info";
@@ -152,6 +153,12 @@ static struct InfoStruct info_table[] = {
 		"Time to allow per client_flood_message_num outside of burst",
 	},
 	{
+		"post_registration_delay",
+		OUTPUT_DECIMAL,
+		&ConfigFileEntry.post_registration_delay,
+		"Time to wait before processing commands from a new client",
+	},
+	{
 		"connect_timeout",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.connect_timeout,
@@ -203,7 +210,7 @@ static struct InfoStruct info_table[] = {
 		"dots_in_ident",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.dots_in_ident,
-		"Number of permissable dots in an ident"
+		"Number of permissible dots in an ident"
 	},
 	{
 		"failed_oper_notice",
@@ -312,7 +319,7 @@ static struct InfoStruct info_table[] = {
 		"max_nick_changes",
 		OUTPUT_DECIMAL,
 		&ConfigFileEntry.max_nick_changes,
-		"NICK change threshhold setting"
+		"NICK change threshold setting"
 	},
 	{
 		"max_nick_time",
@@ -519,6 +526,12 @@ static struct InfoStruct info_table[] = {
 		"The minimum time between aways",
 	},
 	{
+		"tls_ciphers_oper_only",
+		OUTPUT_BOOLEAN_YN,
+		&ConfigFileEntry.tls_ciphers_oper_only,
+		"TLS cipher strings are hidden in whois for non-opers",
+	},
+	{
 		"default_split_server_count",
 		OUTPUT_DECIMAL,
 		&ConfigChannel.default_split_server_count,
@@ -627,6 +640,12 @@ static struct InfoStruct info_table[] = {
 		"Force-part local users on channel RESV"
 	},
 	{
+		"opmod_send_statusmsg",
+		OUTPUT_BOOLEAN_YN,
+		&ConfigChannel.opmod_send_statusmsg,
+		"Send messages to @#channel if affected by +z"
+	},
+	{
 		"disable_hidden",
 		OUTPUT_BOOLEAN_YN,
 		&ConfigServerHide.disable_hidden,
@@ -698,7 +717,7 @@ mo_info(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		info_spy(source_p);
 		send_info_text(source_p);
 
-		if(IsOper(source_p))
+		if(IsOperGeneral(source_p))
 		{
 			send_conf_options(source_p);
 			sendto_one_numeric(source_p, RPL_INFO, ":%s",

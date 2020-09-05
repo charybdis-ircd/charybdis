@@ -125,7 +125,7 @@ m_trace(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			/* giving this out with flattened links defeats the
 			 * object --fl
 			 */
-			if(IsOper(source_p) || IsExemptShide(source_p) ||
+			if(IsOperGeneral(source_p) || IsExemptShide(source_p) ||
 			   !ConfigServerHide.flatten_links)
 				sendto_one_numeric(source_p, RPL_TRACELINK,
 						   form_str(RPL_TRACELINK),

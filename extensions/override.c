@@ -34,10 +34,10 @@ static void handle_client_exit(void *data);
 
 mapi_hfn_list_av1 override_hfnlist[] = {
 	{ "umode_changed", (hookfn) check_umode_change },
-	{ "get_channel_access", (hookfn) hack_channel_access },
-	{ "can_join", (hookfn) hack_can_join },
-	{ "can_kick", (hookfn) hack_can_kick },
-	{ "can_send", (hookfn) hack_can_send },
+	{ "get_channel_access", (hookfn) hack_channel_access, HOOK_HIGHEST },
+	{ "can_join", (hookfn) hack_can_join, HOOK_HIGHEST },
+	{ "can_kick", (hookfn) hack_can_kick, HOOK_HIGHEST },
+	{ "can_send", (hookfn) hack_can_send, HOOK_HIGHEST },
 	{ "client_exit", (hookfn) handle_client_exit },
 	{ NULL, NULL }
 };

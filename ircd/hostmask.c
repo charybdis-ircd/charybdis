@@ -26,6 +26,7 @@
 #include "stdinc.h"
 #include "ircd_defs.h"
 #include "s_conf.h"
+#include "s_newconf.h"
 #include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
@@ -35,18 +36,12 @@ static unsigned long hash_ipv6(struct sockaddr *, int);
 static unsigned long hash_ipv4(struct sockaddr *, int);
 
 
-/* int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
- * Input: A hostmask, or an IPV4/6 address.
- * Output: An integer describing whether it is an IPV4, IPV6 address or a
- *         hostmask, an address(if it is an IP mask),
- *         a bitlength(if it is IP mask).
- * Side effects: None
- */
-int
-parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
+static int
+_parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb, bool strict)
 {
 	char *ip = LOCAL_COPY(text);
 	char *ptr;
+	char *endp;
 	struct rb_sockaddr_storage *addr, xaddr;
 	int *b, xb;
 	if(nb == NULL)
@@ -69,11 +64,17 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 		{
 			*ptr = '\0';
 			ptr++;
-			*b = atoi(ptr);
-			if(*b > 128)
-				*b = 128;
-			else if(*b < 0)
+			long n = strtol(ptr, &endp, 10);
+			if (endp == ptr || n < 0)
 				return HM_HOST;
+			if (n > 128 || *endp != '\0')
+			{
+				if (strict)
+					return HM_ERROR;
+				else
+					n = 128;
+			}
+			*b = n;
 		} else
 			*b = 128;
 		if(rb_inet_pton_sock(ip, addr) > 0)
@@ -87,11 +88,17 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 		{
 			*ptr = '\0';
 			ptr++;
-			*b = atoi(ptr);
-			if(*b > 32)
-				*b = 32;
-			else if(*b < 0)
+			long n = strtol(ptr, &endp, 10);
+			if (endp == ptr || n < 0)
 				return HM_HOST;
+			if (n > 32 || *endp != '\0')
+			{
+				if (strict)
+					return HM_ERROR;
+				else
+					n = 32;
+			}
+			*b = n;
 		} else
 			*b = 32;
 		if(rb_inet_pton_sock(ip, addr) > 0)
@@ -100,6 +107,23 @@ parse_netmask(const char *text, struct rb_sockaddr_storage *naddr, int *nb)
 			return HM_HOST;
 	}
 	return HM_HOST;
+}
+
+/* int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
+ * Input: A hostmask, or an IPV4/6 address.
+ * Output: An integer describing whether it is an IPV4, IPV6 address or a
+ *         hostmask, an address(if it is an IP mask),
+ *         a bitlength(if it is IP mask).
+ * Side effects: None
+ */
+int parse_netmask(const char *mask, struct rb_sockaddr_storage *addr, int *blen)
+{
+	return _parse_netmask(mask, addr, blen, false);
+}
+
+int parse_netmask_strict(const char *mask, struct rb_sockaddr_storage *addr, int *blen)
+{
+	return _parse_netmask(mask, addr, blen, true);
 }
 
 /* Hashtable stuff...now external as its used in m_stats.c */
@@ -216,6 +240,8 @@ find_conf_by_address(const char *name, const char *sockhost,
 	unsigned long hprecv = 0;
 	struct ConfItem *hprec = NULL;
 	struct AddressRec *arec;
+	struct sockaddr_in ip4;
+	struct sockaddr *pip4 = NULL;
 	int b;
 
 	if(username == NULL)
@@ -223,9 +249,13 @@ find_conf_by_address(const char *name, const char *sockhost,
 
 	if(addr)
 	{
-		/* Check for IPV6 matches... */
-		if(fam == AF_INET6)
+		if (fam == AF_INET)
+			pip4 = addr;
+
+		if (fam == AF_INET6)
 		{
+			if (type == CONF_KILL && rb_ipv4_from_ipv6((struct sockaddr_in6 *)addr, &ip4))
+				pip4 = (struct sockaddr *)&ip4;
 
 			for (b = 128; b >= 0; b -= 16)
 			{
@@ -244,15 +274,15 @@ find_conf_by_address(const char *name, const char *sockhost,
 					}
 			}
 		}
-		else
-		if(fam == AF_INET)
+
+		if (pip4 != NULL)
 		{
 			for (b = 32; b >= 0; b -= 8)
 			{
-				for (arec = atable[hash_ipv4(addr, b)]; arec; arec = arec->next)
+				for (arec = atable[hash_ipv4(pip4, b)]; arec; arec = arec->next)
 					if(arec->type == (type & ~0x1) &&
 					   arec->masktype == HM_IPV4 &&
-					   comp_with_mask_sock(addr, (struct sockaddr *)&arec->Mask.ipa.addr,
+					   comp_with_mask_sock(pip4, (struct sockaddr *)&arec->Mask.ipa.addr,
 							       arec->Mask.ipa.bits) &&
 						(type & 0x1 || match(arec->username, username)) &&
 						(type != CONF_CLIENT || !arec->auth_user ||
@@ -364,7 +394,6 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 {
 	struct ConfItem *iconf, *kconf;
 	const char *vuser;
-	struct sockaddr_in ip4;
 
 	/* Find the best I-line... If none, return NULL -A1kmm */
 	if(!(iconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_CLIENT, aftype, user, auth_user)))
@@ -378,6 +407,31 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 	if(IsConfExemptKline(iconf))
 		return iconf;
 
+	/* if theres a spoof, check it against klines.. */
+	if(IsConfDoSpoofIp(iconf))
+	{
+		char *p = strchr(iconf->info.name, '@');
+
+		/* note, we dont need to pass sockhost here, as its
+		 * guaranteed to not match by whats below.. --anfl
+		 */
+		if(p)
+		{
+			*p = '\0';
+			kconf = find_conf_by_address(p+1, NULL, NULL, NULL, CONF_KILL, aftype, iconf->info.name, NULL);
+			*p = '@';
+		}
+		else
+			kconf = find_conf_by_address(iconf->info.name, NULL, NULL, NULL, CONF_KILL, aftype, vuser, NULL);
+
+		if(kconf)
+			return kconf;
+
+		/* everything else checks real hosts, if they're kline_spoof_ip we're done */
+		if(IsConfKlineSpoof(iconf))
+			return iconf;
+	}
+
 	/* Find the best K-line... -A1kmm */
 	kconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_KILL, aftype, user, NULL);
 
@@ -385,40 +439,11 @@ find_address_conf(const char *host, const char *sockhost, const char *user,
 	if(kconf)
 		return kconf;
 
-	/* if theres a spoof, check it against klines.. */
-	if(IsConfDoSpoofIp(iconf))
-	{
-		char *p = strchr(iconf->info.name, '@');
-
-		/* note, we dont need to pass sockhost here, as its
-		 * guaranteed to not match by whats above.. --anfl
-		 */
-		if(p)
-		{
-			*p = '\0';
-			kconf = find_conf_by_address(p+1, NULL, NULL, ip, CONF_KILL, aftype, iconf->info.name, NULL);
-			*p = '@';
-		}
-		else
-			kconf = find_conf_by_address(iconf->info.name, NULL, NULL, ip, CONF_KILL, aftype, vuser, NULL);
-
-		if(kconf)
-			return kconf;
-	}
-
 	/* if no_tilde, check the username without tilde against klines too
 	 * -- jilles */
 	if(user != vuser)
 	{
 		kconf = find_conf_by_address(host, sockhost, NULL, ip, CONF_KILL, aftype, vuser, NULL);
-		if(kconf)
-			return kconf;
-	}
-
-	if(ip != NULL && ip->sa_family == AF_INET6 &&
-			rb_ipv4_from_ipv6((const struct sockaddr_in6 *)(const void *)ip, &ip4))
-	{
-		kconf = find_conf_by_address(NULL, NULL, NULL, (struct sockaddr *)&ip4, CONF_KILL, AF_INET, vuser, NULL);
 		if(kconf)
 			return kconf;
 	}
@@ -728,7 +753,7 @@ report_auth(struct Client *client_p)
 			{
 				aconf = arec->aconf;
 
-				if(!IsOper(client_p) && IsConfDoSpoofIp(aconf))
+				if(!IsOperGeneral(client_p) && IsConfDoSpoofIp(aconf))
 					continue;
 
 				get_printable_conf(aconf, &name, &host, &pass, &user, &port,

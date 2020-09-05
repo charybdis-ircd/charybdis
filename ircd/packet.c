@@ -32,6 +32,7 @@
 #include "hook.h"
 #include "send.h"
 #include "s_assert.h"
+#include "s_newconf.h"
 
 static char readBuf[READBUF_SIZE];
 static void client_dopacket(struct Client *client_p, char *buffer, size_t length);
@@ -108,7 +109,7 @@ parse_client_queued(struct Client *client_p)
 		/* allow opers 4 times the amount of messages as users. why 4?
 		 * why not. :) --fl_
 		 */
-		if(IsOper(client_p) && ConfigFileEntry.no_oper_flood)
+		if(IsOperGeneral(client_p) && ConfigFileEntry.no_oper_flood)
 			allow_read *= 4;
 		/*
 		 * Handle flood protection here - if we exceed our flood limit on
@@ -131,6 +132,12 @@ parse_client_queued(struct Client *client_p)
 			 * and no 'bursts' will be permitted.
 			 */
 			if(client_p->localClient->sent_parsed >= allow_read)
+				break;
+
+			/* post_registration_delay hack. Don't process any messages from a new client for $n seconds,
+			 * to allow network bots to do their thing before channels can be joined.
+			 */
+			if (rb_current_time() < client_p->localClient->firsttime + ConfigFileEntry.post_registration_delay)
 				break;
 
 			dolen = rb_linebuf_get(&client_p->localClient->
@@ -288,7 +295,7 @@ read_packet(rb_fde_t * F, void *data)
 		if(!IsAnyServer(client_p) &&
 		   (rb_linebuf_alloclen(&client_p->localClient->buf_recvq) > ConfigFileEntry.client_flood_max_lines))
 		{
-			if(!(ConfigFileEntry.no_oper_flood && IsOper(client_p)))
+			if(!(ConfigFileEntry.no_oper_flood && IsOperGeneral(client_p)))
 			{
 				exit_client(client_p, client_p, client_p, "Excess Flood");
 				return;

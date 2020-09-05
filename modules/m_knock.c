@@ -35,6 +35,7 @@
 #include "modules.h"
 #include "s_serv.h"
 #include "supported.h"
+#include "s_newconf.h"
 
 static const char knock_desc[] = "Provides the KNOCK command to ask for an invite to an invite-only channel";
 
@@ -130,8 +131,8 @@ m_knock(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 	if(MyClient(source_p))
 	{
 		/* don't allow a knock if the user is banned */
-		if(is_banned(chptr, source_p, NULL, NULL, NULL, NULL) == CHFL_BAN ||
-			is_quieted(chptr, source_p, NULL, NULL, NULL) == CHFL_BAN)
+		if(is_banned(chptr, source_p, NULL, NULL, NULL) == CHFL_BAN ||
+			is_quieted(chptr, source_p, NULL, NULL) == CHFL_BAN)
 		{
 			sendto_one_numeric(source_p, ERR_CANNOTSENDTOCHAN,
 					   form_str(ERR_CANNOTSENDTOCHAN), name);
@@ -142,7 +143,7 @@ m_knock(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 		 * allow one knock per user per knock_delay
 		 * allow one knock per channel per knock_delay_channel
 		 */
-		if(!IsOper(source_p) &&
+		if(!IsOperGeneral(source_p) &&
 		   (source_p->localClient->last_knock + ConfigChannel.knock_delay) > rb_current_time())
 		{
 			sendto_one(source_p, form_str(ERR_TOOMANYKNOCK),

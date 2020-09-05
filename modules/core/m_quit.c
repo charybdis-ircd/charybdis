@@ -33,11 +33,14 @@
 #include "modules.h"
 #include "s_conf.h"
 #include "inline/stringops.h"
+#include "s_newconf.h"
 
 static const char quit_desc[] = "Provides the QUIT command to allow a user to leave the network";
 
 static void m_quit(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
 static void ms_quit(struct MsgBuf *, struct Client *, struct Client *, int, const char **);
+
+static int h_client_quit;
 
 struct Message quit_msgtab = {
 	"QUIT", 0, 0, 0, 0,
@@ -46,7 +49,12 @@ struct Message quit_msgtab = {
 
 mapi_clist_av1 quit_clist[] = { &quit_msgtab, NULL };
 
-DECLARE_MODULE_AV2(quit, NULL, NULL, quit_clist, NULL, NULL, NULL, NULL, quit_desc);
+mapi_hlist_av1 quit_hlist[] = {
+	{ "client_quit", &h_client_quit },
+	{ NULL, NULL }
+};
+
+DECLARE_MODULE_AV2(quit, NULL, NULL, quit_clist, quit_hlist, NULL, NULL, NULL, quit_desc);
 
 /*
 ** m_quit
@@ -55,25 +63,33 @@ DECLARE_MODULE_AV2(quit, NULL, NULL, quit_clist, NULL, NULL, NULL, NULL, quit_de
 static void
 m_quit(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p, int parc, const char *parv[])
 {
-	char *comment = LOCAL_COPY((parc > 1 && parv[1]) ? parv[1] : client_p->name);
+	char *comment_copy = LOCAL_COPY((parc > 1 && parv[1]) ? parv[1] : client_p->name);
+	const char *comment = comment_copy;
 	char reason[REASONLEN + 1];
+	hook_data_client_quit hdata;
 
 	source_p->flags |= FLAGS_NORMALEX;
 
-	if(strlen(comment) > (size_t) REASONLEN)
-		comment[REASONLEN] = '\0';
+	if (strlen(comment_copy) > (size_t) REASONLEN)
+		comment_copy[REASONLEN] = '\0';
 
-	strip_colour(comment);
+	strip_colour(comment_copy);
 
-	if(ConfigFileEntry.client_exit && comment[0])
+	hdata.client = client_p;
+	hdata.reason = hdata.orig_reason = comment;
+	call_hook(h_client_quit, &hdata);
+	comment = hdata.reason;
+
+	/* don't add Quit: if the reason comes from a module */
+	if (ConfigFileEntry.client_exit && hdata.reason == hdata.orig_reason && comment[0])
 	{
 		snprintf(reason, sizeof(reason), "Quit: %s", comment);
 		comment = reason;
 	}
 
-	if(!IsOper(source_p) &&
+	if (comment == NULL || (!IsOperGeneral(source_p) && hdata.reason == hdata.orig_reason &&
 	   (source_p->localClient->firsttime + ConfigFileEntry.anti_spam_exit_message_time) >
-	   rb_current_time())
+	   rb_current_time()))
 	{
 		exit_client(client_p, source_p, source_p, "Client Quit");
 		return;

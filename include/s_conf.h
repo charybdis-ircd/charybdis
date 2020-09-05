@@ -112,6 +112,7 @@ struct ConfItem
 #define CONF_FLAGS_EXEMPTDNSBL		0x04000000
 #define CONF_FLAGS_EXEMPTPROXY		0x08000000
 #define CONF_FLAGS_ALLOW_SCTP		0x10000000
+#define CONF_FLAGS_KLINE_SPOOF		0x20000000
 
 
 /* Macros for struct ConfItem */
@@ -136,6 +137,7 @@ struct ConfItem
 #define IsConfExtendChans(x)	((x)->flags & CONF_FLAGS_EXTEND_CHANS)
 #define IsConfSSLNeeded(x)	((x)->flags & CONF_FLAGS_NEED_SSL)
 #define IsConfAllowSCTP(x)	((x)->flags & CONF_FLAGS_ALLOW_SCTP)
+#define IsConfKlineSpoof(x)	((x)->flags & CONF_FLAGS_KLINE_SPOOF)
 
 /* flag definitions for opers now in client.h */
 
@@ -213,6 +215,7 @@ struct config_file_entry
 	int tkline_expire_notices;
 	int use_whois_actually;
 	int disable_auth;
+	int post_registration_delay;
 	int connect_timeout;
 	int burst_away;
 	int reject_ban_time;
@@ -229,6 +232,7 @@ struct config_file_entry
 	int use_propagated_bans;
 	int max_ratelimit_tokens;
 	int away_interval;
+	int tls_ciphers_oper_only;
 
 	int client_flood_max_lines;
 	int client_flood_burst_rate;
@@ -270,6 +274,7 @@ struct config_channel_entry
 	unsigned int autochanmodes;
 	int displayed_usercount;
 	int strip_topic_colors;
+	int opmod_send_statusmsg;
 };
 
 struct config_server_hide

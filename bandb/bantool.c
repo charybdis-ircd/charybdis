@@ -807,7 +807,7 @@ table_has_rows(const char *dbtab)
 }
 
 /**
- * completly wipes out an existing ban.db of all entries.
+ * completely wipes out an existing ban.db of all entries.
  */
 static void
 wipe_schema(void)
@@ -880,15 +880,15 @@ print_help(int i_exit)
 	fprintf(stderr, "       -s : Reclaim empty slack space the database may be taking up.\n");
 	fprintf(stderr, "       -u : Update the database tables to support any new features.\n");
 	fprintf(stderr,
-		"            This is automaticlly done if you are importing or exporting\n");
+		"            This is automatically done if you are importing or exporting\n");
 	fprintf(stderr, "            but should be run whenever you upgrade the ircd.\n");
 	fprintf(stderr,
 		"       -p : pretend, checks for the configs, and parses them, then tells you some data...\n");
 	fprintf(stderr, "            but does not touch your database.\n");
 	fprintf(stderr,
 		"       -v : Be verbose... and it *is* very verbose! (intended for debugging)\n");
-	fprintf(stderr, "       -d : Enable checking for redunant entries.\n");
-	fprintf(stderr, "       -w : Completly wipe your database clean. May be used with -i \n");
+	fprintf(stderr, "       -d : Enable checking for redundant entries.\n");
+	fprintf(stderr, "       -w : Completely wipe your database clean. May be used with -i \n");
 	fprintf(stderr,
 		"     path : An optional directory containing old ratbox configs for import, or export.\n");
 	fprintf(stderr, "            If not specified, it looks in PREFIX/etc.\n");

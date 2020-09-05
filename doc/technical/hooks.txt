@@ -114,6 +114,23 @@ The following hooks are called during various events related to clients.
 			  oldsnomask = new snomask field
 
 
+Channel Hooks
+-------------
+
+"can_invite"             - Called before deciding whether to allow the
+                            /invite command
+                            hdata->chptr = channel being invited to
+                            hdata->msptr = membership of inviter
+                            hdata->client = inviter
+                            hdata->target = invite target
+                            hdata->approved = zero to allow
+                            hdata->error = NULL, or error message
+                              if non-null, `approved` is the numeric
+"invite"                 - Called just before effecting an invite on the
+                            target's server
+                            hdata = as above
+
+
 The following are for debugging and take struct hook_io_data for arguments.
 These can be used for a variety of purposes, but are aimed at the developer
 community.

@@ -297,6 +297,10 @@ load_one_module(const char *path, int origin, bool coremodule)
 	}
 
 	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "Cannot locate module %s", path);
+
+	if (server_state_foreground)
+		ierror("cannot locate module %s", path);
+
 	return false;
 }
 
@@ -405,8 +409,7 @@ unload_one_module(const char *name, bool warn)
 						continue;
 					}
 
-					if (m->cap_id != NULL)
-						capability_orphan(idx, m->cap_name);
+					capability_orphan(idx, m->cap_name);
 				}
 			}
 			break;
@@ -424,6 +427,7 @@ unload_one_module(const char *name, bool warn)
 
 	rb_dlinkDelete(&mod->node, &module_list);
 	rb_free(mod->name);
+	rb_free(mod->path);
 	rb_free(mod);
 
 	if(warn)
@@ -535,6 +539,38 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 		{
 			struct mapi_mheader_av2 *mheader = (struct mapi_mheader_av2 *)(void *)mapi_version;     /* see above */
 
+			if(mheader->mapi_cap_list)
+			{
+				mapi_cap_list_av2 *m;
+				for (m = mheader->mapi_cap_list; m->cap_name; ++m)
+				{
+					struct CapabilityIndex *idx;
+					int result;
+
+					switch (m->cap_index)
+					{
+					case MAPI_CAP_CLIENT:
+						idx = cli_capindex;
+						break;
+					case MAPI_CAP_SERVER:
+						idx = serv_capindex;
+						break;
+					default:
+						sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
+							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
+							m->cap_index, m->cap_name, mod_displayname);
+						ilog(L_MAIN,
+							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
+							m->cap_index, m->cap_name, mod_displayname);
+						continue;
+					}
+
+					result = capability_put(idx, m->cap_name, m->cap_ownerdata);
+					if (m->cap_id != NULL)
+						*(m->cap_id) = result;
+				}
+			}
+
 			/* XXX duplicated code :( */
 			if(mheader->mapi_register && (mheader->mapi_register() == -1))
 			{
@@ -543,6 +579,26 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 				sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 						     "Module %s indicated failure during load.",
 						     mod_displayname);
+				if(mheader->mapi_cap_list)
+				{
+					mapi_cap_list_av2 *m;
+					for (m = mheader->mapi_cap_list; m->cap_name; ++m)
+					{
+						struct CapabilityIndex *idx;
+						switch (m->cap_index)
+						{
+						case MAPI_CAP_CLIENT:
+							idx = cli_capindex;
+							break;
+						case MAPI_CAP_SERVER:
+							idx = serv_capindex;
+							break;
+						default:
+							continue;
+						}
+						capability_orphan(idx, m->cap_name);
+					}
+				}
 				lt_dlclose(tmpptr);
 				rb_free(mod_displayname);
 				return false;
@@ -586,44 +642,17 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			{
 				mapi_hfn_list_av1 *m;
 				for (m = mheader->mapi_hfn_list; m->hapi_name; ++m)
-					add_hook(m->hapi_name, m->fn);
+				{
+					int priority = m->priority;
+					if (priority == 0)
+						priority = HOOK_NORMAL;
+					add_hook_prio(m->hapi_name, m->fn, priority);
+				}
 			}
 
 			/* New in MAPI v2 - version replacement */
 			ver = mheader->mapi_module_version ? mheader->mapi_module_version : ircd_version;
 			description = mheader->mapi_module_description;
-
-			if(mheader->mapi_cap_list)
-			{
-				mapi_cap_list_av2 *m;
-				for (m = mheader->mapi_cap_list; m->cap_name; ++m)
-				{
-					struct CapabilityIndex *idx;
-					int result;
-
-					switch (m->cap_index)
-					{
-					case MAPI_CAP_CLIENT:
-						idx = cli_capindex;
-						break;
-					case MAPI_CAP_SERVER:
-						idx = serv_capindex;
-						break;
-					default:
-						sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
-							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
-							m->cap_index, m->cap_name, mod_displayname);
-						ilog(L_MAIN,
-							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
-							m->cap_index, m->cap_name, mod_displayname);
-						continue;
-					}
-
-					result = capability_put(idx, m->cap_name, m->cap_ownerdata);
-					if (m->cap_id != NULL)
-						*(m->cap_id) = result;
-				}
-			}
 		}
 
 		break;
@@ -653,6 +682,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	mod->mapi_header = mapi_version;
 	mod->mapi_version = MAPI_VERSION(*mapi_version);
 	mod->origin = origin;
+	mod->path = rb_strdup(path);
 	rb_dlinkAdd(mod, &mod->node, &module_list);
 
 	if(warn)
@@ -691,6 +721,7 @@ modules_do_reload(void *info_)
 	int check_core;
 	int origin;
 	char *m_bn = rb_basename(info->module);
+	char *path;
 	struct Client *source_p = find_id(info->id);
 
 	if((mod = findmodule_byname(m_bn)) == NULL)
@@ -703,6 +734,7 @@ modules_do_reload(void *info_)
 
 	origin = mod->origin;
 	check_core = mod->core;
+	path = rb_strdup(mod->path);
 
 	mod_remember_clicaps();
 
@@ -711,10 +743,11 @@ modules_do_reload(void *info_)
 		if (source_p) sendto_one_notice(source_p, ":Module %s is not loaded", m_bn);
 		rb_free(info);
 		rb_free(m_bn);
+		rb_free(path);
 		return;
 	}
 
-	if((load_one_module(m_bn, origin, check_core) == false) && check_core)
+	if((load_a_module(path, true, origin, check_core) == false) && check_core)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Error reloading core module: %s: terminating ircd", m_bn);
@@ -726,6 +759,7 @@ modules_do_reload(void *info_)
 
 	rb_free(info);
 	rb_free(m_bn);
+	rb_free(path);
 }
 
 void

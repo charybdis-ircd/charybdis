@@ -34,6 +34,7 @@
 #include "s_conf.h"
 #include "s_serv.h"
 #include "packet.h"
+#include "s_newconf.h"
 
 static const char away_desc[] = "Provides the AWAY command to set yourself away";
 
@@ -97,7 +98,7 @@ m_away(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_p
 	/* Rate limit this because it is sent to common channels. */
 	if (MyClient(source_p))
 	{
-		if(!IsOper(source_p) &&
+		if(!IsOperGeneral(source_p) &&
 				source_p->localClient->next_away > rb_current_time())
 		{
 			sendto_one(source_p, form_str(RPL_LOAD2HI),

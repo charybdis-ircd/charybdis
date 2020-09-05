@@ -89,7 +89,7 @@ m_whois(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source_
 			return;
 		}
 
-		if(!IsOper(source_p))
+		if(!IsOperGeneral(source_p))
 		{
 			/* seeing as this is going across servers, we should limit it */
 			if((last_used + ConfigFileEntry.pace_wait_simple) > rb_current_time() || !ratelimit_client(source_p, 2))
@@ -318,7 +318,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 				    GlobalSetOptions.operstring));
 	}
 
-	if(!EmptyString(target_p->user->opername) && IsOper(target_p) && IsOper(source_p))
+	if(!EmptyString(target_p->user->opername) && IsOper(target_p) && (target_p == source_p || HasPrivilege(source_p, "oper:privs")))
 	{
 		char buf[512];
 		const char *privset = "(missing)";
@@ -334,12 +334,13 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	{
 		char cbuf[256] = "is using a secure connection";
 
-		if (MyClient(target_p) && target_p->localClient->cipher_string != NULL)
+		if (MyClient(target_p) && target_p->localClient->cipher_string != NULL &&
+				(!ConfigFileEntry.tls_ciphers_oper_only || source_p == target_p || IsOper(source_p)))
 			rb_snprintf_append(cbuf, sizeof(cbuf), " [%s]", target_p->localClient->cipher_string);
 
 		sendto_one_numeric(source_p, RPL_WHOISSECURE, form_str(RPL_WHOISSECURE),
 				   target_p->name, cbuf);
-		if((source_p == target_p || IsOper(source_p)) &&
+		if((source_p == target_p || IsOperGeneral(source_p)) &&
 				target_p->certfp != NULL)
 			sendto_one_numeric(source_p, RPL_WHOISCERTFP,
 					form_str(RPL_WHOISCERTFP),
@@ -348,7 +349,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 
 	if(MyClient(target_p))
 	{
-		if (IsDynSpoof(target_p) && (IsOper(source_p) || source_p == target_p))
+		if (IsDynSpoof(target_p) && (HasPrivilege(source_p, "auspex:hostname") || source_p == target_p))
 		{
 			/* trick here: show a nonoper their own IP if
 			 * dynamic spoofed but not if auth{} spoofed
@@ -384,7 +385,7 @@ single_whois(struct Client *source_p, struct Client *target_p, int operspy)
 	}
 	else
 	{
-		if (IsDynSpoof(target_p) && (IsOper(source_p) || source_p == target_p))
+		if (IsDynSpoof(target_p) && (HasPrivilege(source_p, "auspex:hostname") || source_p == target_p))
 		{
 			ClearDynSpoof(target_p);
 			sendto_one_numeric(source_p, RPL_WHOISHOST,

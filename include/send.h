@@ -59,6 +59,7 @@ extern void sendto_channel_opmod(struct Client *one, struct Client *source_p,
 				 const char *text);
 
 extern void sendto_channel_local(struct Client *, int type, struct Channel *, const char *, ...) AFP(4, 5);
+extern void sendto_channel_local_priv(struct Client *, int type, const char *priv, struct Channel *, const char *, ...) AFP(5, 6);
 extern void sendto_channel_local_butone(struct Client *, int type, struct Channel *, const char *, ...) AFP(4, 5);
 
 extern void sendto_channel_local_with_capability(struct Client *, int type, int caps, int negcaps, struct Channel *, const char *, ...) AFP(6, 7);

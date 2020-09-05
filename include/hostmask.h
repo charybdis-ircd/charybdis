@@ -27,12 +27,14 @@
 #define INCLUDE_hostmask_h 1
 enum
 {
+	HM_ERROR,
 	HM_HOST,
 	HM_IPV4,
 	HM_IPV6,
 };
 
 int parse_netmask(const char *, struct rb_sockaddr_storage *, int *);
+int parse_netmask_strict(const char *, struct rb_sockaddr_storage *, int *);
 struct ConfItem *find_conf_by_address(const char *host, const char *sockhost,
 				      const char *orighost, struct sockaddr *,
 				      int, int, const char *, const char *);
@@ -49,8 +51,9 @@ struct ConfItem *find_address_conf(const char *host, const char *sockhost,
 
 struct ConfItem *find_dline(struct sockaddr *, int);
 
-#define find_kline(x)	(find_conf_by_address((x)->host, (x)->sockhost, \
-			 (x)->orighost, \
+#define find_kline(x)	((IsConfDoSpoofIp((x)->localClient->att_conf) && IsConfKlineSpoof((x)->localClient->att_conf)) ? \
+		find_conf_by_address((x)->orighost, NULL, NULL, NULL, CONF_KILL, AF_INET, (x)->username, NULL) : \
+		find_conf_by_address((x)->host, (x)->sockhost, (x)->orighost, \
 			 (struct sockaddr *)&(x)->localClient->ip, CONF_KILL,\
 			 GET_SS_FAMILY(&(x)->localClient->ip), (x)->username, NULL))
 

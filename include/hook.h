@@ -11,6 +11,16 @@ typedef struct
 	rb_dlink_list hooks;
 } hook;
 
+enum hook_priority
+{
+	HOOK_LOWEST = 10,
+	HOOK_LOW = 20,
+	HOOK_NORMAL = 30,
+	HOOK_HIGH = 40,
+	HOOK_HIGHEST = 50,
+	HOOK_MONITOR = 100
+};
+
 typedef void (*hookfn) (void *data);
 
 extern int h_iosend_id;
@@ -39,6 +49,7 @@ extern int h_rehash;
 void init_hook(void);
 int register_hook(const char *name);
 void add_hook(const char *name, hookfn fn);
+void add_hook_prio(const char *name, hookfn fn, enum hook_priority priority);
 void remove_hook(const char *name, hookfn fn);
 void call_hook(int id, void *arg);
 
@@ -95,6 +106,7 @@ typedef struct
 	int approved;
 	int dir;
 	const char *modestr;
+	const char *error;
 } hook_data_channel_approval;
 
 typedef struct
@@ -111,6 +123,13 @@ typedef struct
 	struct Client *from; /* causing client (could be &me or target) */
 	const char *comment;
 } hook_data_client_exit;
+
+typedef struct
+{
+	struct Client *client;
+	const char *reason;
+	const char *orig_reason;
+} hook_data_client_quit;
 
 typedef struct
 {

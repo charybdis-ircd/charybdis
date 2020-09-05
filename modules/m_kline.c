@@ -99,7 +99,7 @@ mo_kline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 {
 	char def[] = "No Reason";
 	char user[USERLEN + 2];
-	char host[HOSTLEN + 2];
+	char host_buf[HOSTLEN + 3], *host = host_buf + 1;
 	char *reason = def;
 	char *oper_reason;
 	const char *target_server = NULL;
@@ -122,6 +122,12 @@ mo_kline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 	if(find_user_host(source_p, parv[loc], user, host) == 0)
 		return;
+
+	if (*host == ':')
+	{
+		host--;
+		*host = '0';
+	}
 
 	loc++;
 
@@ -146,6 +152,14 @@ mo_kline(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 	}
 
 	reason = LOCAL_COPY(parv[loc]);
+
+	if(parse_netmask_strict(host, NULL, NULL) == HM_ERROR)
+	{
+		sendto_one_notice(source_p,
+				":[%s@%s] looks like an ill-formed IP K-line, refusing to set it",
+				user, host);
+		return;
+	}
 
 	if(target_server != NULL)
 	{
@@ -706,15 +720,12 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
 	if(aconf == NULL && ConfigFileEntry.non_redundant_klines)
 	{
 		bits = 0;
-		if((t = parse_netmask(lhost, &iphost, &bits)) != HM_HOST)
-		{
-			if(t == HM_IPV6)
-				t = AF_INET6;
-			else
-				t = AF_INET;
-
-			piphost = &iphost;
-		}
+		t = parse_netmask_strict(lhost, &iphost, &bits);
+		piphost = &iphost;
+		if (t == HM_IPV4)
+			t = AF_INET;
+		else if (t == HM_IPV6)
+			t = AF_INET6;
 		else
 			piphost = NULL;
 

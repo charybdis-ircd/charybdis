@@ -42,6 +42,13 @@ hook *hooks;
 
 #define HOOK_INCREMENT 1000
 
+struct hook_entry
+{
+	rb_dlink_node node;
+	hookfn fn;
+	enum hook_priority priority;
+};
+
 int num_hooks = 0;
 int last_hook = 0;
 int max_hooks = HOOK_INCREMENT;
@@ -174,11 +181,34 @@ register_hook(const char *name)
 void
 add_hook(const char *name, hookfn fn)
 {
+	add_hook_prio(name, fn, HOOK_NORMAL);
+}
+
+/* add_hook_prio()
+ *   Adds a hook with the specified priority
+ */
+void
+add_hook_prio(const char *name, hookfn fn, enum hook_priority priority)
+{
+	rb_dlink_node *ptr;
+	struct hook_entry *entry = rb_malloc(sizeof *entry);
 	int i;
 
 	i = register_hook(name);
+	entry->fn = fn;
+	entry->priority = priority;
 
-	rb_dlinkAddAlloc(fn, &hooks[i].hooks);
+	RB_DLINK_FOREACH(ptr, hooks[i].hooks.head)
+	{
+		struct hook_entry *o = ptr->data;
+		if (entry->priority <= o->priority)
+		{
+			rb_dlinkAddBefore(ptr, entry, &entry->node, &hooks[i].hooks);
+			return;
+		}
+	}
+
+	rb_dlinkAddTail(entry, &entry->node, &hooks[i].hooks);
 }
 
 /* remove_hook()
@@ -187,12 +217,21 @@ add_hook(const char *name, hookfn fn)
 void
 remove_hook(const char *name, hookfn fn)
 {
+	rb_dlink_node *ptr, *scratch;
 	int i;
 
 	if((i = find_hook(name)) < 0)
 		return;
 
-	rb_dlinkFindDestroy(fn, &hooks[i].hooks);
+	RB_DLINK_FOREACH_SAFE(ptr, scratch, hooks[i].hooks.head)
+	{
+		struct hook_entry *entry = ptr->data;
+		if (entry->fn == fn)
+		{
+			rb_dlinkDelete(ptr, &hooks[i].hooks);
+			return;
+		}
+	}
 }
 
 /* call_hook()
@@ -201,7 +240,6 @@ remove_hook(const char *name, hookfn fn)
 void
 call_hook(int id, void *arg)
 {
-	hookfn fn;
 	rb_dlink_node *ptr;
 
 	/* The ID we were passed is the position in the hook table of this
@@ -209,8 +247,8 @@ call_hook(int id, void *arg)
 	 */
 	RB_DLINK_FOREACH(ptr, hooks[id].hooks.head)
 	{
-		fn = ptr->data;
-		fn(arg);
+		struct hook_entry *entry = ptr->data;
+		entry->fn(arg);
 	}
 }
 

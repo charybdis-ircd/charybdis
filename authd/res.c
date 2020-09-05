@@ -702,13 +702,9 @@ static int proc_answer(struct reslist *request, HEADER * header, char *buf, char
 			rb_strlcpy(request->name, hostbuf, IRCD_RES_HOSTLEN + 1);
 
 			return (1);
-		case T_CNAME:
-			/* real answer will follow */
-			current += rd_length;
-			break;
-		default:
-			break;
 		}
+		/* skip any other record type e.g. CNAME, DNAME; real answer should follow */
+		current += rd_length;
 	}
 
 	return (1);

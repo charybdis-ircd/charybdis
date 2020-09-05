@@ -147,6 +147,7 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 #define IsOperConfNeedSSL(x)	((x)->flags & OPER_NEEDSSL)
 
 #define HasPrivilege(x, y)	((x)->user != NULL && (x)->user->privset != NULL && privilegeset_in_set((x)->user->privset, (y)))
+#define MayHavePrivilege(x, y)	(HasPrivilege((x), (y)) || (IsOper((x)) && (x)->user != NULL && (x)->user->privset == NULL))
 
 #define IsOperGlobalKill(x)     (HasPrivilege((x), "oper:global_kill"))
 #define IsOperLocalKill(x)      (HasPrivilege((x), "oper:local_kill"))
@@ -165,8 +166,9 @@ extern void cluster_generic(struct Client *, const char *, int cltype,
 #define IsOperInvis(x)          (HasPrivilege((x), "oper:hidden"))
 #define IsOperRemoteBan(x)	(HasPrivilege((x), "oper:remoteban"))
 #define IsOperMassNotice(x)	(HasPrivilege((x), "oper:mass_notice"))
+#define IsOperGeneral(x)	(MayHavePrivilege((x), "oper:general"))
 
-#define SeesOper(target, source)	(IsOper((target)) && ((!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden")) || IsOper((source))))
+#define SeesOper(target, source)	(IsOper((target)) && ((!ConfigFileEntry.hide_opers && !HasPrivilege((target), "oper:hidden")) || HasPrivilege((source), "auspex:oper")))
 
 extern struct oper_conf *make_oper_conf(void);
 extern void free_oper_conf(struct oper_conf *);

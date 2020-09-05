@@ -772,6 +772,7 @@ set_default_conf(void)
 	ConfigFileEntry.use_propagated_bans = true;
 	ConfigFileEntry.max_ratelimit_tokens = 30;
 	ConfigFileEntry.away_interval = 30;
+	ConfigFileEntry.tls_ciphers_oper_only = false;
 
 #ifdef HAVE_LIBZ
 	ConfigFileEntry.compression_level = 4;
@@ -804,6 +805,7 @@ set_default_conf(void)
 	ConfigChannel.channel_target_change = true;
 	ConfigChannel.disable_local_channels = false;
 	ConfigChannel.displayed_usercount = 3;
+	ConfigChannel.opmod_send_statusmsg = false;
 
 	ConfigChannel.autochanmodes = MODE_TOPICLIMIT | MODE_NOPRIVMSGS;
 
@@ -1379,7 +1381,7 @@ get_printable_kline(struct Client *source_p, struct ConfItem *aconf,
 	*user = EmptyString(aconf->user) ? null : aconf->user;
 	*reason = get_user_ban_reason(aconf);
 
-	if(!IsOper(source_p))
+	if(!IsOperGeneral(source_p))
 		*oper_reason = NULL;
 	else
 	{
@@ -1566,7 +1568,7 @@ clear_out_old_conf(void)
 		alias_dict = NULL;
 	}
 
-	del_blacklist_all();
+	del_dnsbl_entry_all();
 
 	privilegeset_mark_all_illegal();
 

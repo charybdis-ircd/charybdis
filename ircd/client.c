@@ -580,9 +580,17 @@ check_one_kline(struct ConfItem *kline)
 	struct Client *client_p;
 	rb_dlink_node *ptr;
 	rb_dlink_node *next_ptr;
+	int masktype;
+	int bits;
+	struct rb_sockaddr_storage sockaddr;
+	struct sockaddr_in ip4;
+
+	masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
 
 	RB_DLINK_FOREACH_SAFE(ptr, next_ptr, lclient_list.head)
 	{
+		int matched = 0;
+
 		client_p = ptr->data;
 
 		if(IsMe(client_p) || !IsPerson(client_p))
@@ -592,28 +600,34 @@ check_one_kline(struct ConfItem *kline)
 			continue;
 
 		/* match one kline */
-		{
-			int matched = 0;
-			int masktype;
-			int bits;
-			struct rb_sockaddr_storage sockaddr;
-
-			masktype = parse_netmask(kline->host, (struct sockaddr_storage *)&sockaddr, &bits);
-
-			switch (masktype) {
-			case HM_IPV4:
-			case HM_IPV6:
-				if(comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
-						(struct sockaddr *)&sockaddr, bits))
-					matched = 1;
-			case HM_HOST:
-				if (match(kline->host, client_p->orighost))
-					matched = 1;
-			}
-
-			if (!matched)
+		switch (masktype) {
+		case HM_IPV4:
+		case HM_IPV6:
+			if (IsConfDoSpoofIp(client_p->localClient->att_conf) &&
+					IsConfKlineSpoof(client_p->localClient->att_conf))
 				continue;
+			if (client_p->localClient->ip.ss_family == AF_INET6 && sockaddr.ss_family == AF_INET &&
+					rb_ipv4_from_ipv6((struct sockaddr_in6 *)&client_p->localClient->ip, &ip4)
+						&& comp_with_mask_sock((struct sockaddr *)&ip4, (struct sockaddr *)&sockaddr, bits))
+				matched = 1;
+			else if (client_p->localClient->ip.ss_family == sockaddr.ss_family &&
+					comp_with_mask_sock((struct sockaddr *)&client_p->localClient->ip,
+						(struct sockaddr *)&sockaddr, bits))
+				matched = 1;
+			break;
+		case HM_HOST:
+			if (match(kline->host, client_p->orighost))
+				matched = 1;
+			if (IsConfDoSpoofIp(client_p->localClient->att_conf) &&
+					IsConfKlineSpoof(client_p->localClient->att_conf))
+				continue;
+			if (match(kline->host, client_p->sockhost))
+				matched = 1;
+			break;
 		}
+
+		if (!matched)
+			continue;
 
 		if(IsExemptKline(client_p))
 		{
@@ -1819,11 +1833,11 @@ show_ip(struct Client *source_p, struct Client *target_p)
 		 * to local opers.
 		 */
 		if(!ConfigFileEntry.hide_spoof_ips &&
-		   (source_p == NULL || MyOper(source_p)))
+		   (source_p == NULL || (MyConnect(source_p) && HasPrivilege(source_p, "auspex:hostname"))))
 			return 1;
 		return 0;
 	}
-	else if(IsDynSpoof(target_p) && (source_p != NULL && !IsOper(source_p)))
+	else if(IsDynSpoof(target_p) && (source_p != NULL && !HasPrivilege(source_p, "auspex:hostname")))
 		return 0;
 	else
 		return 1;

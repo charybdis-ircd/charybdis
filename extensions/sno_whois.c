@@ -12,6 +12,7 @@
 #include "client.h"
 #include "ircd.h"
 #include "send.h"
+#include "s_newconf.h"
 
 /* undefine this to allow anyone to receive whois notifications */
 #define OPERONLY
@@ -57,7 +58,7 @@ show_whois(hook_data_client *data)
 
 	if(MyClient(target_p) &&
 #ifdef OPERONLY
-	   IsOper(target_p) &&
+	   IsOperGeneral(target_p) &&
 #endif
 	   (source_p != target_p) &&
 	   (target_p->snomask & snomask_modes['W']))

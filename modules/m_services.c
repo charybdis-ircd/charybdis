@@ -334,7 +334,7 @@ h_svc_stats(hook_data_int *data)
 	char statchar = (char) data->arg2;
 	rb_dlink_node *ptr;
 
-	if (statchar == 'U' && IsOper(data->client))
+	if (statchar == 'U' && IsOperGeneral(data->client))
 	{
 		RB_DLINK_FOREACH(ptr, service_list.head)
 		{

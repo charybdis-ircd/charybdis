@@ -49,7 +49,7 @@ int rb_gettimeofday(struct timeval *tv, void *tz)
 
 unsigned int CAP_ACCOUNT_TAG;
 unsigned int CAP_SERVER_TIME;
-unsigned int CAP_INVITE_NOTIFY;
+unsigned int CAP_MULTI_PREFIX;
 
 static struct Client *user;
 static struct Client *server;
@@ -1182,7 +1182,7 @@ static void sendto_channel_opmod__local(void)
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
-	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:#test> Hello World!" CRLF, server, MSG);
+	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "No users to receive message; " MSG);
 
 	// Moderated channel
@@ -1211,6 +1211,73 @@ static void sendto_channel_opmod__local(void)
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
 	is_client_sendq(":" TEST_ME_ID "90004 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	standard_free();
+}
+
+static void sendto_channel_opmod_statusmsg__local(void)
+{
+	standard_init();
+	ConfigChannel.opmod_send_statusmsg = true;
+
+	// This function does not support TS5...
+	standard_ids();
+
+	// Without CAP_CHW | CAP_EOPMOD
+	standard_server_caps(0, CAP_CHW | CAP_EOPMOD);
+
+	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
+	is_client_sendq_empty(user, "Not on channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq_empty(server, "No users to receive message; " MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	// With CAP_CHW, without CAP_EOPMOD
+	standard_server_caps(CAP_CHW, CAP_EOPMOD);
+
+	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
+	is_client_sendq_empty(user, "Not on channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	// Moderated channel
+	channel->mode.mode |= MODE_MODERATED;
+
+	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
+	is_client_sendq_empty(user, "Not on channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_ME_ID "90004 TEST @" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	// With CAP_CHW | CAP_EOPMOD
+	channel->mode.mode &= ~MODE_MODERATED;
+	standard_server_caps(CAP_CHW | CAP_EOPMOD, 0);
+
+	sendto_channel_opmod(local_chan_p, local_chan_p, channel, "TEST", "Hello World!");
+	is_client_sendq_empty(user, "Not on channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":LChanPeon" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_ME_ID "90004 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	ConfigChannel.opmod_send_statusmsg = false;
+	standard_free();
 }
 
 static void sendto_channel_opmod__local__tags(void)
@@ -1248,7 +1315,7 @@ static void sendto_channel_opmod__local__tags(void)
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_p, "Message source; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
-	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:#test> Hello World!" CRLF, server, MSG);
+	is_client_sendq(":" TEST_ME_ID " NOTICE @" TEST_CHANNEL " :<LChanPeon:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "No users to receive message; " MSG);
 
 	// Moderated channel
@@ -1282,6 +1349,8 @@ static void sendto_channel_opmod__local__tags(void)
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
 	is_client_sendq(":" TEST_ME_ID "90004 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	standard_free();
 }
 
 static void sendto_channel_opmod__remote(void)
@@ -1310,7 +1379,7 @@ static void sendto_channel_opmod__remote(void)
 	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
-	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:#test> Hello World!" CRLF, server, MSG);
+	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "Message source; " MSG);
 
 	// Moderated channel
@@ -1336,6 +1405,63 @@ static void sendto_channel_opmod__remote(void)
 	is_client_sendq(":" TEST_SERVER2_ID "90205 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "Message source; " MSG);
 
+	standard_free();
+}
+
+static void sendto_channel_opmod_statusmsg__remote(void)
+{
+	standard_init();
+	ConfigChannel.opmod_send_statusmsg = true;
+
+	// This function does not support TS5...
+	standard_ids();
+
+	// Without CAP_CHW | CAP_EOPMOD
+	standard_server_caps(0, CAP_CHW | CAP_EOPMOD);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq_empty(server, "Message source; " MSG);
+	is_client_sendq_empty(server2, "No users to receive message; " MSG);
+
+	// With CAP_CHW, without CAP_EOPMOD
+	standard_server_caps(CAP_CHW, CAP_EOPMOD);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
+
+	// Moderated channel
+	channel->mode.mode |= MODE_MODERATED;
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID "90205 TEST @" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
+
+	// With CAP_CHW | CAP_EOPMOD
+	channel->mode.mode &= ~MODE_MODERATED;
+	standard_server_caps(CAP_CHW | CAP_EOPMOD, 0);
+
+	sendto_channel_opmod(server2, remote2_chan_d, channel, "TEST", "Hello World!");
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_o, "On channel; " MSG);
+	is_client_sendq(":R2ChanDeaf" TEST_ID_SUFFIX " TEST @" TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
+	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
+	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
+	is_client_sendq(":" TEST_SERVER2_ID "90205 TEST =" TEST_CHANNEL " :Hello World!" CRLF, server, MSG);
+	is_client_sendq_empty(server2, "Message source; " MSG);
+
+	ConfigChannel.opmod_send_statusmsg = false;
 	standard_free();
 }
 
@@ -1370,7 +1496,7 @@ static void sendto_channel_opmod__remote__tags(void)
 	is_client_sendq("@time=" ADVENTURE_TIME " :R2ChanDeaf" TEST_ID_SUFFIX " TEST " TEST_CHANNEL " :Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_v, "Not +o; " MSG);
 	is_client_sendq_empty(local_chan_d, "Deaf; " MSG);
-	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:#test> Hello World!" CRLF, server, MSG);
+	is_client_sendq(":" TEST_SERVER2_ID " NOTICE @" TEST_CHANNEL " :<R2ChanDeaf:" TEST_CHANNEL "> Hello World!" CRLF, server, MSG);
 	is_client_sendq_empty(server2, "Message source; " MSG);
 
 	// Moderated channel
@@ -1448,7 +1574,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, channel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not an oper; " MSG);
@@ -1477,7 +1603,7 @@ static void sendto_channel_local1(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1538,7 +1664,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, channel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not an oper; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not an oper; " MSG);
@@ -1570,7 +1696,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("@account=test Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1589,7 +1715,7 @@ static void sendto_channel_local1__tags(void)
 	is_client_sendq_empty(server2, MSG);
 	is_client_sendq_empty(server3, MSG);
 
-	sendto_channel_local(user, ONLY_OPERS, lchannel, "Hello %s!", "World");
+	sendto_channel_local_priv(user, ALL_MEMBERS, "test:test", lchannel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not an oper; " MSG);
 	is_client_sendq("Hello World!" CRLF, oper1, "Is an oper; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, oper2, "Is an oper; " MSG);
@@ -1604,10 +1730,10 @@ static void sendto_channel_local_with_capability1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1617,7 +1743,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1637,7 +1763,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1647,7 +1773,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1667,7 +1793,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1677,7 +1803,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1697,7 +1823,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1707,7 +1833,7 @@ static void sendto_channel_local_with_capability1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1734,8 +1860,8 @@ static void sendto_channel_local_with_capability1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
 	strcpy(user->user->suser, "test");
 	local_chan_o->localClient->caps |= CAP_ACCOUNT_TAG;
@@ -1743,7 +1869,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1753,7 +1879,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1773,7 +1899,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1783,7 +1909,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_VOICE, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not +v; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +v; " MSG);
@@ -1803,7 +1929,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "Has +o; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1813,7 +1939,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +o; " MSG);
@@ -1833,7 +1959,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test Hello World!" CRLF, local_chan_o, "Has +o/+v; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1843,7 +1969,7 @@ static void sendto_channel_local_with_capability1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability(user, CHFL_CHANOP | CHFL_VOICE, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Has +o/+v; " MSG);
@@ -1870,10 +1996,10 @@ static void sendto_channel_local_with_capability_butone1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1883,7 +2009,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1903,7 +2029,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1913,7 +2039,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1933,7 +2059,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1943,7 +2069,7 @@ static void sendto_channel_local_with_capability_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -1970,8 +2096,8 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_chan_p->user->suser, "test_p");
@@ -1980,7 +2106,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -1990,7 +2116,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(NULL, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2010,7 +2136,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2020,7 +2146,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_o, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2040,7 +2166,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_INVITE_NOTIFY, 0, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, CAP_MULTI_PREFIX, 0, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test_p Hello World!" CRLF, local_chan_o, "On channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2050,7 +2176,7 @@ static void sendto_channel_local_with_capability_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_INVITE_NOTIFY, channel, "Hello %s!", "World");
+	sendto_channel_local_with_capability_butone(local_chan_p, ALL_MEMBERS, 0, CAP_MULTI_PREFIX, channel, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "On channel; " MSG);
@@ -2280,10 +2406,10 @@ static void sendto_common_channels_local1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_common_channels_local(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2294,7 +2420,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2316,7 +2442,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2326,7 +2452,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2346,9 +2472,9 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2358,7 +2484,7 @@ static void sendto_common_channels_local1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2385,8 +2511,8 @@ static void sendto_common_channels_local1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_no_chan->user->suser, "test_n");
@@ -2395,7 +2521,7 @@ static void sendto_common_channels_local1__tags(void)
 	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME ";account=test_o Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2406,7 +2532,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_chan_o, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Has cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2430,7 +2556,7 @@ static void sendto_common_channels_local1__tags(void)
 
 	local_no_chan->localClient->caps |= CAP_SERVER_TIME;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2440,7 +2566,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2460,10 +2586,10 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CAP_MULTI_PREFIX;
 	local_no_chan->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2473,7 +2599,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2495,7 +2621,7 @@ static void sendto_common_channels_local1__tags(void)
 
 	local_no_chan->localClient->caps &= ~CAP_SERVER_TIME;
 
-	sendto_common_channels_local(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2505,7 +2631,7 @@ static void sendto_common_channels_local1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2532,10 +2658,10 @@ static void sendto_common_channels_local_butone1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_common_channels_local_butone(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2546,7 +2672,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2568,7 +2694,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2578,7 +2704,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2598,9 +2724,9 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2610,7 +2736,7 @@ static void sendto_common_channels_local_butone1(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2637,8 +2763,8 @@ static void sendto_common_channels_local_butone1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
 	strcpy(local_chan_o->user->suser, "test_o");
 	strcpy(local_no_chan->user->suser, "test_n");
@@ -2647,7 +2773,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local_butone(local_chan_o, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -2658,7 +2784,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_chan_o, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_chan_o, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Is the one (neo); " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_ov, "Doesn't have cap; " MSG);
@@ -2682,7 +2808,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 
 	local_no_chan->localClient->caps |= CAP_SERVER_TIME;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2692,7 +2818,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2712,10 +2838,10 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	local_no_chan->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_no_chan->localClient->caps |= CAP_MULTI_PREFIX;
 	local_no_chan->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2725,7 +2851,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2747,7 +2873,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 
 	local_no_chan->localClient->caps &= ~CAP_SERVER_TIME;
 
-	sendto_common_channels_local_butone(local_no_chan, CAP_INVITE_NOTIFY, 0, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, CAP_MULTI_PREFIX, 0, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -2757,7 +2883,7 @@ static void sendto_common_channels_local_butone1__tags(void)
 	is_client_sendq_empty(server, MSG);
 	is_client_sendq_empty(server2, MSG);
 
-	sendto_common_channels_local_butone(local_no_chan, 0, CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_common_channels_local_butone(local_no_chan, 0, CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_o, "Not on common channel; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Not on common channel; " MSG);
@@ -3198,10 +3324,10 @@ static void sendto_local_clients_with_capability1(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
-	sendto_local_clients_with_capability(CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_local_clients_with_capability(CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Doesn't have cap; " MSG);
 	is_client_sendq("Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -3218,8 +3344,8 @@ static void sendto_local_clients_with_capability1__tags(void)
 {
 	standard_init();
 
-	local_chan_o->localClient->caps |= CAP_INVITE_NOTIFY;
-	local_chan_v->localClient->caps |= CAP_INVITE_NOTIFY;
+	local_chan_o->localClient->caps |= CAP_MULTI_PREFIX;
+	local_chan_v->localClient->caps |= CAP_MULTI_PREFIX;
 
 	strcpy(user->user->suser, "test");
 	strcpy(local_chan_o->user->suser, "test_o");
@@ -3232,7 +3358,7 @@ static void sendto_local_clients_with_capability1__tags(void)
 	local_chan_ov->localClient->caps |= CAP_SERVER_TIME;
 	local_chan_v->localClient->caps |= CAP_ACCOUNT_TAG;
 
-	sendto_local_clients_with_capability(CAP_INVITE_NOTIFY, "Hello %s!", "World");
+	sendto_local_clients_with_capability(CAP_MULTI_PREFIX, "Hello %s!", "World");
 	is_client_sendq_empty(user, "Doesn't have cap; " MSG);
 	is_client_sendq("@time=" ADVENTURE_TIME " Hello World!" CRLF, local_chan_o, "Has cap; " MSG);
 	is_client_sendq_empty(local_chan_ov, "Doesn't have cap; " MSG);
@@ -4913,8 +5039,8 @@ int main(int argc, char *argv[])
 	CAP_SERVER_TIME = capability_get(cli_capindex, "server-time", NULL);
 	ok(CAP_SERVER_TIME != 0, "CAP_SERVER_TIME missing; " MSG);
 
-	CAP_INVITE_NOTIFY = capability_get(cli_capindex, "invite-notify", NULL);
-	ok(CAP_INVITE_NOTIFY != 0, "CAP_INVITE_NOTIFY missing; " MSG);
+	CAP_MULTI_PREFIX = capability_get(cli_capindex, "multi-prefix", NULL);
+	ok(CAP_MULTI_PREFIX != 0, "CAP_MULTI_PREFIX missing; " MSG);
 
 	sendto_one1();
 	sendto_one1__tags();
@@ -4939,8 +5065,10 @@ int main(int argc, char *argv[])
 	sendto_channel_flags__remote__chanop_voice();
 
 	sendto_channel_opmod__local();
+	sendto_channel_opmod_statusmsg__local();
 	sendto_channel_opmod__local__tags();
 	sendto_channel_opmod__remote();
+	sendto_channel_opmod_statusmsg__remote();
 	sendto_channel_opmod__remote__tags();
 	sendto_channel_local1();
 	sendto_channel_local1__tags();

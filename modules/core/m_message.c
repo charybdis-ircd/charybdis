@@ -513,7 +513,7 @@ msg_channel(enum message_type msgtype,
 	if((result = can_send(chptr, source_p, NULL)))
 	{
 		if(result != CAN_SEND_OPV && MyClient(source_p) &&
-		   !IsOper(source_p) &&
+		   !IsOperGeneral(source_p) &&
 		   !add_channel_target(source_p, chptr))
 		{
 			sendto_one(source_p, form_str(ERR_TARGCHANGE),
@@ -531,7 +531,7 @@ msg_channel(enum message_type msgtype,
 			(!(chptr->mode.mode & MODE_NOPRIVMSGS) ||
 			 IsMember(source_p, chptr)))
 	{
-		if(MyClient(source_p) && !IsOper(source_p) &&
+		if(MyClient(source_p) && !IsOperGeneral(source_p) &&
 		   !add_channel_target(source_p, chptr))
 		{
 			sendto_one(source_p, form_str(ERR_TARGCHANGE),
@@ -718,40 +718,13 @@ msg_client(enum message_type msgtype,
 
 	if(MyClient(source_p))
 	{
-		/*
-		 * XXX: Controversial? Allow target users to send replies
-		 * through a +g.  Rationale is that people can presently use +g
-		 * as a way to taunt users, e.g. harass them and hide behind +g
-		 * as a way of griefing.  --nenolod
-		 */
-		if(msgtype != MESSAGE_TYPE_NOTICE &&
-				(IsSetCallerId(source_p) ||
-				 (IsSetRegOnlyMsg(source_p) && !target_p->user->suser[0])) &&
-				!accept_message(target_p, source_p) &&
-				!IsOper(target_p))
-		{
-			if(rb_dlink_list_length(&source_p->localClient->allow_list) <
-					(unsigned long)ConfigFileEntry.max_accept)
-			{
-				rb_dlinkAddAlloc(target_p, &source_p->localClient->allow_list);
-				rb_dlinkAddAlloc(source_p, &target_p->on_allow_list);
-			}
-			else
-			{
-				sendto_one_numeric(source_p, ERR_OWNMODE,
-						form_str(ERR_OWNMODE),
-						target_p->name, "+g");
-				return;
-			}
-		}
-
 		/* reset idle time for message only if its not to self
 		 * and its not a notice */
 		if(msgtype != MESSAGE_TYPE_NOTICE)
 			source_p->localClient->last = rb_current_time();
 
 		/* auto cprivmsg/cnotice */
-		do_floodcount = !IsOper(source_p) &&
+		do_floodcount = !IsOperGeneral(source_p) &&
 			!find_allowing_channel(source_p, target_p);
 
 		/* target change stuff, dont limit ctcp replies as that
@@ -792,22 +765,22 @@ msg_client(enum message_type msgtype,
 		sendto_one_numeric(source_p, RPL_AWAY, form_str(RPL_AWAY),
 				   target_p->name, target_p->user->away);
 
+	hdata.msgtype = msgtype;
+	hdata.source_p = source_p;
+	hdata.target_p = target_p;
+	hdata.text = text;
+	hdata.approved = 0;
+
+	call_hook(h_privmsg_user, &hdata);
+
+	/* buffer location may have changed. */
+	text = hdata.text;
+
+	if (hdata.approved != 0)
+		return;
+
 	if(MyClient(target_p))
 	{
-		hdata.msgtype = msgtype;
-		hdata.source_p = source_p;
-		hdata.target_p = target_p;
-		hdata.text = text;
-		hdata.approved = 0;
-
-		call_hook(h_privmsg_user, &hdata);
-
-		/* buffer location may have changed. */
-		text = hdata.text;
-
-		if (hdata.approved != 0)
-			return;
-
 		if (EmptyString(text))
 		{
 			/* could be empty after colour stripping and
@@ -817,58 +790,8 @@ msg_client(enum message_type msgtype,
 			return;
 		}
 
-		/* XXX Controversial? allow opers always to send through a +g */
-		if(!IsServer(source_p) && (IsSetCallerId(target_p) ||
-					(IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])))
-		{
-			/* Here is the anti-flood bot/spambot code -db */
-			if(accept_message(source_p, target_p) || IsOper(source_p))
-			{
-				add_reply_target(target_p, source_p);
-				sendto_one(target_p, ":%s!%s@%s %s %s :%s",
-					   source_p->name,
-					   source_p->username,
-					   source_p->host, cmdname[msgtype], target_p->name, text);
-			}
-			else if (IsSetRegOnlyMsg(target_p) && !source_p->user->suser[0])
-			{
-				if (msgtype != MESSAGE_TYPE_NOTICE)
-					sendto_one_numeric(source_p, ERR_NONONREG,
-							form_str(ERR_NONONREG),
-							target_p->name);
-			}
-			else
-			{
-				/* check for accept, flag recipient incoming message */
-				if(msgtype != MESSAGE_TYPE_NOTICE)
-				{
-					sendto_one_numeric(source_p, ERR_TARGUMODEG,
-							   form_str(ERR_TARGUMODEG),
-							   target_p->name);
-				}
-
-				if((target_p->localClient->last_caller_id_time +
-				    ConfigFileEntry.caller_id_wait) < rb_current_time())
-				{
-					if(msgtype != MESSAGE_TYPE_NOTICE)
-						sendto_one_numeric(source_p, RPL_TARGNOTIFY,
-								   form_str(RPL_TARGNOTIFY),
-								   target_p->name);
-
-					add_reply_target(target_p, source_p);
-					sendto_one(target_p, form_str(RPL_UMODEGMSG),
-						   me.name, target_p->name, source_p->name,
-						   source_p->username, source_p->host);
-
-					target_p->localClient->last_caller_id_time = rb_current_time();
-				}
-			}
-		}
-		else
-		{
-			add_reply_target(target_p, source_p);
-			sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
-		}
+		add_reply_target(target_p, source_p);
+		sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
 	}
 	else
 		sendto_anywhere(target_p, source_p, cmdname[msgtype], ":%s", text);
@@ -958,7 +881,6 @@ handle_special(enum message_type msgtype, struct Client *client_p,
 {
 	struct Client *target_p;
 	char *server;
-	char *s;
 
 	/* user[%host]@server addressed?
 	 * NOTE: users can send to user@server, but not user%host@server
@@ -1032,22 +954,6 @@ handle_special(enum message_type msgtype, struct Client *client_p,
 		{
 			sendto_one(source_p, form_str(ERR_NOPRIVS),
 				   me.name, source_p->name, "mass_notice");
-			return;
-		}
-
-		if((s = strrchr(nick, '.')) == NULL)
-		{
-			sendto_one_numeric(source_p, ERR_NOTOPLEVEL,
-					   form_str(ERR_NOTOPLEVEL), nick);
-			return;
-		}
-		while(*++s)
-			if(*s == '.' || *s == '*' || *s == '?')
-				break;
-		if(*s == '*' || *s == '?')
-		{
-			sendto_one_numeric(source_p, ERR_WILDTOPLEVEL,
-					   form_str(ERR_WILDTOPLEVEL), nick);
 			return;
 		}
 

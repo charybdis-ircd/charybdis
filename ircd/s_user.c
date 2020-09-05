@@ -81,7 +81,7 @@ int user_modes[256] = {
 	0,			/* O */
 	0,			/* P */
 	UMODE_NOFORWARD,	/* Q */
-	UMODE_REGONLYMSG,	/* R */
+	0,			/* R */
 	UMODE_SERVICE,		/* S */
 	0,			/* T */
 	0,			/* U */
@@ -97,7 +97,7 @@ int user_modes[256] = {
 	0,			/* d */
 	0,			/* e */
 	0,			/* f */
-	UMODE_CALLERID,		/* g */
+	0,			/* g */
 	0,			/* h */
 	UMODE_INVISIBLE,	/* i */
 	0,			/* j */
@@ -213,25 +213,25 @@ authd_check(struct Client *client_p, struct Client *source_p)
 
 	switch(source_p->preClient->auth.cause)
 	{
-	case 'B':	/* Blacklists */
+	case 'B':	/* DNSBL */
 		{
-			struct BlacklistStats *stats;
-			char *blacklist = source_p->preClient->auth.data;
+			struct DNSBLEntryStats *stats;
+			char *dnsbl_name = source_p->preClient->auth.data;
 
-			if(bl_stats != NULL)
-				if((stats = rb_dictionary_retrieve(bl_stats, blacklist)) != NULL)
+			if(dnsbl_stats != NULL)
+				if((stats = rb_dictionary_retrieve(dnsbl_stats, dnsbl_name)) != NULL)
 					stats->hits++;
 
 			if(IsExemptKline(source_p) || IsConfExemptDNSBL(aconf))
 			{
 				sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s, but you are exempt",
-						source_p->sockhost, blacklist);
+						source_p->sockhost, dnsbl_name);
 				break;
 			}
 
 			sendto_realops_snomask(SNO_REJ, L_NETWIDE,
 				"Listed on DNSBL %s: %s (%s@%s) [%s] [%s]",
-				blacklist, source_p->name, source_p->username, source_p->host,
+				dnsbl_name, source_p->name, source_p->username, source_p->host,
 				IsIPSpoof(source_p) ? "255.255.255.255" : source_p->sockhost,
 				source_p->info);
 
@@ -239,9 +239,9 @@ authd_check(struct Client *client_p, struct Client *source_p)
 				me.name, source_p->name, reason);
 
 			sendto_one_notice(source_p, ":*** Your IP address %s is listed in %s",
-				source_p->sockhost, blacklist);
-			add_reject(source_p, NULL, NULL, NULL, "Banned (DNS blacklist)");
-			exit_client(client_p, source_p, &me, "Banned (DNS blacklist)");
+				source_p->sockhost, dnsbl_name);
+			add_reject(source_p, NULL, NULL, NULL, "Banned (listed in a DNSBL)");
+			exit_client(client_p, source_p, &me, "Banned (listed in a DNSBL)");
 			reject = true;
 		}
 		break;
@@ -386,7 +386,9 @@ register_local_user(struct Client *client_p, struct Client *source_p)
 	if(source_p->preClient->auth.cid)
 		return -1;
 
-	client_p->localClient->last = rb_current_time();
+	/* Set firsttime here so that post_registration_delay works from registration,
+	 * rather than initial connection.  */
+	source_p->localClient->firsttime = client_p->localClient->last = rb_current_time();
 
 	/* XXX - fixme. we shouldnt have to build a users buffer twice.. */
 	if(!IsGotId(source_p) && (strchr(source_p->username, '[') != NULL))
@@ -925,7 +927,7 @@ report_and_set_user_flags(struct Client *source_p, struct ConfItem *aconf)
 	if(IsConfExemptDNSBL(aconf))
 		/* kline exempt implies this, don't send both */
 		if(!IsConfExemptKline(aconf))
-			sendto_one_notice(source_p, ":*** You are exempt from DNS blacklists");
+			sendto_one_notice(source_p, ":*** You are exempt from DNSBL listings");
 
 	/* If this user is exempt from user limits set it F lined" */
 	if(IsConfExemptLimits(aconf))
@@ -1045,7 +1047,7 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 
 	if(source_p != target_p)
 	{
-		if (MyOper(source_p) && parc < 3)
+		if (HasPrivilege(source_p, "auspex:umodes") && parc < 3)
 			show_other_user_mode(source_p, target_p);
 		else
 			sendto_one(source_p, form_str(ERR_USERSDONTMATCH), me.name, source_p->name);
@@ -1114,11 +1116,6 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 				if(MyConnect(source_p))
 				{
 					source_p->umodes &= ~ConfigFileEntry.oper_only_umodes;
-					if (!(source_p->umodes & UMODE_SERVNOTICE) && source_p->snomask != 0)
-					{
-						source_p->snomask = 0;
-						showsnomask = true;
-					}
 					source_p->flags &= ~OPER_FLAGS;
 
 					rb_dlinkFindDestroy(source_p, &local_oper_list);
@@ -1156,8 +1153,8 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 		case 's':
 			if (MyConnect(source_p))
 			{
-				if(!IsOper(source_p)
-						&& (ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE))
+				if((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+						(!IsOper(source_p) || !HasPrivilege(source_p, "usermode:servnotice")))
 				{
 					if (what == MODE_ADD || source_p->umodes & UMODE_SERVNOTICE)
 						badflag = true;
@@ -1216,6 +1213,18 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 	if(badflag)
 		sendto_one(source_p, form_str(ERR_UMODEUNKNOWNFLAG), me.name, source_p->name);
 
+	if(MyClient(source_p))
+	{
+		if ((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+				!HasPrivilege(source_p, "usermode:servnotice"))
+			source_p->umodes &= ~UMODE_SERVNOTICE;
+		if (!(source_p->umodes & UMODE_SERVNOTICE) && source_p->snomask != 0)
+		{
+			source_p->snomask = 0;
+			showsnomask = true;
+		}
+	}
+
 	if(MyClient(source_p) && (source_p->snomask & SNO_NCHANGE) && !IsOperN(source_p))
 	{
 		sendto_one_notice(source_p, ":*** You need oper and nick_changes flag for +s +n");
@@ -1234,6 +1243,9 @@ user_mode(struct Client *client_p, struct Client *source_p, int parc, const char
 		sendto_one_notice(source_p, ":*** You need oper and admin flag for +a");
 		source_p->umodes &= ~UMODE_ADMIN;
 	}
+
+	if(MyClient(source_p))
+		source_p->handler = IsOperGeneral(source_p) ? OPER_HANDLER : CLIENT_HANDLER;
 
 	/* let modules providing usermodes know that we've changed our usermode --nenolod */
 	hdata.client = source_p;
@@ -1432,10 +1444,18 @@ oper_up(struct Client *source_p, struct oper_conf *oper_p)
 		source_p->snomask &= ~SNO_NCHANGE;
 	if(!IsOperOperwall(source_p))
 		source_p->umodes &= ~UMODE_OPERWALL;
+	if((ConfigFileEntry.oper_only_umodes & UMODE_SERVNOTICE) &&
+			!HasPrivilege(source_p, "usermode:servnotice"))
+	{
+		source_p->umodes &= ~UMODE_SERVNOTICE;
+		source_p->snomask = 0;
+	}
 	hdata.client = source_p;
 	hdata.oldumodes = old;
 	hdata.oldsnomask = oldsnomask;
 	call_hook(h_umode_changed, &hdata);
+
+	source_p->handler = IsOperGeneral(source_p) ? OPER_HANDLER : CLIENT_HANDLER;
 
 	sendto_realops_snomask(SNO_GENERAL, L_ALL,
 			     "%s (%s!%s@%s) is now an operator", oper_p->name, source_p->name,
