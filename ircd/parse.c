@@ -391,7 +391,7 @@ remove_unknown(struct Client *client_p, const char *lsender, char *lbuffer)
 	else if(!IsDigit(lsender[0]))
 		;
 	else if(slen != 9)
-		sendto_realops_snomask(SNO_DEBUG, L_ALL,
+		sendto_realops_snomask(SNO_DEBUG, L_NETWIDE,
 				     "Invalid prefix (%s) from %s",
 				     lbuffer, client_p->name);
 	else

@@ -1105,7 +1105,7 @@ serv_connect(struct server_conf *server_p, struct Client *by)
 	 */
 	if((client_p = find_server(NULL, server_p->name)))
 	{
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Server %s already present from %s",
 				     server_p->name, client_p->name);
 		if(by && IsPerson(by) && !MyClient(by))
