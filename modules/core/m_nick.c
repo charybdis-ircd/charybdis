@@ -790,7 +790,7 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
 	/* if we dont have a ts, or their TS's are the same, kill both */
 	if(!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
 	{
-		sendto_realops_snomask(SNO_SKILL, L_NEWIDE,
+		sendto_realops_snomask(SNO_SKILL, L_NETWIDE,
 				     "Nick collision on %s(%s <- %s)(both %s)",
 				     target_p->name, target_p->from->name, client_p->name, action);
 
