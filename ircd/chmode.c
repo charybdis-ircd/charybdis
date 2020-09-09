@@ -1743,7 +1743,7 @@ set_channel_mode(struct Client *client_p, struct Client *source_p,
 	for(j = 0; j < 3; j++)
 	{
 		int send_flags = flags = flags_list[j];
-		const char *priv = "";
+		const char *priv = NULL;
 		if (flags == ONLY_OPERS)
 		{
 			send_flags = ALL_MEMBERS;
