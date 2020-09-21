@@ -857,7 +857,7 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 
 		if(fl & CHFL_ADMIN)
 		{
-			*mbuf++ = 'a';
+			*mbuf++ = 'q';
 			para[pargs++] = target_p->name;
 
 			if(pargs >= MAXMODEPARAMS)
@@ -1224,7 +1224,7 @@ remove_our_modes(struct Channel *chptr, struct Client *source_p)
 		{
 			msptr->flags &= ~CHFL_ADMIN;
 			lpara[count++] = msptr->client_p->name;
-			*mbuf++ = 'a';
+			*mbuf++ = 'q';
 
 			if(count >= MAXMODEPARAMS)
 			{
