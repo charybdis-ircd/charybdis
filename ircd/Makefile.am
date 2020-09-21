@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 prefix		= @prefix@
 libircddir	= @libdir@
 
-AM_CPPFLAGS = @LTDLINCL@ -I$(top_srcdir)/include -I$(top_srcdir)/librb/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/librb/include
 AM_LDFLAGS  = -L$(top_srcdir)/librb/src -export-dynamic -avoid-version -no-undefined
 AM_YFLAGS = -d
 
@@ -68,7 +68,7 @@ libircd_la_SOURCES =                  \
   whowas.c			\
   wsproc.c
 libircd_la_LDFLAGS = $(EXTRA_FLAGS) -avoid-version -no-undefined
-libircd_la_LIBADD = @LIBLTDL@ -L$(top_srcdir)/librb/src -lrb
+libircd_la_LIBADD = -L$(top_srcdir)/librb/src -lrb
 libircd_LTLIBRARIES = libircd.la
 
 bin_PROGRAMS = ophion

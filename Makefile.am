@@ -3,10 +3,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = librb
 
-if BUILD_LTDL
-SUBDIRS += libltdl
-endif
-
 SUBDIRS += ircd \
            ssld \
            wsockd \

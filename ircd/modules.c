@@ -38,30 +38,30 @@
 #include "capability.h"
 #include "hash.h"
 
-#include <ltdl.h>
+#include <dlfcn.h>
 
 #ifndef LT_MODULE_EXT
-#	error "Charybdis requires loadable module support."
+# define LT_MODULE_EXT ".so"
 #endif
 
 rb_dlink_list module_list;
 rb_dlink_list mod_paths;
 
 static const char *core_module_table[] = {
-	"m_ban",
-	"m_die",
-	"m_error",
-	"m_join",
-	"m_kick",
-	"m_kill",
-	"m_message",
-	"m_mode",
-	"m_modules",
-	"m_nick",
-	"m_part",
-	"m_quit",
-	"m_server",
-	"m_squit",
+	"m_ban.so",
+	"m_die.so",
+	"m_error.so",
+	"m_join.so",
+	"m_kick.so",
+	"m_kill.so",
+	"m_message.so",
+	"m_mode.so",
+	"m_modules.so",
+	"m_nick.so",
+	"m_part.so",
+	"m_quit.so",
+	"m_server.so",
+	"m_squit.so",
 	NULL
 };
 
@@ -70,12 +70,6 @@ static const char *core_module_table[] = {
 void
 init_modules(void)
 {
-	if(lt_dlinit())
-	{
-		ilog(L_MAIN, "lt_dlinit failed");
-		exit(EXIT_FAILURE);
-	}
-
 	/* Add the default paths we look in to the module system --nenolod */
 	mod_add_path(ircd_paths[IRCD_PATH_MODULES]);
 	mod_add_path(ircd_paths[IRCD_PATH_AUTOLOAD_MODULES]);
@@ -423,7 +417,7 @@ unload_one_module(const char *name, bool warn)
 		break;
 	}
 
-	lt_dlclose(mod->address);
+	dlclose(mod->address);
 
 	rb_dlinkDelete(&mod->node, &module_list);
 	rb_free(mod->name);
@@ -450,7 +444,7 @@ bool
 load_a_module(const char *path, bool warn, int origin, bool core)
 {
 	struct module *mod;
-	lt_dlhandle tmpptr;
+	void *tmpptr;
 	char *mod_displayname, *c;
 	const char *ver, *description = NULL;
 
@@ -462,11 +456,11 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	if((c = rb_strcasestr(mod_displayname, LT_MODULE_EXT)) != NULL)
 		*c = '\0';
 
-	tmpptr = lt_dlopenext(path);
+	tmpptr = dlopen(path, RTLD_LOCAL | RTLD_NOW);
 
 	if(tmpptr == NULL)
 	{
-		const char *err = lt_dlerror();
+		const char *err = dlerror();
 
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 				     "Error loading module %s: %s", mod_displayname, err);
@@ -481,16 +475,16 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	 * as a single int in order to determine the API version.
 	 *      -larne.
 	 */
-	mapi_version = (int *) (uintptr_t) lt_dlsym(tmpptr, "_mheader");
+	mapi_version = (int *) (uintptr_t) dlsym(tmpptr, "_mheader");
 	if((mapi_version == NULL
-	    && (mapi_version = (int *) (uintptr_t) lt_dlsym(tmpptr, "__mheader")) == NULL)
+	    && (mapi_version = (int *) (uintptr_t) dlsym(tmpptr, "__mheader")) == NULL)
 	   || MAPI_MAGIC(*mapi_version) != MAPI_MAGIC_HDR)
 	{
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 				     "Data format error: module %s has no MAPI header.",
 				     mod_displayname);
 		ilog(L_MAIN, "Data format error: module %s has no MAPI header.", mod_displayname);
-		(void) lt_dlclose(tmpptr);
+		(void) dlclose(tmpptr);
 		rb_free(mod_displayname);
 		return false;
 	}
@@ -507,7 +501,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 				sendto_realops_snomask(SNO_GENERAL, L_ALL,
 						     "Module %s indicated failure during load.",
 						     mod_displayname);
-				lt_dlclose(tmpptr);
+				dlclose(tmpptr);
 				rb_free(mod_displayname);
 				return false;
 			}
@@ -599,7 +593,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 						capability_orphan(idx, m->cap_name);
 					}
 				}
-				lt_dlclose(tmpptr);
+				dlclose(tmpptr);
 				rb_free(mod_displayname);
 				return false;
 			}
@@ -662,7 +656,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 		sendto_realops_snomask(SNO_GENERAL, L_ALL,
 				     "Module %s has unknown/unsupported MAPI version %d.",
 				     mod_displayname, *mapi_version);
-		lt_dlclose(tmpptr);
+		dlclose(tmpptr);
 		rb_free(mod_displayname);
 		return false;
 	}
