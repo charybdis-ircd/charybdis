@@ -109,7 +109,12 @@ ae_level_name(unsigned int level)
 {
 	size_t i;
 
-	for (i = 0; i < ARRAY_SIZE(alevel); i++)
+	/*
+	 * We iterate backwards so that OWNER is preferred over ADMIN for
+	 * access level name.  This is so we can remove ADMIN later.
+	 *     -- Ariadne
+	 */
+	for (i = ARRAY_SIZE(alevel) - 1; i > 0; i--)
 	{
 		if ((alevel[i].flag & level) == level)
 			return alevel[i].level;
