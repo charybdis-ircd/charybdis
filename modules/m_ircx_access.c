@@ -98,8 +98,9 @@ struct AccessLevel {
 
 /* keep this in alphabetical order for bsearch(3)! */
 static const struct AccessLevel alevel[] = {
-	{"ADMIN", 'a', CHFL_ADMIN},
+	{"ADMIN", 'q', CHFL_ADMIN},
 	{"OP", 'o', CHFL_CHANOP},
+	{"OWNER", 'q', CHFL_ADMIN},
 	{"VOICE", 'v', CHFL_VOICE}
 };
 
