@@ -315,12 +315,6 @@ ms_bmask(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		mems = ONLY_CHANOPS;
 		break;
 
-	case 'q':
-		banlist = &chptr->quietlist;
-		mode_type = CHFL_QUIET;
-		mems = ALL_MEMBERS;
-		break;
-
 		/* maybe we should just blindly propagate this? */
 	default:
 		return;
