@@ -652,35 +652,6 @@ is_banned(struct Channel *chptr, struct Client *who, struct membership *msptr,
 #endif
 }
 
-/* is_quieted()
- *
- * input	- channel to check bans for, user to check bans against
- *                optional prebuilt buffers
- * output	- 1 if banned, else 0
- * side effects -
- */
-int
-is_quieted(struct Channel *chptr, struct Client *who, struct membership *msptr,
-	   const struct matchset *ms)
-{
-#if 0
-	if (chptr->last_checked_client != NULL &&
-		who == chptr->last_checked_client &&
-		chptr->last_checked_type == CHFL_QUIET &&
-		chptr->last_checked_ts > chptr->bants)
-		return chptr->last_checked_result;
-
-	chptr->last_checked_client = who;
-	chptr->last_checked_type = CHFL_QUIET;
-	chptr->last_checked_result = is_banned_list(chptr, &chptr->quietlist, who, msptr, s, s2, NULL);
-	chptr->last_checked_ts = rb_current_time();
-
-	return chptr->last_checked_result;
-#else
-	return is_banned_list(chptr, &chptr->quietlist, who, msptr, ms, NULL);
-#endif
-}
-
 /* can_join()
  *
  * input	- client to check, channel to check for, key
@@ -828,8 +799,7 @@ can_send(struct Channel *chptr, struct Client *source_p, struct membership *mspt
 			if(can_send_banned(msptr))
 				moduledata.approved = CAN_SEND_NO;
 		}
-		else if(is_banned(chptr, source_p, msptr, NULL, NULL) == CHFL_BAN
-			|| is_quieted(chptr, source_p, msptr, NULL) == CHFL_BAN)
+		else if(is_banned(chptr, source_p, msptr, NULL, NULL) == CHFL_BAN)
 			moduledata.approved = CAN_SEND_NO;
 	}
 
@@ -932,8 +902,7 @@ find_bannickchange_channel(struct Client *client_p)
 			if (can_send_banned(msptr))
 				return chptr;
 		}
-		else if (is_banned(chptr, client_p, msptr, &ms, NULL) == CHFL_BAN
-			|| is_quieted(chptr, client_p, msptr, &ms) == CHFL_BAN)
+		else if (is_banned(chptr, client_p, msptr, &ms, NULL) == CHFL_BAN)
 			return chptr;
 	}
 	return NULL;

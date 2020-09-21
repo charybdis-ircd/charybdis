@@ -160,7 +160,6 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define CHFL_ADMIN		0x0004	/* channel admin */
 
 #define CHFL_BANNED		0x0008  /* cached as banned */
-#define CHFL_QUIETED		0x0010  /* cached as being +q victim */
 #define ONLY_SERVERS		0x0020
 #define ONLY_OPERS		0x0040
 #define ALL_MEMBERS		CHFL_PEON
@@ -171,7 +170,7 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define is_chanop(x)	((x) && (x)->flags & CHFL_CHANOP)
 #define is_voiced(x)	((x) && (x)->flags & CHFL_VOICE)
 #define is_chanop_voiced(x) ((x) && (x)->flags & (CHFL_CHANOP|CHFL_VOICE|CHFL_ADMIN))
-#define can_send_banned(x) ((x) && (x)->flags & (CHFL_BANNED|CHFL_QUIETED))
+#define can_send_banned(x) ((x) && (x)->flags & (CHFL_BANNED))
 
 /* channel modes ONLY */
 #define MODE_PRIVATE    0x0001
@@ -191,7 +190,6 @@ typedef int (*ExtbanFunc)(const char *data, struct Client *client_p,
 #define CHFL_BAN        0x10000000	/* ban channel flag */
 #define CHFL_EXCEPTION  0x20000000	/* exception to ban channel flag */
 #define CHFL_INVEX      0x40000000
-#define CHFL_QUIET      0x80000000
 
 #define CHFL_ACL	(CHFL_EXCEPTION | CHFL_INVEX)
 
@@ -237,8 +235,6 @@ struct matchset;
 extern int is_banned(struct Channel *chptr, struct Client *who,
                      struct membership *msptr, const struct matchset *ms,
                      const char **);
-extern int is_quieted(struct Channel *chptr, struct Client *who,
-		     struct membership *msptr, const struct matchset *ms);
 extern int can_join(struct Client *source_p, struct Channel *chptr,
 		    const char *key, const char **forward);
 

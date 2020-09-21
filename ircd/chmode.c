@@ -297,7 +297,7 @@ add_id(struct Client *source_p, struct Channel *chptr, const char *banid, const 
 	rb_dlinkAdd(actualBan, &actualBan->node, list);
 
 	/* invalidate the can_send() cache */
-	if(mode_type == CHFL_BAN || mode_type == CHFL_QUIET || mode_type == CHFL_EXCEPTION)
+	if(mode_type == CHFL_BAN || mode_type == CHFL_EXCEPTION)
 		chptr->bants = rb_current_time();
 
 	return true;
@@ -327,7 +327,7 @@ del_id(struct Channel *chptr, const char *banid, rb_dlink_list * list, long mode
 			rb_dlinkDelete(&banptr->node, list);
 
 			/* invalidate the can_send() cache */
-			if(mode_type == CHFL_BAN || mode_type == CHFL_QUIET || mode_type == CHFL_EXCEPTION)
+			if(mode_type == CHFL_BAN || mode_type == CHFL_EXCEPTION)
 				chptr->bants = rb_current_time();
 
 			return banptr;
@@ -815,14 +815,6 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 			mems = ONLY_SERVERS;
 		break;
 
-	case CHFL_QUIET:
-		list = &chptr->quietlist;
-		errorval = SM_ERR_RPL_Q;
-		rpl_list_p = form_str(RPL_QUIETLIST);
-		rpl_endlist_p = form_str(RPL_ENDOFQUIETLIST);
-		mems = ALL_MEMBERS;
-		break;
-
 	default:
 		sendto_realops_snomask(SNO_GENERAL, L_ALL, "chm_ban() called with unknown type!");
 		return;
@@ -836,8 +828,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr,
 
 		/* non-ops cant see +eI lists.. */
 		/* note that this is still permitted if +e/+I are mlocked. */
-		if(alevel < CHFL_CHANOP && mode_type != CHFL_BAN &&
-				mode_type != CHFL_QUIET)
+		if(alevel < CHFL_CHANOP && mode_type != CHFL_BAN)
 		{
 			if(!(*errors & SM_ERR_NOOPS))
 				sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
@@ -1582,7 +1573,7 @@ struct ChannelMode chmode_table[256] =
   {chm_simple,	MODE_NOPRIVMSGS },	/* n */
   {chm_op,	0 },			/* o */
   {chm_simple,	MODE_PRIVATE },		/* p */
-  {chm_ban,	CHFL_QUIET },		/* q */
+  {chm_nosuch,	0 },			/* q */
   {chm_simple,  MODE_REGONLY },		/* r */
   {chm_simple,	MODE_SECRET },		/* s */
   {chm_simple,	MODE_TOPICLIMIT },	/* t */
