@@ -96,7 +96,7 @@ h_prop_channel_join(void *vdata)
 	msptr->flags |= CHFL_ADMIN;
 
 #if 0
-	const char *para[] = {"+a", source_p->name};
+	const char *para[] = {"+q", source_p->name};
 	set_channel_mode(source_p, &me, chptr, NULL, 2, para);
 #endif
 }
