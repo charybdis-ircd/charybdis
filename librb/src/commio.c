@@ -28,7 +28,7 @@
 #include <commio-int.h>
 #include <commio-ssl.h>
 #include <event-int.h>
-#ifdef HAVE_SYS_UIO_H
+#ifdef HAVE_WRITEV
 #include <sys/uio.h>
 #endif
 #define HAVE_SSL 1
