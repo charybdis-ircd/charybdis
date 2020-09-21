@@ -6,9 +6,9 @@ package=librb
 
 echo "Extracting $package/src/version.c..."
 
-if test -r version.c.last
+if test -r $1.last
 then
-   generation=`sed -n 's/^const char \*generation = \"\(.*\)\";/\1/p' < version.c.last`
+   generation=`sed -n 's/^const char \*generation = \"\(.*\)\";/\1/p' < $1.last`
    if test ! "$generation" ; then generation=0; fi
 else
    generation=0
@@ -16,7 +16,7 @@ fi
 
 generation=`expr $generation + 1`
 
-$spitshell >version.c <<!SUB!THIS!
+$spitshell >$1 <<!SUB!THIS!
 /*
  *   librb: a library used by charybdis and other things
  *   src/version.c
@@ -67,10 +67,12 @@ const char *librb_infotext[] =
 IFS='
 '
 for i in `grep -v '^$Id' ../CREDITS |tr -d '"'` ; do
-echo "  \"$i\"," >> version.c
+echo "  \"$i\"," >> $1
 done
-$spitshell >>version.c <<!SUB!THISTOO!
+$spitshell >>$1 <<!SUB!THISTOO!
   "",
   0,
 };
 !SUB!THISTOO!
+
+cp $1 $1.last

@@ -1925,7 +1925,7 @@ rb_inet_socketpair_udp(rb_fde_t **newF1, rb_fde_t **newF2)
 	for(i = 0; i < 2; i++)
 	{
 #ifdef MSG_DONTWAIT
-		int flag = MSG_DONTWAIT
+		int flag = MSG_DONTWAIT;
 #else
 		int flag = 0;
 #endif

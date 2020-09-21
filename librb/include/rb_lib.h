@@ -155,11 +155,7 @@ char *rb_strerror(int error);
 #endif
 
 /* evaluates to true if assertion fails */
-#ifdef SOFT_ASSERT
 #define lrb_assert(expr) 	(!slrb_assert(expr))
-#else
-#define lrb_assert(expr)	(assert(slrb_assert(expr)), 0)
-#endif
 
 #ifdef RB_SOCKADDR_HAS_SA_LEN
 #define ss_len sa_len

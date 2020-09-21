@@ -6,8 +6,7 @@ AM_CPPFLAGS = -I. -I../include @SSL_CFLAGS@ @GNUTLS_CFLAGS@ @MBEDTLS_CFLAGS@
 BUILT_SOURCES = version.c
 
 version.c: version.c.SH ../CREDITS
-	$(SHELL) ./version.c.SH
-	$(CP) version.c version.c.last
+	$(SHELL) ./version.c.SH version.c
 
 version.lo: version.c ../include/serno.h
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
