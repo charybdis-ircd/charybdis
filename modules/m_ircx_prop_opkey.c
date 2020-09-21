@@ -72,7 +72,10 @@ h_prop_channel_join(void *vdata)
 		return;
 
 	rb_dlink_list *prop_list = &chptr->prop_list;
-	struct Property *prop = propertyset_find(prop_list, "OPKEY");
+	struct Property *prop = propertyset_find(prop_list, "HOSTKEY");
+
+	if (prop == NULL)
+		prop = propertyset_find(prop_list, "OPKEY");
 
 	if (prop == NULL)
 		return;
@@ -106,7 +109,7 @@ h_prop_authorize(void *vdata)
 	if (!IsChanPrefix(*data->target))
 		return;
 
-	if (rb_strcasecmp(data->key, "OPKEY"))
+	if (rb_strcasecmp(data->key, "OPKEY") || rb_strcasecmp(data->key, "HOSTKEY"))
 		return;
 
 	data->approved = data->alevel >= CHFL_CHANOP;
