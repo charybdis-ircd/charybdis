@@ -1557,7 +1557,7 @@ struct ChannelMode chmode_table[256] =
   {chm_nosuch,	0 },
   {chm_nosuch,	0 },
   {chm_nosuch,	0 },
-  {chm_admin,	0 },			/* a */
+  {chm_nosuch,	0 },			/* a */
   {chm_ban,	CHFL_BAN },		/* b */
   {chm_nosuch,	0 },			/* c */
   {chm_nosuch,	0 },			/* d */
@@ -1573,7 +1573,7 @@ struct ChannelMode chmode_table[256] =
   {chm_simple,	MODE_NOPRIVMSGS },	/* n */
   {chm_op,	0 },			/* o */
   {chm_simple,	MODE_PRIVATE },		/* p */
-  {chm_nosuch,	0 },			/* q */
+  {chm_admin,	0 },			/* q */
   {chm_simple,  MODE_REGONLY },		/* r */
   {chm_simple,	MODE_SECRET },		/* s */
   {chm_simple,	MODE_TOPICLIMIT },	/* t */
