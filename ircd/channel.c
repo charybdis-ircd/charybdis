@@ -406,7 +406,6 @@ destroy_channel(struct Channel *chptr)
 	free_channel_list(&chptr->banlist);
 	free_channel_list(&chptr->exceptlist);
 	free_channel_list(&chptr->invexlist);
-	free_channel_list(&chptr->quietlist);
 
 	/* free properties */
 	propertyset_clear(&chptr->prop_list);

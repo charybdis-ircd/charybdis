@@ -737,9 +737,6 @@ burst_TS6(struct Client *client_p)
 		   rb_dlink_list_length(&chptr->invexlist) > 0)
 			burst_modes_TS6(client_p, chptr, &chptr->invexlist, 'I');
 
-		if(rb_dlink_list_length(&chptr->quietlist) > 0)
-			burst_modes_TS6(client_p, chptr, &chptr->quietlist, 'q');
-
 		if(IsCapable(client_p, CAP_TB) && chptr->topic != NULL)
 			sendto_one(client_p, ":%s TB %s %ld %s%s:%s",
 				   me.id, chptr->chname, (long) chptr->topic_time,

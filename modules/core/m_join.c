@@ -735,9 +735,6 @@ ms_sjoin(struct MsgBuf *msgbuf_p, struct Client *client_p, struct Client *source
 		if(rb_dlink_list_length(&chptr->invexlist) > 0)
 			remove_ban_list(chptr, fakesource_p, &chptr->invexlist,
 					'I', ONLY_CHANOPS);
-		if(rb_dlink_list_length(&chptr->quietlist) > 0)
-			remove_ban_list(chptr, fakesource_p, &chptr->quietlist,
-					'q', ALL_MEMBERS);
 		chptr->bants++;
 
 		sendto_channel_local(&me, ALL_MEMBERS, chptr,

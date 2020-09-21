@@ -1289,7 +1289,6 @@ stats_memory (struct Client *source_p)
 	int channel_bans = 0;
 	int channel_except = 0;
 	int channel_invex = 0;
-	int channel_quiets = 0;
 
 	int class_count = 0;	/* classes */
 	int conf_count = 0;	/* conf lines */
@@ -1302,7 +1301,6 @@ stats_memory (struct Client *source_p)
 	size_t channel_ban_memory = 0;
 	size_t channel_except_memory = 0;
 	size_t channel_invex_memory = 0;
-	size_t channel_quiet_memory = 0;
 
 	size_t away_memory = 0;	/* memory used by aways */
 	size_t ww = 0;		/* whowas array count */
@@ -1377,13 +1375,6 @@ stats_memory (struct Client *source_p)
 
 			channel_invex_memory += (sizeof(rb_dlink_node) + sizeof(struct Ban));
 		}
-
-		RB_DLINK_FOREACH(rb_dlink, chptr->quietlist.head)
-		{
-			channel_quiets++;
-
-			channel_quiet_memory += (sizeof(rb_dlink_node) + sizeof(struct Ban));
-		}
 	}
 
 	/* count up all classes */
@@ -1423,11 +1414,10 @@ stats_memory (struct Client *source_p)
 			   channel_count, (int) channel_memory);
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
-			   "z :Bans %u(%d) Exceptions %u(%d) Invex %u(%d) Quiets %u(%d)",
+			   "z :Bans %u(%d) Exceptions %u(%d) Invex %u(%d)",
 			   channel_bans, (int) channel_ban_memory,
 			   channel_except, (int) channel_except_memory,
-			   channel_invex, (int) channel_invex_memory,
-			   channel_quiets, (int) channel_quiet_memory);
+			   channel_invex, (int) channel_invex_memory);
 
 	sendto_one_numeric(source_p, RPL_STATSDEBUG,
 			   "z :Channel members %u(%lu) invite %u(%lu)",
