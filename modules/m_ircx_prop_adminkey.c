@@ -72,7 +72,10 @@ h_prop_channel_join(void *vdata)
 		return;
 
 	rb_dlink_list *prop_list = &chptr->prop_list;
-	struct Property *prop = propertyset_find(prop_list, "ADMINKEY");
+	struct Property *prop = propertyset_find(prop_list, "OWNERKEY");
+
+	if (prop == NULL)
+		prop = propertyset_find(prop_list, "ADMINKEY");
 
 	if (prop == NULL)
 		return;
@@ -84,10 +87,10 @@ h_prop_channel_join(void *vdata)
 	struct membership *msptr = find_channel_membership(chptr, source_p);
 	s_assert(msptr != NULL);
 
-	sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +a %s",
+	sendto_channel_local(&me, ALL_MEMBERS, chptr, ":%s MODE %s +q %s",
 			me.name, chptr->chname, source_p->name);
 	sendto_server(NULL, chptr, CAP_TS6, NOCAPS,
-			":%s TMODE %ld %s +a %s",
+			":%s TMODE %ld %s +q %s",
 			me.id, (long) chptr->channelts, chptr->chname,
 			source_p->id);
 	msptr->flags |= CHFL_ADMIN;
@@ -106,7 +109,7 @@ h_prop_authorize(void *vdata)
 	if (!IsChanPrefix(*data->target))
 		return;
 
-	if (rb_strcasecmp(data->key, "ADMINKEY"))
+	if (rb_strcasecmp(data->key, "ADMINKEY") || rb_strcasecmp(data->key, "OWNERKEY"))
 		return;
 
 	data->approved = data->alevel >= CHFL_ADMIN;
