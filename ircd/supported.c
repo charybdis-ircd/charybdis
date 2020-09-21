@@ -313,7 +313,7 @@ init_isupport(void)
 	add_isupport("INVEX", isupport_boolean, &ConfigChannel.use_invex);
 	add_isupport("CHANMODES", isupport_chanmodes, NULL);
 	add_isupport("CHANLIMIT", isupport_chanlimit, NULL);
-	add_isupport("PREFIX", isupport_string, "(aov).@+");
+	add_isupport("PREFIX", isupport_string, "(qov).@+");
 	add_isupport("MAXLIST", isupport_maxlist, NULL);
 	add_isupport("MODES", isupport_intptr, &maxmodes);
 	add_isupport("NETWORK", isupport_stringptr, &ServerInfo.network_name);
