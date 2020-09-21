@@ -61,7 +61,6 @@ extension_LTLIBRARIES =		\
   m_opme.la			\
   m_sendbans.la			\
   m_webirc.la			\
-  m_remove.la			\
   m_roleplay.la			\
   hide_uncommon_channels.la	\
   no_kill_services.la		\
