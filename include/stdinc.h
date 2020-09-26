@@ -98,32 +98,22 @@ typedef bool _Bool;
 #include <ctype.h>
 
 #include <limits.h>
-
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/file.h>
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
+#ifdef HAVE_GETRUSAGE
+# include <sys/resource.h>
 #endif
 
 
 #include <sys/stat.h>
-
-#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#else
-extern int errno;
-#endif
 
-#ifdef HAVE_SYS_UIO_H
+#ifdef HAVE_WRITEV
 #include <sys/uio.h>
 #endif
 

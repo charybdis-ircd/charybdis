@@ -64,3 +64,5 @@
 #endif
 
 #mesondefine VERSION
+#mesondefine HAVE_GETRUSAGE
+#mesondefine HAVE_WRITEV
