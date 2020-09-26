@@ -102,21 +102,21 @@ prefix = get_option('prefix')
 cdata.set_quoted('PREFIX', prefix)
 cdata.set_quoted('IRCD_PREFIX', prefix)
 
-libexec_dir = prefix + '/bin'
+libexec_dir = prefix / 'bin'
 cdata.set_quoted('PKGLIBEXECDIR', libexec_dir)
 
-etc_dir = prefix + '/etc'
+etc_dir = prefix / 'etc'
 cdata.set_quoted('ETC_DIR', etc_dir)
 cdata.set_quoted('PKGRUNDIR', etc_dir)
 cdata.set_quoted('PKGLOCALSTATEDIR', etc_dir)
 
-log_dir = prefix + '/log'
+log_dir = prefix / 'log'
 cdata.set_quoted('LOG_DIR', log_dir)
 
-help_dir = prefix + '/help'
+help_dir = prefix / 'help'
 cdata.set_quoted('HELP_DIR', help_dir)
 
-module_dir = prefix + '/modules'
+module_dir = prefix / 'modules'
 cdata.set_quoted('MODULE_DIR', module_dir)
 
 cdata.set_quoted('PROGRAM_PREFIX', '')
