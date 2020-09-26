@@ -19,11 +19,50 @@ bison_gen = generator(bison,
 
 cdata = configuration_data()
 
-# tls
+# zlib
+zlib_dep = dependency('zlib', required: false)
+
+if zlib_dep.found()
+  cdata.set('HAVE_LIBZ', true)
+endif
+
+# tls: we prefer mbedtls if we can find it, else gnutls and then openssl
 libcrypto_dep = dependency('libcrypto', required: false)
 
 if libcrypto_dep.found()
   cdata.set('HAVE_LIBCRYPTO', true)
+endif
+
+# grr, mbedtls has no pc file so we have to do this ourselves.  gross.
+mbedtls_lib = cc.find_library('mbedtls', has_headers: ['mbedtls/ssl.h'])
+mbedcrypto_lib = cc.find_library('mbedcrypto')
+mbedx509_lib = cc.find_library('mbedx509')
+
+if mbedtls_lib.found() and mbedcrypto_lib.found() and mbedx509_lib.found()
+  mbedtls_dep = declare_dependency(include_directories: '/usr/include',
+    dependencies: [mbedtls_lib, mbedcrypto_lib, mbedx509_lib])
+
+  cdata.set('HAVE_MBEDTLS', true)
+else
+  mbedtls_dep = disabler()
+endif
+
+if not mbedtls_dep.found()
+  gnutls_dep = dependency('gnutls', required: false)
+
+  cdata.set('HAVE_GNUTLS', true)
+else
+  gnutls_dep = disabler()
+endif
+
+if not mbedtls_dep.found() and not gnutls_dep.found() and libcrypto_dep.found()
+  libssl_dep = dependency('libssl', required: false)
+
+  if libssl_dep.found()
+    cdata.set('HAVE_OPENSSL', true)
+  endif
+else
+  libssl_dep = disabler()
 endif
 
 # branding

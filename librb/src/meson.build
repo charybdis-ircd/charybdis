@@ -5,6 +5,16 @@ librb_version_c = custom_target(
   command: ['sh', '@INPUT@', '@OUTPUT@']
 )
 
+if mbedtls_dep.found()
+  tls_dep = mbedtls_dep
+elif gnutls_dep.found()
+  tls_dep = gnutls_dep
+elif libssl_dep.found()
+  tls_dep = libssl_dep
+else
+  tls_dep = dependency()
+endif
+
 librb_lib = shared_library('rb',
   'unix.c',
   'win32.c',
@@ -35,6 +45,7 @@ librb_lib = shared_library('rb',
   'arc4random.c',
   librb_version_c,
   librb_serno_h,
+  dependencies: [tls_dep],
   install: true,
   include_directories: [librb_inc]
 )
