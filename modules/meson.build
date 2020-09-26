@@ -21,7 +21,6 @@ modules = [
   'm_cap',
   'm_capab',
   'm_certfp',
-  'm_challenge',
   'm_chghost',
   'm_close',
   'm_connect',
@@ -97,3 +96,14 @@ foreach module : modules
     install: true,
     install_dir: autoload_dir)
 endforeach
+
+if libcrypto_dep.found()
+  shared_module('m_challenge',
+    'm_challenge.c',
+    dependencies: [libcrypto_dep],
+    link_with: [librb_lib, ircd_lib],
+    include_directories: [librb_inc, base_inc],
+    name_prefix: '',
+    install: true,
+    install_dir: autoload_dir)
+endif
