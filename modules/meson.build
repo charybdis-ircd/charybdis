@@ -1,3 +1,5 @@
+autoload_dir = module_dir / 'autoload'
+
 subdir('core')
 
 modules = [
@@ -91,5 +93,7 @@ foreach module : modules
     '@0@.c'.format(module),
     link_with: [librb_lib, ircd_lib],
     include_directories: [librb_inc, base_inc],
-    name_prefix: '')
+    name_prefix: '',
+    install: true,
+    install_dir: autoload_dir)
 endforeach

@@ -20,5 +20,7 @@ foreach core_module : core_modules
     '@0@.c'.format(core_module),
     link_with: [librb_lib, ircd_lib],
     include_directories: [librb_inc, base_inc],
-    name_prefix: '')
+    name_prefix: '',
+    install: true,
+    install_dir: module_dir)
 endforeach

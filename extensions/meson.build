@@ -1,3 +1,5 @@
+extension_dir = module_dir / 'extensions'
+
 extensions = [
   'chantype_dummy',
   'chm_adminonly',
@@ -72,7 +74,9 @@ foreach extension : extensions
     '@0@.c'.format(extension),
     link_with: [librb_lib, ircd_lib],
     include_directories: [librb_inc, base_inc],
-    name_prefix: '')
+    name_prefix: '',
+    install: true,
+    install_dir: extension_dir)
 endforeach
 
 hyperscan_dep = dependency('hyperscan', required: false)
@@ -83,5 +87,7 @@ if hyperscan_dep.found()
     dependencies: [hyperscan_dep],
     link_with: [librb_lib, ircd_lib],
     include_directories: [librb_inc, base_inc],
-    name_prefix: '')
+    name_prefix: '',
+    install: true,
+    install_dir: extension_dir)
 endif
