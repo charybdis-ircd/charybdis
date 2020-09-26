@@ -3,9 +3,9 @@ project('ophion', 'c',
   license : 'GPL-2-only',
   meson_version : '>=0.50')
 
-
 cc = meson.get_compiler('c')
 
+# flex / bison
 flex = find_program('flex', required: true)
 bison = find_program('bison', required: true)
 
@@ -18,6 +18,13 @@ bison_gen = generator(bison,
   arguments: ['@INPUT@', '--defines=@OUTPUT1@', '--output=@OUTPUT0@'])
 
 cdata = configuration_data()
+
+# tls
+libcrypto_dep = dependency('libcrypto', required: false)
+
+if libcrypto_dep.found()
+  cdata.set('HAVE_LIBCRYPTO', true)
+endif
 
 # branding
 cdata.set_quoted('BRANDING_NAME', meson.project_name())

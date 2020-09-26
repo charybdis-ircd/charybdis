@@ -58,6 +58,7 @@ ircd_lib = shared_library('ircd',
   ircd_version_c,
   ircd_lexer_src,
   ircd_parser_src,
+  dependencies: [libcrypto_dep],
   include_directories: [librb_inc, base_inc],
   install: true,
   link_with: [librb_lib])
