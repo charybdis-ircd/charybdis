@@ -6,6 +6,16 @@ project('ophion', 'c',
 
 cc = meson.get_compiler('c')
 
+flex = find_program('flex', required: true)
+bison = find_program('bison', required: true)
+
+flex_gen = generator(flex,
+  output: '@PLAINNAME@.y.c',
+  arguments: ['-o', '@OUTPUT@', '@INPUT@'])
+
+bison_gen = generator(bison,
+  output: ['@BASENAME@.tab.c', '@BASENAME@.tab.h'],
+  arguments: ['@INPUT@', '--defines=@OUTPUT1@', '--output=@OUTPUT0@'])
 
 cdata = configuration_data()
 
