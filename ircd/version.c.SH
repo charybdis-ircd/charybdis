@@ -5,9 +5,9 @@ package=charybdis
 
 echo "Extracting $package/src/version.c..."
 
-if test -r version.c.last
+if test -r $1.last
 then
-   generation=`sed -n 's/^const char \*generation = \"\(.*\)\";/\1/p' < version.c.last`
+   generation=`sed -n 's/^const char \*generation = \"\(.*\)\";/\1/p' < $1.last`
    if test ! "$generation" ; then generation=0; fi
 else
    generation=0
@@ -28,7 +28,7 @@ else
     creation="$EXTERNAL_BUILD_TIMESTAMP"
 fi
 
-$spitshell >version.c <<!SUB!THIS!
+$spitshell >$1 <<!SUB!THIS!
 /*
  *   $package - Internet Relay Chat, src/version.c
  *   Copyright (C) 1990 Chelsea Ashley Dyerman
@@ -78,8 +78,8 @@ const char *infotext[] =
   " ",
 !SUB!THIS!
 
-sed 's/^$/ /;s/.*/\  "&\",/' ../CREDITS >> version.c
-$spitshell >>version.c <<!SUB!THISTOO!
+sed 's/^$/ /;s/.*/\  "&\",/' ../CREDITS >> $1
+$spitshell >>$1 <<!SUB!THISTOO!
   " ",
   NULL,
 };

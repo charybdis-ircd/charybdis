@@ -14,11 +14,52 @@ flex_gen = generator(flex,
   arguments: ['-o', '@OUTPUT@', '@INPUT@'])
 
 bison_gen = generator(bison,
-  output: ['@BASENAME@.tab.c', '@BASENAME@.tab.h'],
+  output: ['@BASENAME@.c', '@BASENAME@.h'],
   arguments: ['@INPUT@', '--defines=@OUTPUT1@', '--output=@OUTPUT0@'])
 
 cdata = configuration_data()
 
+# branding
+cdata.set_quoted('BRANDING_NAME', meson.project_name())
+cdata.set_quoted('BRANDING_VERSION', meson.project_version())
+
+# nicklen / topiclen / whowas size
+max_nicklen = 32
+max_topiclen = 390
+max_nickname_history_length = 15000
+
+cdata.set('NICKLEN', max_nicklen)
+cdata.set('TOPICLEN', max_topiclen)
+cdata.set('NICKNAMEHISTORYLENGTH', max_nickname_history_length)
+
+# heap sizes
+small_heap_size = 256
+medium_heap_size = 1024
+large_heap_size = 4096
+huge_heap_size = 8192
+jumbo_heap_size = 32768
+
+small_heaps = ['PCLIENT_HEAP_SIZE', 'ND_HEAP_SIZE', 'CONFITEM_HEAP_SIZE', 'AWAY_HEAP_SIZE']
+medium_heaps = ['LCLIENT_HEAP_SIZE', 'MONITOR_HEAP_SIZE', 'FD_HEAP_SIZE']
+large_heaps = ['BAN_HEAP_SIZE', 'TOPIC_HEAP_SIZE', 'LINEBUF_HEAP_SIZE']
+huge_heaps = ['CHANNEL_HEAP_SIZE', 'CLIENT_HEAP_SIZE', 'USER_HEAP_SIZE', 'DNODE_HEAP_SIZE']
+jumbo_heaps = ['MEMBER_HEAP_SIZE']
+
+heaps = [
+  [small_heaps, small_heap_size],
+  [medium_heaps, medium_heap_size],
+  [large_heaps, large_heap_size],
+  [huge_heaps, huge_heap_size],
+  [jumbo_heaps, jumbo_heap_size]
+]
+
+foreach heap : heaps
+  foreach heap_item : heap.get(0)
+    cdata.set(heap_item, heap.get(1))
+  endforeach
+endforeach
+
+# functions
 check_functions = [
   ['HAVE_SNPRINTF', 'snprintf', 'stdio.h'],
   ['HAVE_VSNPRINTF', 'vsnprintf', 'stdio.h'],
@@ -55,6 +96,30 @@ foreach f : check_functions
     cdata.set(f.get(0), 1)
   endif
 endforeach
+
+# paths
+prefix = get_option('prefix')
+cdata.set_quoted('PREFIX', prefix)
+cdata.set_quoted('IRCD_PREFIX', prefix)
+
+libexec_dir = prefix + '/bin'
+cdata.set_quoted('PKGLIBEXECDIR', libexec_dir)
+
+etc_dir = prefix + '/etc'
+cdata.set_quoted('ETC_DIR', etc_dir)
+cdata.set_quoted('PKGRUNDIR', etc_dir)
+cdata.set_quoted('PKGLOCALSTATEDIR', etc_dir)
+
+log_dir = prefix + '/log'
+cdata.set_quoted('LOG_DIR', log_dir)
+
+help_dir = prefix + '/help'
+cdata.set_quoted('HELP_DIR', help_dir)
+
+module_dir = prefix + '/modules'
+cdata.set_quoted('MODULE_DIR', module_dir)
+
+cdata.set_quoted('PROGRAM_PREFIX', '')
 
 subdir('include')
 subdir('librb')

@@ -1,0 +1,66 @@
+#mesondefine AWAY_HEAP_SIZE
+#mesondefine BAN_HEAP_SIZE
+#mesondefine BRANDING_NAME
+#mesondefine BRANDING_VERSION
+#mesondefine CHANNEL_HEAP_SIZE
+#mesondefine CHARYBDIS_PROFILE
+#mesondefine CLIENT_HEAP_SIZE
+#mesondefine CONFITEM_HEAP_SIZE
+#mesondefine DNODE_HEAP_SIZE
+#mesondefine ENABLE_OPER_CHGHOST
+#mesondefine ETC_DIR
+#mesondefine FD_HEAP_SIZE
+#mesondefine HAVE_LIBCRYPTO
+#mesondefine HAVE_LIBSCTP
+#mesondefine HAVE_LIBZ
+#mesondefine HELP_DIR
+#mesondefine IRCD_PREFIX
+#mesondefine LCLIENT_HEAP_SIZE
+#mesondefine LINEBUF_HEAP_SIZE
+#mesondefine LOG_DIR
+#mesondefine MEMBER_HEAP_SIZE
+#mesondefine MODULE_DIR
+#mesondefine MONITOR_HEAP_SIZE
+#mesondefine ND_HEAP_SIZE
+#mesondefine NICKLEN
+#mesondefine NICKNAMEHISTORYLENGTH
+#mesondefine PACKAGE
+#mesondefine PACKAGE_BUGREPORT
+#mesondefine PACKAGE_NAME
+#mesondefine PACKAGE_STRING
+#mesondefine PACKAGE_TARNAME
+#mesondefine PACKAGE_URL
+#mesondefine PACKAGE_VERSION
+#mesondefine PATH_DEVNULL
+#mesondefine PCLIENT_HEAP_SIZE
+#mesondefine PKGLIBEXECDIR
+#mesondefine PKGLOCALSTATEDIR
+#mesondefine PKGRUNDIR
+#mesondefine PROGRAM_PREFIX
+#mesondefine SOFT_ASSERT
+#mesondefine TOPICLEN
+#mesondefine TOPIC_HEAP_SIZE
+#mesondefine USER_HEAP_SIZE
+
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+#mesondefine VERSION

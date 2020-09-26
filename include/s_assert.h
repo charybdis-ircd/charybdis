@@ -55,10 +55,6 @@
 #endif
 
 /* evaluates to true if assertion fails */
-#ifdef SOFT_ASSERT
 #define s_assert(expr)	(!ss_assert(expr))
-#else
-#define s_assert(expr)	(assert(ss_assert(expr)), 0)
-#endif
 
 #endif /* INCLUDED_s_assert_h */
