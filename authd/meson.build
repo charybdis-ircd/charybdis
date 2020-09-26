@@ -13,4 +13,5 @@ authd_exe = executable('authd',
   'providers/rdns.c',
   'providers/opm.c',
   link_with: [librb_lib],
+  install: true,
   include_directories: [librb_inc, base_inc])

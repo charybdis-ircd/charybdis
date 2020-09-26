@@ -59,9 +59,11 @@ ircd_lib = shared_library('ircd',
   ircd_lexer_src,
   ircd_parser_src,
   include_directories: [librb_inc, base_inc],
+  install: true,
   link_with: [librb_lib])
 
 ircd_exe = executable(meson.project_name(),
   'main.c',
   include_directories: [librb_inc, base_inc],
+  install: true,
   link_with: [ircd_lib])

@@ -35,5 +35,6 @@ librb_lib = shared_library('rb',
   'arc4random.c',
   librb_version_c,
   librb_serno_h,
+  install: true,
   include_directories: [librb_inc]
 )
