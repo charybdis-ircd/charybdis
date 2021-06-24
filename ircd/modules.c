@@ -296,7 +296,7 @@ load_one_module(const char *path, int origin, bool coremodule)
 		}
 	}
 
-	sendto_realops_snomask(SNO_GENERAL, L_ALL, "Cannot locate module %s", path);
+	sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "Cannot locate module %s", path);
 
 	if (server_state_foreground)
 		ierror("cannot locate module %s", path);
@@ -400,7 +400,7 @@ unload_one_module(const char *name, bool warn)
 						idx = serv_capindex;
 						break;
 					default:
-						sendto_realops_snomask(SNO_GENERAL, L_ALL,
+						sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 							"Unknown/unsupported CAP index found of type %d on capability %s when unloading %s",
 							m->cap_index, m->cap_name, mod->name);
 						ilog(L_MAIN,
@@ -415,7 +415,7 @@ unload_one_module(const char *name, bool warn)
 			break;
 		}
 	default:
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Unknown/unsupported MAPI version %d when unloading %s!",
 				     mod->mapi_version, mod->name);
 		ilog(L_MAIN, "Unknown/unsupported MAPI version %d when unloading %s!",
@@ -433,7 +433,7 @@ unload_one_module(const char *name, bool warn)
 	if(warn)
 	{
 		ilog(L_MAIN, "Module %s unloaded", name);
-		sendto_realops_snomask(SNO_GENERAL, L_ALL, "Module %s unloaded", name);
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE, "Module %s unloaded", name);
 	}
 
 	return true;
@@ -468,7 +468,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	{
 		const char *err = lt_dlerror();
 
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Error loading module %s: %s", mod_displayname, err);
 		ilog(L_MAIN, "Error loading module %s: %s", mod_displayname, err);
 		rb_free(mod_displayname);
@@ -486,7 +486,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	    && (mapi_version = (int *) (uintptr_t) lt_dlsym(tmpptr, "__mheader")) == NULL)
 	   || MAPI_MAGIC(*mapi_version) != MAPI_MAGIC_HDR)
 	{
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Data format error: module %s has no MAPI header.",
 				     mod_displayname);
 		ilog(L_MAIN, "Data format error: module %s has no MAPI header.", mod_displayname);
@@ -504,7 +504,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			{
 				ilog(L_MAIN, "Module %s indicated failure during load.",
 				     mod_displayname);
-				sendto_realops_snomask(SNO_GENERAL, L_ALL,
+				sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 						     "Module %s indicated failure during load.",
 						     mod_displayname);
 				lt_dlclose(tmpptr);
@@ -556,7 +556,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 						idx = serv_capindex;
 						break;
 					default:
-						sendto_realops_snomask(SNO_GENERAL, L_ALL,
+						sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 							"Unknown/unsupported CAP index found of type %d on capability %s when loading %s",
 							m->cap_index, m->cap_name, mod_displayname);
 						ilog(L_MAIN,
@@ -576,7 +576,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			{
 				ilog(L_MAIN, "Module %s indicated failure during load.",
 					mod_displayname);
-				sendto_realops_snomask(SNO_GENERAL, L_ALL,
+				sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 						     "Module %s indicated failure during load.",
 						     mod_displayname);
 				if(mheader->mapi_cap_list)
@@ -618,7 +618,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 					delta /= 86400;
 					iwarn("Module %s build date is out of sync with ircd build date by %ld days, expect problems",
 						mod_displayname, delta);
-					sendto_realops_snomask(SNO_GENERAL, L_ALL,
+					sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 						"Module %s build date is out of sync with ircd build date by %ld days, expect problems",
 						mod_displayname, delta);
 				}
@@ -659,7 +659,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 	default:
 		ilog(L_MAIN, "Module %s has unknown/unsupported MAPI version %d.",
 		     mod_displayname, MAPI_VERSION(*mapi_version));
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Module %s has unknown/unsupported MAPI version %d.",
 				     mod_displayname, *mapi_version);
 		lt_dlclose(tmpptr);
@@ -702,7 +702,7 @@ load_a_module(const char *path, bool warn, int origin, bool core)
 			break;
 		}
 
-		sendto_realops_snomask(SNO_GENERAL, L_ALL,
+		sendto_realops_snomask(SNO_GENERAL, L_NETWIDE,
 				     "Module %s [version: %s; MAPI version: %d; origin: %s; description: \"%s\"] loaded at %p",
 				     mod_displayname, ver, MAPI_VERSION(*mapi_version), o, description,
 				     (void *) tmpptr);
