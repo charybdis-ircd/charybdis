@@ -78,6 +78,8 @@ struct config_file_entry ConfigFileEntry;
 struct server_info ServerInfo;
 /* admin info set from ircd.conf */
 struct admin_info AdminInfo;
+/* STS info set from ircd.conf */
+struct sts_info STSInfo;
 
 struct Counter Count;
 struct ServerStatistics ServerStats;
