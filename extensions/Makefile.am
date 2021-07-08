@@ -35,6 +35,7 @@ extension_LTLIBRARIES =		\
   force_user_invis.la		\
   helpops.la			\
   hurt.la			\
+  identify_msg.la		\
   invite_notify.la		\
   ip_cloaking.la		\
   ip_cloaking_old.la		\
@@ -50,6 +51,7 @@ extension_LTLIBRARIES =		\
   sno_globaloper.la		\
   sno_whois.la			\
   umode_noctcp.la		\
+  umode_regnick.la		\
   m_adminwall.la		\
   m_echotags.la			\
   m_extendchans.la		\

@@ -64,6 +64,7 @@ auto_load_mod_LTLIBRARIES = \
   m_starttls.la \
   m_stats.la \
   m_svinfo.la \
+  m_svsumode.la \
   m_tb.la \
   m_testline.la \
   m_testmask.la \
